@@ -1,2 +1,2 @@
 # py-git
-git command interfaces with default implementatiom using subprocess calls.
+git command interfaces with default implementation using subprocess calls.
