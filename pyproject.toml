@@ -28,7 +28,10 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = []
+dependencies = [
+  "vt-commons @ git+https://github.com/Vaastav-Technologies/py-commons.git",
+  "vt-err-hndlr @ git+https://github.com/Vaastav-Technologies/py-err-hndlr.git"
+]
 
 [dependency-groups]
 test = ['pytest', 'coverage']
