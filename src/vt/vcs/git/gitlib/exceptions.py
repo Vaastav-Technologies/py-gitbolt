@@ -18,19 +18,19 @@ class GitException(VTException):
 
         >>> raise GitException()
         Traceback (most recent call last):
-        exceptions.GitException
+        gitlib.exceptions.GitException
 
       * raise exception with a message:
 
         >>> raise GitException('unexpected.')
         Traceback (most recent call last):
-        exceptions.GitException: unexpected.
+        gitlib.exceptions.GitException: unexpected.
 
       * raise exception from another exception:
 
         >>> raise GitException() from ValueError
         Traceback (most recent call last):
-        exceptions.GitException: ValueError
+        gitlib.exceptions.GitException: ValueError
 
     ... rest examples mimic ``VTException`` examples.
     """
@@ -47,15 +47,15 @@ class GitCmdException(GitException, VTCmdException):
 
         >>> raise GitCmdException
         Traceback (most recent call last):
-        exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException
 
         >>> raise GitCmdException()
         Traceback (most recent call last):
-        exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException
 
         >>> raise GitCmdException(exit_code=23)
         Traceback (most recent call last):
-        exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException
 
       * obtain error code:
 
@@ -87,19 +87,19 @@ class GitCmdException(GitException, VTCmdException):
 
         >>> raise GitCmdException('unexpected.')
         Traceback (most recent call last):
-        exceptions.GitCmdException: unexpected.
+        gitlib.exceptions.GitCmdException: unexpected.
 
       * raise exception from another exception:
 
         >>> raise GitCmdException() from ValueError
         Traceback (most recent call last):
-        exceptions.GitCmdException: ValueError
+        gitlib.exceptions.GitCmdException: ValueError
 
       * raise exception from another exception with message:
 
         >>> raise GitCmdException() from ValueError('cause message')
         Traceback (most recent call last):
-        exceptions.GitCmdException: ValueError: cause message
+        gitlib.exceptions.GitCmdException: ValueError: cause message
 
     ... rest examples mimic ``VTCmdException``.
     """

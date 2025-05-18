@@ -34,10 +34,12 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = ["mypy", "ruff"]
+doc = ['sphinx', 'sphinx-argparse']
 test = ['pytest', 'coverage']
 multitest = ['tox']
-doc = ['sphinx', 'sphinx-argparse']
 
 [tool.setuptools.packages.find]
-where = ["src/"]
+where = ['src']
 exclude = ["*.py"]
+namespaces = true
