@@ -37,3 +37,7 @@ dependencies = [
 test = ['pytest', 'coverage']
 multitest = ['tox']
 doc = ['sphinx', 'sphinx-argparse']
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+exclude = ["*.py"]
