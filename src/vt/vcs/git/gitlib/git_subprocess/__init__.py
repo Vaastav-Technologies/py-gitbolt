@@ -5,4 +5,4 @@
 Git command interfaces with implementation using subprocess calls.
 """
 
-from vt.vcs.git.gitlib.subprocess.base import *
+from vt.vcs.git.gitlib.git_subprocess.base import *
