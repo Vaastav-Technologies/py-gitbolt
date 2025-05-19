@@ -6,6 +6,7 @@ interfaces related to processors specific to git commands.
 """
 from __future__ import annotations
 from abc import abstractmethod
+from collections.abc import Sequence
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Protocol
@@ -55,14 +56,27 @@ class GitSubCommand[T](ForGit, Protocol):
     """
 
     @abstractmethod
-    def git_opts_override(self, *, cwd: list[str] | list[Path] | None = None, c: dict[str, str] | None = None,
-                          config_env: dict[str, str] | None = None, exec_path: str | Path, paginate: bool = False,
-                          no_pager: bool = False, git_dir: str | Path | None = None,
-                          work_tree: str | Path | None = None, namespace: str | None = None, bare: bool = False,
-                          no_replace_objects: bool = False, no_lazy_fetch: bool, no_optional_locks: bool = False,
-                          no_advice: bool = False, literal_pathspecs: bool = False, glob_pathspecs: bool = False,
-                          no_glob_pathspecs: bool = False, icase_pathspecs: bool = False,
-                          list_cmds: list[str] | None = None, attr_source: str | None = None) -> T:
+    def git_opts_override(self, *,
+                          cwd: Sequence[Path] | None = None,
+                          c: dict[str, str] | None = None,
+                          config_env: dict[str, str] | None = None,
+                          exec_path: Path | None = None,
+                          paginate: bool | None = None,
+                          no_pager: bool | None = None,
+                          git_dir: Path | None = None,
+                          work_tree: Path | None = None,
+                          namespace: str | None = None,
+                          bare: bool | None = None,
+                          no_replace_objects: bool | None = None,
+                          no_lazy_fetch: bool | None = None,
+                          no_optional_locks: bool | None = None,
+                          no_advice: bool | None = None,
+                          literal_pathspecs: bool | None = None,
+                          glob_pathspecs: bool | None = None,
+                          no_glob_pathspecs: bool | None = None,
+                          icase_pathspecs: bool | None = None,
+                          list_cmds: Sequence[str] | None = None,
+                          attr_source: str | None = None) -> T:
         """
         Temporarily override options to the main git command before current subcommand runs.
         All the parameters mirror options described in the `git documentation <https://git-scm.com/docs/git>`_.
@@ -110,17 +124,34 @@ class Version[T](GitSubCommand['Version[T]'], Protocol):
 
 
 class Git[T](ForGit, Protocol):
+    """
+    Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
+    """
 
     @abstractmethod
-    def git(self, *, cwd: list[str] | list[Path] | None = None, c: dict[str, str] | None = None,
-            config_env: dict[str, str] | None = None, exec_path: str | Path, paginate: bool = False,
-            no_pager: bool = False, git_dir: str | Path | None = None, work_tree: str | Path | None = None,
-            namespace: str | None = None, bare: bool = False, no_replace_objects: bool = False, no_lazy_fetch: bool,
-            no_optional_locks: bool = False, no_advice: bool = False, literal_pathspecs: bool = False,
-            glob_pathspecs: bool = False, no_glob_pathspecs: bool = False, icase_pathspecs: bool = False,
-            list_cmds: list[str] | None = None, attr_source: str | None = None) -> Git[T]:
+    def git(self, *,
+            cwd: Sequence[Path] | None = None,
+            c: dict[str, str] | None = None,
+            config_env: dict[str, str] | None = None,
+            exec_path: Path | None = None,
+            paginate: bool | None = None,
+            no_pager: bool | None = None,
+            git_dir: Path | None = None,
+            work_tree: Path | None = None,
+            namespace: str | None = None,
+            bare: bool | None = None,
+            no_replace_objects: bool | None = None,
+            no_lazy_fetch: bool | None = None,
+            no_optional_locks: bool | None = None,
+            no_advice: bool | None = None,
+            literal_pathspecs: bool | None = None,
+            glob_pathspecs: bool | None = None,
+            no_glob_pathspecs: bool | None = None,
+            icase_pathspecs: bool | None = None,
+            list_cmds: Sequence[str] | None = None,
+            attr_source: str | None = None) -> Git[T]:
         """
-        All the parameters are mirrors of the parameters of ``git ls-tree`` CLI command
+        All the parameters are mirrors of the parameters of the ``git`` CLI command
         from `git documentation <https://git-scm.com/docs/git>`_.
 
         :param cwd: param mirror for ``-C``.
@@ -150,25 +181,50 @@ class Git[T](ForGit, Protocol):
     @property
     @abstractmethod
     def git_version_subcmd(self) -> Version[T]:
+        """
+        :return: ``git version`` command.
+        """
         ...
 
     @property
     @abstractmethod
     def ls_tree(self) -> LsTree[T]:
+        """
+        :return: ``git ls-tree`` command.
+        """
         ...
 
     @property
     def version(self) -> T:
+        """
+        :return: current git version.
+        """
         return self.git_version_subcmd.version()
 
     @property
+    def exec_path(self) -> Path:
+        """
+        :return: Path to wherever your core Git programs are installed.
+        """
+        ...
+
+    @property
     def html_path(self) -> Path:
+        """
+        :return: the path, without trailing slash, where Git’s HTML documentation is installed.
+        """
         ...
 
     @property
     def info_path(self) -> Path:
+        """
+        :return: the path where the Info files documenting this version of Git are installed.
+        """
         ...
 
     @property
     def man_path(self) -> Path:
+        """
+        :return: the man path (see man(1)) for the man pages for this version of Git.
+        """
         ...

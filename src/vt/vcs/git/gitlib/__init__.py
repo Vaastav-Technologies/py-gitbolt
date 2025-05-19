@@ -4,3 +4,5 @@
 """
 Git command interfaces with default implementation using subprocess calls.
 """
+
+from vt.vcs.git.gitlib.base import *
