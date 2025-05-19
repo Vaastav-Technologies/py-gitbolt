@@ -6,13 +6,30 @@ Git command interfaces with default implementation using subprocess calls.
 """
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+from subprocess import CompletedProcess, CalledProcessError
 from typing import override
 from collections.abc import Sequence
 
 from vt.utils.commons.commons.core_py import fallback_on_none, fallback_on_none_strict
 
 from vt.vcs.git.gitlib import Git, GitCommandRunner, Version, LsTree
+from vt.vcs.git.gitlib.exceptions import GitCmdException
+
+
+class SimpleGitCR[T](GitCommandRunner[T]):
+    """
+    Simple git command runner that simply runs everything `as-is` in a subprocess.
+    """
+
+    def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
+                        **subprocess_run_kwargs) -> CompletedProcess[T]:
+        try:
+            return subprocess.run([GitCommandRunner.GIT_CMD, *main_cmd_args, *subcommand_args],
+                                  *subprocess_run_args, **subprocess_run_kwargs)
+        except CalledProcessError as e:
+            raise GitCmdException(exit_code=e.returncode) from e
 
 
 class GitCommand[T](Git[T]):
