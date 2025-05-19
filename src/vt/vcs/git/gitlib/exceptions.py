@@ -47,26 +47,26 @@ class GitCmdException(GitException, VTCmdException):
 
       * raise without message:
 
-        >>> raise GitCmdException(called_process_error=CalledProcessError(1, ['git', 'status']))
+        >>> raise GitCmdException(called_process_error=CalledProcessError(1, ['git', 'status'])) # always use `from` clause.
         Traceback (most recent call last):
         gitlib.exceptions.GitCmdException: CalledProcessError: Command '['git', 'status']' returned non-zero exit status 1.
 
       * raise with a message:
 
-        >>> raise GitCmdException('Git failed', called_process_error=CalledProcessError(1, ['git', 'push']))
+        >>> raise GitCmdException('Git failed', called_process_error=CalledProcessError(1, ['git', 'push'])) # always use `from` clause.
         Traceback (most recent call last):
         gitlib.exceptions.GitCmdException: CalledProcessError: Git failed
 
       * raise with overridden exit code:
 
-        >>> raise GitCmdException('Git push failed', called_process_error=CalledProcessError(1, ['git', 'push']), exit_code=42)
+        >>> raise GitCmdException('Git push failed', called_process_error=CalledProcessError(1, ['git', 'push']), exit_code=42) # always use `from` clause.
         Traceback (most recent call last):
         gitlib.exceptions.GitCmdException: CalledProcessError: Git push failed
 
       * raise without message, override with stderr inside CalledProcessError:
 
         >>> err = CalledProcessError(128, ['git', 'fetch'], stderr='fatal: not a git repository')
-        >>> raise GitCmdException(called_process_error=err)
+        >>> raise GitCmdException(called_process_error=err) # always use `from` clause.
         Traceback (most recent call last):
         gitlib.exceptions.GitCmdException: CalledProcessError: Command '['git', 'fetch']' returned non-zero exit status 128.
 
