@@ -114,7 +114,7 @@ class GitCommand[T](Git[T]):
             attr_source=fallback_on_none(attr_source, self.attr_source)
         )
 
-    def formed_cmd_args(self) -> list[str]:
+    def compute_main_cmd_args(self) -> list[str]:
         """
         :return: constructed git main command args, for example, ``--no-pager`` is a git main command arg in
             ``git --no-pager log -10``.
