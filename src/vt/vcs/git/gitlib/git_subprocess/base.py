@@ -7,14 +7,17 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 import subprocess
+from abc import abstractmethod
 from pathlib import Path
 from subprocess import CompletedProcess, CalledProcessError
 from typing import override
 from collections.abc import Sequence
 
+from mypy.semanal_shared import Protocol
 from vt.utils.commons.commons.core_py import fallback_on_none, fallback_on_none_strict
 
-from vt.vcs.git.gitlib import Git, GitCommandRunner, Version, LsTree
+from vt.vcs.git.gitlib import Git, GitCommandRunner, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
+    GitSubCommand
 from vt.vcs.git.gitlib.exceptions import GitCmdException
 
 
@@ -30,6 +33,78 @@ class SimpleGitCR[T](GitCommandRunner[T]):
                                   *subprocess_run_args, **subprocess_run_kwargs)
         except CalledProcessError as e:
             raise GitCmdException(called_process_error=e) from e
+
+
+class HasUnderlyingGitCommand[T](HasGitUnderneath[T], Protocol):
+    @override
+    @property
+    @abstractmethod
+    def underlying_git(self) -> GitCommand[T]:
+        ...
+
+
+class GitOptsOverriderCommand[T](CanOverrideGitOpts[T], HasUnderlyingGitCommand[T], Protocol):
+
+    @override
+    def git_opts_override(self, *,
+                          cwd: Sequence[Path] | None = None,
+                          c: dict[str, str] | None = None,
+                          config_env: dict[str, str] | None = None,
+                          exec_path: Path | None = None,
+                          paginate: bool | None = None,
+                          no_pager: bool | None = None,
+                          git_dir: Path | None = None,
+                          work_tree: Path | None = None,
+                          namespace: str | None = None,
+                          bare: bool | None = None,
+                          no_replace_objects: bool | None = None,
+                          no_lazy_fetch: bool | None = None,
+                          no_optional_locks: bool | None = None,
+                          no_advice: bool | None = None,
+                          literal_pathspecs: bool | None = None,
+                          glob_pathspecs: bool | None = None,
+                          no_glob_pathspecs: bool | None = None,
+                          icase_pathspecs: bool | None = None,
+                          list_cmds: Sequence[str] | None = None,
+                          attr_source: str | None = None) -> T:
+        return self.underlying_git.git(
+            cwd=cwd,
+            c=c,
+            config_env=config_env,
+            exec_path=exec_path,
+            paginate=paginate,
+            no_pager=no_pager,
+            git_dir=git_dir,
+            work_tree=work_tree,
+            namespace=namespace,
+            bare=bare,
+            no_replace_objects=no_replace_objects,
+            no_lazy_fetch=no_lazy_fetch,
+            no_optional_locks=no_optional_locks,
+            no_advice=no_advice,
+            literal_pathspecs=literal_pathspecs,
+            glob_pathspecs=glob_pathspecs,
+            no_glob_pathspecs=no_glob_pathspecs,
+            icase_pathspecs=icase_pathspecs,
+            list_cmds=list_cmds,
+            attr_source=attr_source)
+
+
+class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol):
+
+    @override
+    @property
+    @abstractmethod
+    def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
+        ...
+
+
+class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Protocol):
+    pass
+
+
+class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
+    pass
 
 
 class GitCommand[T](Git[T]):
@@ -210,7 +285,7 @@ class GitCommand[T](Git[T]):
 
     @override
     @property
-    def git_version_subcmd(self) -> Version[T]:
+    def git_version_subcmd(self) -> VersionCommand[T]:
         pass
 
     @override

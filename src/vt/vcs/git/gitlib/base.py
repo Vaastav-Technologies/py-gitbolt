@@ -9,7 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Protocol
+from typing import Protocol, override
 
 
 class ForGit(Protocol):
@@ -108,7 +108,59 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
     * ...
     etc.
     """
-    pass
+
+    @property
+    @abstractmethod
+    def overrider_git_opts(self) -> CanOverrideGitOpts[T]:
+        """
+        :return: the overrider object that helps override main git command options.
+        """
+        ...
+
+    # TODO: check why PyCharm says that Type of 'git_opts_override' is incompatible with 'CanOverrideGitOpts'.
+    @override
+    def git_opts_override(self, *,
+                          cwd: Sequence[Path] | None = None,
+                          c: dict[str, str] | None = None,
+                          config_env: dict[str, str] | None = None,
+                          exec_path: Path | None = None,
+                          paginate: bool | None = None,
+                          no_pager: bool | None = None,
+                          git_dir: Path | None = None,
+                          work_tree: Path | None = None,
+                          namespace: str | None = None,
+                          bare: bool | None = None,
+                          no_replace_objects: bool | None = None,
+                          no_lazy_fetch: bool | None = None,
+                          no_optional_locks: bool | None = None,
+                          no_advice: bool | None = None,
+                          literal_pathspecs: bool | None = None,
+                          glob_pathspecs: bool | None = None,
+                          no_glob_pathspecs: bool | None = None,
+                          icase_pathspecs: bool | None = None,
+                          list_cmds: Sequence[str] | None = None,
+                          attr_source: str | None = None) -> T:
+        return self.overrider_git_opts.git_opts_override(
+            cwd=cwd,
+            c=c,
+            config_env=config_env,
+            exec_path=exec_path,
+            paginate=paginate,
+            no_pager=no_pager,
+            git_dir=git_dir,
+            work_tree=work_tree,
+            namespace=namespace,
+            bare=bare,
+            no_replace_objects=no_replace_objects,
+            no_lazy_fetch=no_lazy_fetch,
+            no_optional_locks=no_optional_locks,
+            no_advice=no_advice,
+            literal_pathspecs=literal_pathspecs,
+            glob_pathspecs=glob_pathspecs,
+            no_glob_pathspecs=no_glob_pathspecs,
+            icase_pathspecs=icase_pathspecs,
+            list_cmds=list_cmds,
+            attr_source=attr_source)
 
 
 class LsTree[T](GitSubCommand['LsTree[T]'], Protocol):
