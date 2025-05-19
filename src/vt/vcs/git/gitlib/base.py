@@ -44,15 +44,25 @@ class GitCommandRunner[T](ForGit, Protocol):
         ...
 
 
-class GitSubCommand[T](ForGit, Protocol):
+class HasGitUnderneath[T](Protocol):
     """
-    Interface for git subcommands, such as:
+    Stores a reference to main git instance.
+    """
 
-    * ``add``
-    * ``commit``
-    * ``pull``
-    * ...
-    etc.
+    @property
+    @abstractmethod
+    def underlying_git(self) -> Git[T]:
+        """
+        :return: stored git instance reference.
+        """
+        ...
+
+
+class CanOverrideGitOpts[T](HasGitUnderneath[T], Protocol):
+    """
+    Can override main git command options.
+
+    For example, in ``git --no-pager log -1 master`` git command, ``--no-pager`` is the main command arg.
     """
 
     @abstractmethod
@@ -86,6 +96,19 @@ class GitSubCommand[T](ForGit, Protocol):
         :return: the subcommand instance with overridden git main command args.
         """
         ...
+
+
+class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
+    """
+    Interface for git subcommands, such as:
+
+    * ``add``
+    * ``commit``
+    * ``pull``
+    * ...
+    etc.
+    """
+    pass
 
 
 class LsTree[T](GitSubCommand['LsTree[T]'], Protocol):
