@@ -85,6 +85,7 @@ class GitCommand[T](Git[T]):
         self.list_cmds = list_cmds
         self.attr_source = attr_source
 
+    # TODO: check why PyCharm says that Type of 'git' is incompatible with 'Git'.
     @override
     def git(self, *,
             cwd: Sequence[Path] | None = None,
