@@ -39,67 +39,97 @@ class GitException(VTException):
 
 class GitCmdException(GitException, VTCmdException):
     """
-    A ``GitException`` and also a ``VTCmdException``.
+    A ``GitException`` that is also a ``VTCmdException``.
 
     Examples:
 
-      * raise exception:
+        >>> from subprocess import CalledProcessError
 
-        >>> raise GitCmdException
+      * raise without message:
+
+        >>> raise GitCmdException(called_process_error=CalledProcessError(1, ['git', 'status']))
         Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException: CalledProcessError: Command '['git', 'status']' returned non-zero exit status 1.
 
-        >>> raise GitCmdException()
+      * raise with a message:
+
+        >>> raise GitCmdException('Git failed', called_process_error=CalledProcessError(1, ['git', 'push']))
         Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException: CalledProcessError: Git failed
 
-        >>> raise GitCmdException(exit_code=23)
+      * raise with overridden exit code:
+
+        >>> raise GitCmdException('Git push failed', called_process_error=CalledProcessError(1, ['git', 'push']), exit_code=42)
         Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException
+        gitlib.exceptions.GitCmdException: CalledProcessError: Git push failed
 
-      * obtain error code:
+      * raise without message, override with stderr inside CalledProcessError:
+
+        >>> err = CalledProcessError(128, ['git', 'fetch'], stderr='fatal: not a git repository')
+        >>> raise GitCmdException(called_process_error=err)
+        Traceback (most recent call last):
+        gitlib.exceptions.GitCmdException: CalledProcessError: Command '['git', 'fetch']' returned non-zero exit status 128.
+
+      * raise exception using `from` clause (chaining):
 
         >>> try:
-        ...     raise GitCmdException
-        ... except GitCmdException as e:
-        ...     e.exit_code
-        1
+        ...     raise CalledProcessError(129, ['git', 'clone'], stderr='fatal: repo not found')
+        ... except CalledProcessError as e:
+        ...     raise GitCmdException('Clone failed', called_process_error=e) from e
+        Traceback (most recent call last):
+        gitlib.exceptions.GitCmdException: CalledProcessError: Clone failed
+
+      * cause reflects original CalledProcessError when chained:
 
         >>> try:
-        ...     raise GitCmdException('a message', exit_code=10)
-        ... except GitCmdException as e:
-        ...     e.exit_code
-        10
+        ...     raise CalledProcessError(2, ['git', 'commit'])
+        ... except CalledProcessError as e:
+        ...     try:
+        ...         raise GitCmdException('Commit failed', called_process_error=e) from e
+        ...     except GitCmdException as g:
+        ...         isinstance(g.cause, CalledProcessError)
+        True
 
-        >>> try:
-        ...     raise GitCmdException('a message', exit_code=15) from ValueError
-        ... except GitCmdException as e:
-        ...     e.exit_code
-        15
+      * cause falls back to `called_process_error` when not chained:
 
-        >>> try:
-        ...     raise GitCmdException('main message', exit_code=23) from ValueError('cause message.')
-        ... except GitCmdException as e:
-        ...     e.exit_code
-        23
+        >>> e = CalledProcessError(3, ['git', 'diff'])
+        >>> g = GitCmdException('Diff fail', called_process_error=e)
+        >>> g.cause is g.called_process_error
+        True
 
-      * raise exception with a message:
+      * access exit code:
 
-        >>> raise GitCmdException('unexpected.')
-        Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException: unexpected.
+        >>> e = CalledProcessError(100, ['git', 'log'])
+        >>> ex = GitCmdException('Failure', called_process_error=e)
+        >>> ex.exit_code
+        100
 
-      * raise exception from another exception:
+      * override exit code manually:
 
-        >>> raise GitCmdException() from ValueError
-        Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException: ValueError
+        >>> GitCmdException('Overridden', called_process_error=e, exit_code=77).exit_code
+        77
 
-      * raise exception from another exception with message:
+      * access structured information:
 
-        >>> raise GitCmdException() from ValueError('cause message')
-        Traceback (most recent call last):
-        gitlib.exceptions.GitCmdException: ValueError: cause message
+        >>> g = GitCmdException('Git structured', called_process_error=e)
+        >>> info = g.to_dict()
+        >>> info['type'], 'Git structured' in info['message']
+        ('GitCmdException', True)
+
+      * raise exception with extra metadata:
+
+        >>> e = CalledProcessError(4, ['git', 'tag'])
+        >>> x = GitCmdException('Failed tagging', called_process_error=e, context='tagging-op')
+        >>> x.kwargs['context']
+        'tagging-op'
+
+      * demonstrate subclass relationship:
+
+        >>> isinstance(GitCmdException('x', called_process_error=e), VTCmdException)
+        True
+
+        >>> isinstance(GitCmdException('x', called_process_error=e), GitException)
+        True
 
     ... rest examples mimic ``VTCmdException``.
     """
