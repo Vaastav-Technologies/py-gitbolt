@@ -4,6 +4,7 @@
 """
 Simple and naive implementations of git commands using subprocess.
 """
+from __future__ import annotations
 from typing import override
 
 from vt.vcs.git.gitlib import GitCommandRunner
@@ -103,6 +104,7 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
 
 
 class SimpleGitCommand[T](GitCommand[T]):
+
     def __init__(self, runner: GitCommandRunner[T], *,
                  git_version_subcmd: VersionCommand[T] | None = None,
                  ls_tree: LsTreeCommand[T] | None = None):
@@ -119,3 +121,7 @@ class SimpleGitCommand[T](GitCommand[T]):
     @property
     def ls_tree(self) -> LsTreeCommand[T]:
         return self._ls_tree
+
+    @override
+    def clone(self) -> SimpleGitCommand[T]:
+        return SimpleGitCommand(self.runner)

@@ -163,7 +163,7 @@ class GitCommand[T](Git[T], ABC):
             icase_pathspecs: bool | None = None,
             list_cmds: Sequence[str] | None = None,
             attr_source: str | None = None) -> GitCommand[T]:
-        _git_cmd = GitCommand[T](self.runner)
+        _git_cmd = self.clone()
         _git_cmd.cwd = fallback_on_none(cwd, self.cwd)
         _git_cmd.c = fallback_on_none(c, self.c)
         _git_cmd.config_env = fallback_on_none(config_env, self.config_env)
@@ -292,3 +292,8 @@ class GitCommand[T](Git[T], ABC):
         _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
                                     capture_output=True).stdout.strip()
         return Path(_path_str)
+
+    @override
+    @abstractmethod
+    def clone(self) -> GitCommand[T]:
+        ...

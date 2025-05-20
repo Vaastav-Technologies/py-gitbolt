@@ -14,5 +14,4 @@ def test_exec_path():
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand[str](SimpleGitCR())
-    git.git(exec_path=None)
-    assert git.exec_path is None
+    assert git.git(exec_path=None).exec_path is None

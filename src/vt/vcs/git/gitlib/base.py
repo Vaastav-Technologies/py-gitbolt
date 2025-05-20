@@ -303,3 +303,10 @@ class Git[T](ForGit, Protocol):
         :return: the man path (see man(1)) for the man pages for this version of Git.
         """
         ...
+
+    @abstractmethod
+    def clone(self) -> Git[T]:
+        """
+        :return: a clone of this class.
+        """
+        ...
