@@ -100,7 +100,7 @@ class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol
 
 
 class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Protocol):
-    pass
+    VERSION_CMD: str = 'version'
 
 
 class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
