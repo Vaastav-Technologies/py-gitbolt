@@ -36,6 +36,7 @@ class GitSubcmdCommandImpl[T](GitSubcmdCommand[T]):
     def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
         return self._overrider_git_opts
 
+
 class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionCommandImpl[T]']):
     @override
     def version(self, build_options: bool = False) -> T:
