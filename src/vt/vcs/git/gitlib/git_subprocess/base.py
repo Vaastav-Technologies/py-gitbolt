@@ -7,7 +7,7 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 import subprocess
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from pathlib import Path
 from subprocess import CompletedProcess, CalledProcessError
 from typing import override
@@ -107,58 +107,38 @@ class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
     LS_TREE_CMD: str = 'ls-tree'
 
 
-class GitCommand[T](Git[T]):
+class GitCommand[T](Git[T], ABC):
     """
     Runs git as a command.
     """
 
-    def __init__(self, runner: GitCommandRunner[T], *,
-                 cwd: Sequence[Path] | None = None,
-                 c: dict[str, str] | None = None,
-                 config_env: dict[str, str] | None = None,
-                 exec_path: Path | None = None,
-                 paginate: bool = False,
-                 no_pager: bool = False,
-                 git_dir: Path | None = None,
-                 work_tree: Path | None = None,
-                 namespace: str | None = None,
-                 bare: bool = False,
-                 no_replace_objects: bool = False,
-                 no_lazy_fetch: bool,
-                 no_optional_locks: bool = False,
-                 no_advice: bool = False,
-                 literal_pathspecs: bool = False,
-                 glob_pathspecs: bool = False,
-                 no_glob_pathspecs: bool = False,
-                 icase_pathspecs: bool = False,
-                 list_cmds: Sequence[str] | None = None,
-                 attr_source: str | None = None):
+    def __init__(self, runner: GitCommandRunner[T]):
         """
         :param runner: a ``GitCommandRunner`` which eventually runs the cli command in a subprocess.
 
         ... all other params are mirrors of ``Git`` ctor params.
         """
         self.runner = runner
-        self.cwd = cwd
-        self.c = c
-        self.config_env = config_env
-        self.opt_exec_path = exec_path
-        self.paginate = paginate
-        self.no_pager = no_pager
-        self.git_dir = git_dir
-        self.work_tree = work_tree
-        self.namespace = namespace
-        self.bare = bare
-        self.no_replace_objects = no_replace_objects
-        self.no_lazy_fetch = no_lazy_fetch
-        self.no_optional_locks = no_optional_locks
-        self.no_advice = no_advice
-        self.literal_pathspecs = literal_pathspecs
-        self.glob_pathspecs = glob_pathspecs
-        self.no_glob_pathspecs = no_glob_pathspecs
-        self.icase_pathspecs = icase_pathspecs
-        self.list_cmds = list_cmds
-        self.attr_source = attr_source
+        self.cwd: Sequence[Path] | None = None
+        self.c: dict[str, str] | None = None
+        self.config_env: dict[str, str] | None = None
+        self.opt_exec_path: Path | None = None
+        self.paginate: bool = False
+        self.no_pager: bool = False
+        self.git_dir: Path | None = None
+        self.work_tree: Path | None = None
+        self.namespace: str | None = None
+        self.bare: bool = False
+        self.no_replace_objects: bool = False
+        self.no_lazy_fetch: bool = False
+        self.no_optional_locks: bool = False
+        self.no_advice: bool = False
+        self.literal_pathspecs: bool = False
+        self.glob_pathspecs: bool = False
+        self.no_glob_pathspecs: bool = False
+        self.icase_pathspecs: bool = False
+        self.list_cmds: Sequence[str] | None = None
+        self.attr_source: str | None = None
 
     # TODO: check why PyCharm says that Type of 'git' is incompatible with 'Git'.
     @override
@@ -183,29 +163,28 @@ class GitCommand[T](Git[T]):
             icase_pathspecs: bool | None = None,
             list_cmds: Sequence[str] | None = None,
             attr_source: str | None = None) -> GitCommand[T]:
-        return GitCommand[T](
-            runner=self.runner,
-            cwd=fallback_on_none(cwd, self.cwd),
-            c=fallback_on_none(c, self.c),
-            config_env=fallback_on_none(config_env, self.config_env),
-            exec_path=fallback_on_none(exec_path, self.exec_path),
-            paginate=fallback_on_none_strict(paginate, self.paginate),
-            no_pager=fallback_on_none_strict(no_pager, self.no_pager),
-            git_dir=fallback_on_none(git_dir, self.git_dir),
-            work_tree=fallback_on_none(work_tree, self.work_tree),
-            namespace=fallback_on_none(namespace, self.namespace),
-            bare=fallback_on_none_strict(bare, self.bare),
-            no_replace_objects=fallback_on_none_strict(no_replace_objects, self.no_replace_objects),
-            no_lazy_fetch=fallback_on_none_strict(no_lazy_fetch, self.no_lazy_fetch),
-            no_optional_locks=fallback_on_none_strict(no_optional_locks, self.no_optional_locks),
-            no_advice=fallback_on_none_strict(no_advice, self.no_advice),
-            literal_pathspecs=fallback_on_none_strict(literal_pathspecs, self.literal_pathspecs),
-            glob_pathspecs=fallback_on_none_strict(glob_pathspecs, self.glob_pathspecs),
-            no_glob_pathspecs=fallback_on_none_strict(no_glob_pathspecs, self.no_glob_pathspecs),
-            icase_pathspecs=fallback_on_none_strict(icase_pathspecs, self.icase_pathspecs),
-            list_cmds=fallback_on_none(list_cmds, self.list_cmds),
-            attr_source=fallback_on_none(attr_source, self.attr_source)
-        )
+        _git_cmd = GitCommand[T](self.runner)
+        _git_cmd.cwd = fallback_on_none(cwd, self.cwd)
+        _git_cmd.c = fallback_on_none(c, self.c)
+        _git_cmd.config_env = fallback_on_none(config_env, self.config_env)
+        _git_cmd.opt_exec_path = fallback_on_none(exec_path, self.opt_exec_path)
+        _git_cmd.paginate = fallback_on_none_strict(paginate, self.paginate)
+        _git_cmd.no_pager = fallback_on_none_strict(no_pager, self.no_pager)
+        _git_cmd.git_dir = fallback_on_none(git_dir, self.git_dir)
+        _git_cmd.work_tree = fallback_on_none(work_tree, self.work_tree)
+        _git_cmd.namespace = fallback_on_none(namespace, self.namespace)
+        _git_cmd.bare = fallback_on_none_strict(bare, self.bare)
+        _git_cmd.no_replace_objects = fallback_on_none_strict(no_replace_objects, self.no_replace_objects)
+        _git_cmd.no_lazy_fetch = fallback_on_none_strict(no_lazy_fetch, self.no_lazy_fetch)
+        _git_cmd.no_optional_locks = fallback_on_none_strict(no_optional_locks, self.no_optional_locks)
+        _git_cmd.no_advice = fallback_on_none_strict(no_advice, self.no_advice)
+        _git_cmd.literal_pathspecs = fallback_on_none_strict(literal_pathspecs, self.literal_pathspecs)
+        _git_cmd.glob_pathspecs = fallback_on_none_strict(glob_pathspecs, self.glob_pathspecs)
+        _git_cmd.no_glob_pathspecs = fallback_on_none_strict(no_glob_pathspecs, self.no_glob_pathspecs)
+        _git_cmd.icase_pathspecs = fallback_on_none_strict(icase_pathspecs, self.icase_pathspecs)
+        _git_cmd.list_cmds = fallback_on_none(list_cmds, self.list_cmds)
+        _git_cmd.attr_source = fallback_on_none(attr_source, self.attr_source)
+        return _git_cmd
 
     def compute_main_cmd_args(self) -> list[str]:
         """
@@ -285,25 +264,31 @@ class GitCommand[T](Git[T]):
 
     @override
     @property
-    def git_version_subcmd(self) -> VersionCommand[T]:
-        pass
-
-    @override
-    @property
-    def ls_tree(self) -> LsTree[T]:
-        pass
-
-    @override
-    @property
     def html_path(self) -> Path:
-        ...
+        html_path_str = '--html-path'
+        return self._get_path(html_path_str)
 
     @override
     @property
     def info_path(self) -> Path:
-        ...
+        info_path_str = '--info-path'
+        return self._get_path(info_path_str)
 
     @override
     @property
     def man_path(self) -> Path:
-        ...
+        man_path_str = '--man-path'
+        return self._get_path(man_path_str)
+
+    @override
+    @property
+    def exec_path(self) -> Path:
+        exec_path_str = '--exec-path'
+        return self._get_path(exec_path_str)
+
+    def _get_path(self, path_opt_str: str) -> Path:
+        main_opts = self.compute_main_cmd_args()
+        main_opts.append(path_opt_str)
+        _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
+                                    capture_output=True).stdout.strip()
+        return Path(_path_str)

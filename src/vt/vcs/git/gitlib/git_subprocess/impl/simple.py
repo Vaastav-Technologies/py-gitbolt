@@ -6,15 +6,26 @@ Simple and naive implementations of git commands using subprocess.
 """
 from typing import override
 
+from vt.vcs.git.gitlib import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
     LsTreeCommand
 
 
+class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
+
+    def __init__(self, git: GitCommand[T]):
+        self._underlying_git = git
+
+    @property
+    def underlying_git(self) -> GitCommand[T]:
+        return self._underlying_git
+
+
 class GitSubcmdCommandImpl[T](GitSubcmdCommand[T]):
 
-    def __init__(self, git: GitCommand[T], git_opts_overrider: GitOptsOverriderCommand[T]):
+    def __init__(self, git: GitCommand[T], git_opts_overrider: GitOptsOverriderCommand[T] | None = None):
         self._underlying_git = git
-        self._overrider_git_opts = git_opts_overrider
+        self._overrider_git_opts = git_opts_overrider or SimpleGitOptsOverriderCommand(self.underlying_git)
 
     @property
     def underlying_git(self) -> GitCommand[T]:
@@ -89,3 +100,22 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
 
         # Return raw stdout; parsing can be handled upstream or in a separate method
         return result.stdout  # type: ignore
+
+
+class SimpleGitCommand[T](GitCommand[T]):
+    def __init__(self, runner: GitCommandRunner[T], *,
+                 git_version_subcmd: VersionCommand[T] | None = None,
+                 ls_tree: LsTreeCommand[T] | None = None):
+        super().__init__(runner)
+        self._git_version_subcmd = git_version_subcmd or VersionCommandImpl(self)
+        self._ls_tree = ls_tree or LsTreeCommandImpl(self)
+
+    @override
+    @property
+    def git_version_subcmd(self) -> VersionCommand[T]:
+        return self._git_version_subcmd
+
+    @override
+    @property
+    def ls_tree(self) -> LsTreeCommand[T]:
+        return self._ls_tree
