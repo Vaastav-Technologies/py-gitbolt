@@ -104,7 +104,7 @@ class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Proto
 
 
 class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
-    pass
+    LS_TREE_CMD: str = 'ls-tree'
 
 
 class GitCommand[T](Git[T]):
