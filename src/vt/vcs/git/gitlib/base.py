@@ -11,6 +11,8 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Protocol, override
 
+from vt.utils.commons.commons.op import RootDirOp
+
 
 class ForGit(Protocol):
     """
@@ -163,7 +165,7 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
             attr_source=attr_source)
 
 
-class LsTree[T](GitSubCommand['LsTree[T]'], Protocol):
+class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
     """
     Interface for ``git ls-tree`` command.
     """
