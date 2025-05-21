@@ -49,7 +49,7 @@ class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionComm
         if build_options:
             sub_cmd_args.append('--build-options')
         return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
-                                                   capture_output=True)
+                                                   capture_output=True).stdout.strip()
 
 
 class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommandImpl[T]']):
