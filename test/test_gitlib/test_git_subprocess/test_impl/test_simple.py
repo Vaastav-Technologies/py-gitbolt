@@ -33,8 +33,7 @@ def test_version_build_options():
     assert 'git version 2' in version_build_info
     assert 'cpu: ' in version_build_info
     assert 'built from commit: ' in version_build_info
-    supposed_version_subcmd = git.version_subcmd.git_opts_override(namespace='suhas')
-    ano_build_info = supposed_version_subcmd.version(build_options=True)
+    ano_build_info = git.version_subcmd.git_opts_override(namespace='suhas').version(build_options=True)
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info
     assert 'built from commit: ' in ano_build_info
