@@ -23,8 +23,6 @@ class GitCommandRunner[T](ForGit, Protocol):
     Interface to facilitate running git commands in subprocess.
     """
 
-    GIT_CMD: Final[str] = 'git'
-
     @abstractmethod
     def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
                         **subprocess_run_kwargs) -> CompletedProcess[T]:
@@ -93,7 +91,6 @@ class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol
 
 
 class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Protocol):
-    VERSION_CMD: str = 'version'
 
     @override
     @abstractmethod
@@ -102,7 +99,6 @@ class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Proto
 
 
 class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
-    LS_TREE_CMD: str = 'ls-tree'
 
     @override
     @abstractmethod

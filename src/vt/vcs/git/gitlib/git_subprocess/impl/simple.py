@@ -17,7 +17,7 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.vcs.git.gitlib import Git
 from vt.vcs.git.gitlib.exceptions import GitCmdException
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
-    LsTreeCommand, GitCommandRunner
+    LsTreeCommand, GitCommandRunner, GIT_CMD, VERSION_CMD, LS_TREE_CMD
 
 
 class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
@@ -38,7 +38,7 @@ class SimpleGitCR[T](GitCommandRunner[T]):
     def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
                         **subprocess_run_kwargs) -> CompletedProcess[T]:
         try:
-            return subprocess.run([GitCommandRunner.GIT_CMD, *main_cmd_args, *subcommand_args],
+            return subprocess.run([GIT_CMD, *main_cmd_args, *subcommand_args],
                                   *subprocess_run_args, **subprocess_run_kwargs)
         except CalledProcessError as e:
             raise GitCmdException(called_process_error=e) from e
@@ -69,7 +69,7 @@ class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionComm
     @override
     def version(self, build_options: bool = False) -> T:
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
-        sub_cmd_args = [VersionCommand.VERSION_CMD]
+        sub_cmd_args = [VERSION_CMD]
         if build_options:
             sub_cmd_args.append('--build-options')
         return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
@@ -93,7 +93,7 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
                 full_tree: bool = False, abbrev: int | None = None, format_: str | None = None,
                 path: list[str] | None = None) -> T:
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
-        sub_cmd_args = [LsTreeCommand.LS_TREE_CMD]
+        sub_cmd_args = [LS_TREE_CMD]
         # Add boolean flags
         if d:
             sub_cmd_args.append('-d')
