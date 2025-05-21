@@ -97,13 +97,28 @@ class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol
     def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
         ...
 
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> GitSubcmdCommand[T]:
+        ...
+
 
 class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Protocol):
     VERSION_CMD: str = 'version'
 
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> VersionCommand[T]:
+        ...
+
 
 class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
     LS_TREE_CMD: str = 'ls-tree'
+
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> LsTreeCommand[T]:
+        ...
 
 
 class GitCommand[T](Git[T], ABC):

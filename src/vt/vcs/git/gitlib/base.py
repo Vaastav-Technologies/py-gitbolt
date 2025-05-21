@@ -142,7 +142,7 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
                           icase_pathspecs: bool | None = None,
                           list_cmds: Sequence[str] | None = None,
                           attr_source: str | None = None) -> T:
-        return self.overrider_git_opts.git_opts_override(
+        ano_git = self.overrider_git_opts.git_opts_override(
             cwd=cwd,
             c=c,
             config_env=config_env,
@@ -163,6 +163,11 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
             icase_pathspecs=icase_pathspecs,
             list_cmds=list_cmds,
             attr_source=attr_source)
+        return self._subcmd_git_override(ano_git)
+
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> GitSubCommand[T]:
+        ...
 
 
 class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
@@ -183,6 +188,11 @@ class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
         """
         ...
 
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> LsTree[T]:
+        ...
+
 
 class Version[T](GitSubCommand['Version[T]'], Protocol):
     """
@@ -197,6 +207,11 @@ class Version[T](GitSubCommand['Version[T]'], Protocol):
 
         :return: ``version`` output morphed into ``T``.
         """
+        ...
+
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> Version[T]:
         ...
 
 

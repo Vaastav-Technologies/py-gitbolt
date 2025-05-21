@@ -6,12 +6,13 @@ Simple and naive implementations of git commands using subprocess.
 """
 from __future__ import annotations
 
+from abc import abstractmethod
 from pathlib import Path
 from typing import override
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib import GitCommandRunner
+from vt.vcs.git.gitlib import GitCommandRunner, Git
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
     LsTreeCommand, SimpleGitCR
 
@@ -40,8 +41,14 @@ class GitSubcmdCommandImpl[T](GitSubcmdCommand[T]):
     def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
         return self._overrider_git_opts
 
+    @override
+    @abstractmethod
+    def _subcmd_git_override(self, git: Git[T]) -> GitSubcmdCommandImpl[T]:
+        ...
+
 
 class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionCommandImpl[T]']):
+
     @override
     def version(self, build_options: bool = False) -> T:
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
@@ -50,6 +57,11 @@ class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionComm
             sub_cmd_args.append('--build-options')
         return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
                                                    capture_output=True).stdout.strip()
+
+    @override
+    def _subcmd_git_override(self, git: Git[T]) -> VersionCommandImpl[T]:
+        self._underlying_git = git
+        return self.underlying_git.version_subcmd
 
 
 class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommandImpl[T]']):
@@ -117,6 +129,11 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
     @property
     def root_dir(self) -> Path:
         return self._root_dir
+
+    @override
+    def _subcmd_git_override(self, git: Git[T]) -> VersionCommandImpl[T]:
+        self._underlying_git = git
+        return self.underlying_git.ls_tree_subcmd
 
 
 class SimpleGitCommand[T](GitCommand[T], RootDirOp):
