@@ -13,7 +13,7 @@ from vt.utils.commons.commons.op import RootDirOp
 
 from vt.vcs.git.gitlib import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
-    LsTreeCommand
+    LsTreeCommand, SimpleGitCR
 
 
 class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
@@ -121,7 +121,7 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
 
 class SimpleGitCommand[T](GitCommand[T], RootDirOp):
 
-    def __init__(self, runner: GitCommandRunner[T], git_root_dir: Path = RootDirOp.from_path(), *,
+    def __init__(self, git_root_dir: Path = RootDirOp.from_path(), runner: GitCommandRunner[T] = SimpleGitCR(), *,
                  git_version_subcmd: VersionCommand[T] | None = None,
                  ls_tree: LsTreeCommand[T] | None = None):
         super().__init__(runner)
@@ -141,7 +141,7 @@ class SimpleGitCommand[T](GitCommand[T], RootDirOp):
 
     @override
     def clone(self) -> SimpleGitCommand[T]:
-        return SimpleGitCommand(self.runner, self.root_dir)
+        return SimpleGitCommand()
 
     @override
     @property
