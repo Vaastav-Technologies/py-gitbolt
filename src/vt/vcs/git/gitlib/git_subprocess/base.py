@@ -9,13 +9,13 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import override, Protocol, Final
+from typing import override, Protocol, Final, Unpack
 from collections.abc import Sequence
 
 from vt.utils.commons.commons.core_py import fallback_on_none, fallback_on_none_strict
 
 from vt.vcs.git.gitlib import Git, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
-    GitSubCommand, ForGit
+    GitSubCommand, ForGit, GitOpts
 
 
 class GitCommandRunner[T](ForGit, Protocol):
@@ -54,48 +54,28 @@ class HasUnderlyingGitCommand[T](HasGitUnderneath[T], Protocol):
 class GitOptsOverriderCommand[T](CanOverrideGitOpts[T], HasUnderlyingGitCommand[T], Protocol):
 
     @override
-    def git_opts_override(self, *,
-                          cwd: Sequence[Path] | None = None,
-                          c: dict[str, str] | None = None,
-                          config_env: dict[str, str] | None = None,
-                          exec_path: Path | None = None,
-                          paginate: bool | None = None,
-                          no_pager: bool | None = None,
-                          git_dir: Path | None = None,
-                          work_tree: Path | None = None,
-                          namespace: str | None = None,
-                          bare: bool | None = None,
-                          no_replace_objects: bool | None = None,
-                          no_lazy_fetch: bool | None = None,
-                          no_optional_locks: bool | None = None,
-                          no_advice: bool | None = None,
-                          literal_pathspecs: bool | None = None,
-                          glob_pathspecs: bool | None = None,
-                          no_glob_pathspecs: bool | None = None,
-                          icase_pathspecs: bool | None = None,
-                          list_cmds: Sequence[str] | None = None,
-                          attr_source: str | None = None) -> T:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> T:
         return self.underlying_git.git(
-            cwd=cwd,
-            c=c,
-            config_env=config_env,
-            exec_path=exec_path,
-            paginate=paginate,
-            no_pager=no_pager,
-            git_dir=git_dir,
-            work_tree=work_tree,
-            namespace=namespace,
-            bare=bare,
-            no_replace_objects=no_replace_objects,
-            no_lazy_fetch=no_lazy_fetch,
-            no_optional_locks=no_optional_locks,
-            no_advice=no_advice,
-            literal_pathspecs=literal_pathspecs,
-            glob_pathspecs=glob_pathspecs,
-            no_glob_pathspecs=no_glob_pathspecs,
-            icase_pathspecs=icase_pathspecs,
-            list_cmds=list_cmds,
-            attr_source=attr_source)
+            C=overrides.get("C"),
+            c=overrides.get("c"),
+            config_env=overrides.get("config_env"),
+            exec_path=overrides.get("exec_path"),
+            paginate=overrides.get("paginate"),
+            no_pager=overrides.get("no_pager"),
+            git_dir=overrides.get("git_dir"),
+            work_tree=overrides.get("work_tree"),
+            namespace=overrides.get("namespace"),
+            bare=overrides.get("bare"),
+            no_replace_objects=overrides.get("no_replace_objects"),
+            no_lazy_fetch=overrides.get("no_lazy_fetch"),
+            no_optional_locks=overrides.get("no_optional_locks"),
+            no_advice=overrides.get("no_advice"),
+            literal_pathspecs=overrides.get("literal_pathspecs"),
+            glob_pathspecs=overrides.get("glob_pathspecs"),
+            noglob_pathspecs=overrides.get("noglob_pathspecs"),
+            icase_pathspecs=overrides.get("icase_pathspecs"),
+            list_cmds=overrides.get("list_cmds"),
+            attr_source=overrides.get("attr_source"))
 
 
 class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol):
@@ -142,7 +122,7 @@ class GitCommand[T](Git[T], ABC):
         ... all other params are mirrors of ``Git`` ctor params.
         """
         self.runner = runner
-        self.cwd: Sequence[Path] | None = None
+        self.C: Sequence[Path] | None = None
         self.c: dict[str, str] | None = None
         self.config_env: dict[str, str] | None = None
         self.opt_exec_path: Path | None = None
@@ -158,55 +138,40 @@ class GitCommand[T](Git[T], ABC):
         self.no_advice: bool = False
         self.literal_pathspecs: bool = False
         self.glob_pathspecs: bool = False
-        self.no_glob_pathspecs: bool = False
+        self.noglob_pathspecs: bool = False
         self.icase_pathspecs: bool = False
         self.list_cmds: Sequence[str] | None = None
         self.attr_source: str | None = None
 
     # TODO: check why PyCharm says that Type of 'git' is incompatible with 'Git'.
     @override
-    def git(self, *,
-            cwd: Sequence[Path] | None = None,
-            c: dict[str, str] | None = None,
-            config_env: dict[str, str] | None = None,
-            exec_path: Path | None = None,
-            paginate: bool | None = None,
-            no_pager: bool | None = None,
-            git_dir: Path | None = None,
-            work_tree: Path | None = None,
-            namespace: str | None = None,
-            bare: bool | None = None,
-            no_replace_objects: bool | None = None,
-            no_lazy_fetch: bool | None = None,
-            no_optional_locks: bool | None = None,
-            no_advice: bool | None = None,
-            literal_pathspecs: bool | None = None,
-            glob_pathspecs: bool | None = None,
-            no_glob_pathspecs: bool | None = None,
-            icase_pathspecs: bool | None = None,
-            list_cmds: Sequence[str] | None = None,
-            attr_source: str | None = None) -> GitCommand[T]:
+    def git(self, **git_main_opts: Unpack[GitOpts]) -> GitCommand[T]:
         _git_cmd = self.clone()
-        _git_cmd.cwd = fallback_on_none(cwd, self.cwd)
-        _git_cmd.c = fallback_on_none(c, self.c)
-        _git_cmd.config_env = fallback_on_none(config_env, self.config_env)
-        _git_cmd.opt_exec_path = fallback_on_none(exec_path, self.opt_exec_path)
-        _git_cmd.paginate = fallback_on_none_strict(paginate, self.paginate)
-        _git_cmd.no_pager = fallback_on_none_strict(no_pager, self.no_pager)
-        _git_cmd.git_dir = fallback_on_none(git_dir, self.git_dir)
-        _git_cmd.work_tree = fallback_on_none(work_tree, self.work_tree)
-        _git_cmd.namespace = fallback_on_none(namespace, self.namespace)
-        _git_cmd.bare = fallback_on_none_strict(bare, self.bare)
-        _git_cmd.no_replace_objects = fallback_on_none_strict(no_replace_objects, self.no_replace_objects)
-        _git_cmd.no_lazy_fetch = fallback_on_none_strict(no_lazy_fetch, self.no_lazy_fetch)
-        _git_cmd.no_optional_locks = fallback_on_none_strict(no_optional_locks, self.no_optional_locks)
-        _git_cmd.no_advice = fallback_on_none_strict(no_advice, self.no_advice)
-        _git_cmd.literal_pathspecs = fallback_on_none_strict(literal_pathspecs, self.literal_pathspecs)
-        _git_cmd.glob_pathspecs = fallback_on_none_strict(glob_pathspecs, self.glob_pathspecs)
-        _git_cmd.no_glob_pathspecs = fallback_on_none_strict(no_glob_pathspecs, self.no_glob_pathspecs)
-        _git_cmd.icase_pathspecs = fallback_on_none_strict(icase_pathspecs, self.icase_pathspecs)
-        _git_cmd.list_cmds = fallback_on_none(list_cmds, self.list_cmds)
-        _git_cmd.attr_source = fallback_on_none(attr_source, self.attr_source)
+        _git_cmd.C = fallback_on_none(git_main_opts.get('C'), self.C)
+        _git_cmd.c = fallback_on_none(git_main_opts.get('c'), self.c)
+        _git_cmd.config_env = fallback_on_none(git_main_opts.get('config_env'), self.config_env)
+        _git_cmd.opt_exec_path = fallback_on_none(git_main_opts.get('exec_path'), self.opt_exec_path)
+        _git_cmd.paginate = fallback_on_none_strict(git_main_opts.get('paginate'), self.paginate)
+        _git_cmd.no_pager = fallback_on_none_strict(git_main_opts.get('no_pager'), self.no_pager)
+        _git_cmd.git_dir = fallback_on_none(git_main_opts.get('git_dir'), self.git_dir)
+        _git_cmd.work_tree = fallback_on_none(git_main_opts.get('work_tree'), self.work_tree)
+        _git_cmd.namespace = fallback_on_none(git_main_opts.get('namespace'), self.namespace)
+        _git_cmd.bare = fallback_on_none_strict(git_main_opts.get('bare'), self.bare)
+        _git_cmd.no_replace_objects = fallback_on_none_strict(git_main_opts.get('no_replace_objects'),
+                                                              self.no_replace_objects)
+        _git_cmd.no_lazy_fetch = fallback_on_none_strict(git_main_opts.get('no_lazy_fetch'), self.no_lazy_fetch)
+        _git_cmd.no_optional_locks = fallback_on_none_strict(git_main_opts.get('no_optional_locks'),
+                                                             self.no_optional_locks)
+        _git_cmd.no_advice = fallback_on_none_strict(git_main_opts.get('no_advice'), self.no_advice)
+        _git_cmd.literal_pathspecs = fallback_on_none_strict(git_main_opts.get('literal_pathspecs'),
+                                                             self.literal_pathspecs)
+        _git_cmd.glob_pathspecs = fallback_on_none_strict(git_main_opts.get('glob_pathspecs'), self.glob_pathspecs)
+        _git_cmd.noglob_pathspecs = fallback_on_none_strict(git_main_opts.get('noglob_pathspecs'),
+                                                             self.noglob_pathspecs)
+        _git_cmd.icase_pathspecs = fallback_on_none_strict(git_main_opts.get('icase_pathspecs'),
+                                                           self.icase_pathspecs)
+        _git_cmd.list_cmds = fallback_on_none(git_main_opts.get('list_cmds'), self.list_cmds)
+        _git_cmd.attr_source = fallback_on_none(git_main_opts.get('attr_source'), self.attr_source)
         return _git_cmd
 
     def compute_main_cmd_args(self) -> list[str]:
@@ -217,8 +182,8 @@ class GitCommand[T](Git[T], ABC):
         args = []
 
         # Handle -C (change directory)
-        if self.cwd:
-            for path in self.cwd:
+        if self.C:
+            for path in self.C:
                 args += ['-C', str(path)]
 
         # Handle -c key=value (set config values)
@@ -270,7 +235,7 @@ class GitCommand[T](Git[T], ABC):
         if self.glob_pathspecs:
             args.append('--glob-pathspecs')
 
-        if self.no_glob_pathspecs:
+        if self.noglob_pathspecs:
             args.append('--noglob-pathspecs')
 
         if self.icase_pathspecs:
