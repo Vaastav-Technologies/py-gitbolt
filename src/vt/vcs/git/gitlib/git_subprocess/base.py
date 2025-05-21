@@ -6,32 +6,41 @@ Git command interfaces with default implementation using subprocess calls.
 """
 from __future__ import annotations
 
-import subprocess
 from abc import abstractmethod, ABC
 from pathlib import Path
-from subprocess import CompletedProcess, CalledProcessError
-from typing import override, Protocol
+from subprocess import CompletedProcess
+from typing import override, Protocol, Final
 from collections.abc import Sequence
 
 from vt.utils.commons.commons.core_py import fallback_on_none, fallback_on_none_strict
 
-from vt.vcs.git.gitlib import Git, GitCommandRunner, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
-    GitSubCommand
-from vt.vcs.git.gitlib.exceptions import GitCmdException
+from vt.vcs.git.gitlib import Git, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
+    GitSubCommand, ForGit
 
 
-class SimpleGitCR[T](GitCommandRunner[T]):
+class GitCommandRunner[T](ForGit, Protocol):
     """
-    Simple git command runner that simply runs everything `as-is` in a subprocess.
+    Interface to facilitate running git commands in subprocess.
     """
 
+    GIT_CMD: Final[str] = 'git'
+
+    @abstractmethod
     def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
                         **subprocess_run_kwargs) -> CompletedProcess[T]:
-        try:
-            return subprocess.run([GitCommandRunner.GIT_CMD, *main_cmd_args, *subcommand_args],
-                                  *subprocess_run_args, **subprocess_run_kwargs)
-        except CalledProcessError as e:
-            raise GitCmdException(called_process_error=e) from e
+        """
+        Run git subcommands in a separate process.
+
+        :param main_cmd_args: git's main command args, i.e. ``git --no-pager log -1 master``. Here, ``--no-pager``
+            is the main command arg.
+        :param subcommand_args: git subcommand args, i.e. ``git --no-pager log -1 master``. Here, ``-1 master`` are
+            the subcommand args.
+        :param subprocess_run_args: Any extra arguments ``(*args)`` to be sent to ``subprocess.run()``.
+        :param subprocess_run_kwargs: Any extra keyword arguments ``(**kwargs)`` to be sent to ``subprocess.run()``.
+        :return: ``CompletedProcess[T]`` instance with captured out, err and return-code.
+        :raise CalledProcessError[T]: in case the process called returns non-zero return-code.
+        """
+        ...
 
 
 class HasUnderlyingGitCommand[T](HasGitUnderneath[T], Protocol):

@@ -8,7 +8,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import Protocol, override
 
 from vt.utils.commons.commons.op import RootDirOp
@@ -19,31 +18,6 @@ class ForGit(Protocol):
     Marker interface to mark an operation for git.
     """
     pass
-
-
-class GitCommandRunner[T](ForGit, Protocol):
-    """
-    Interface to facilitate running git commands in subprocess.
-    """
-
-    GIT_CMD: str = 'git'
-
-    @abstractmethod
-    def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
-                        **subprocess_run_kwargs) -> CompletedProcess[T]:
-        """
-        Run git subcommands in a separate process.
-
-        :param main_cmd_args: git's main command args, i.e. ``git --no-pager log -1 master``. Here, ``--no-pager``
-            is the main command arg.
-        :param subcommand_args: git subcommand args, i.e. ``git --no-pager log -1 master``. Here, ``-1 master`` are
-            the subcommand args.
-        :param subprocess_run_args: Any extra arguments ``(*args)`` to be sent to ``subprocess.run()``.
-        :param subprocess_run_kwargs: Any extra keyword arguments ``(**kwargs)`` to be sent to ``subprocess.run()``.
-        :return: ``CompletedProcess[T]`` instance with captured out, err and return-code.
-        :raise CalledProcessError[T]: in case the process called returns non-zero return-code.
-        """
-        ...
 
 
 class HasGitUnderneath[T](Protocol):

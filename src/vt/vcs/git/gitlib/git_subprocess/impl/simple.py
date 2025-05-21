@@ -6,15 +6,18 @@ Simple and naive implementations of git commands using subprocess.
 """
 from __future__ import annotations
 
+import subprocess
 from abc import abstractmethod
 from pathlib import Path
+from subprocess import CompletedProcess, CalledProcessError
 from typing import override
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib import GitCommandRunner, Git
+from vt.vcs.git.gitlib import Git
+from vt.vcs.git.gitlib.exceptions import GitCmdException
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
-    LsTreeCommand, SimpleGitCR
+    LsTreeCommand, GitCommandRunner
 
 
 class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
@@ -25,6 +28,20 @@ class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
     @property
     def underlying_git(self) -> GitCommand[T]:
         return self._underlying_git
+
+
+class SimpleGitCR[T](GitCommandRunner[T]):
+    """
+    Simple git command runner that simply runs everything `as-is` in a subprocess.
+    """
+
+    def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
+                        **subprocess_run_kwargs) -> CompletedProcess[T]:
+        try:
+            return subprocess.run([GitCommandRunner.GIT_CMD, *main_cmd_args, *subcommand_args],
+                                  *subprocess_run_args, **subprocess_run_kwargs)
+        except CalledProcessError as e:
+            raise GitCmdException(called_process_error=e) from e
 
 
 class GitSubcmdCommandImpl[T](GitSubcmdCommand[T]):
@@ -164,4 +181,3 @@ class SimpleGitCommand[T](GitCommand[T], RootDirOp):
     @property
     def root_dir(self) -> Path:
         return self.git_root_dir
-
