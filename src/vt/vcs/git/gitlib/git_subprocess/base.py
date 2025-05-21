@@ -10,10 +10,9 @@ import subprocess
 from abc import abstractmethod, ABC
 from pathlib import Path
 from subprocess import CompletedProcess, CalledProcessError
-from typing import override
+from typing import override, Protocol
 from collections.abc import Sequence
 
-from mypy.semanal_shared import Protocol
 from vt.utils.commons.commons.core_py import fallback_on_none, fallback_on_none_strict
 
 from vt.vcs.git.gitlib import Git, GitCommandRunner, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
