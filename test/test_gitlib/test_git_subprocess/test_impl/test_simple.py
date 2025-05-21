@@ -14,4 +14,12 @@ def test_exec_path():
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand[str](SimpleGitCR())
-    assert git.git(exec_path=None).exec_path is None
+    assert git.git(exec_path=None).exec_path is not None
+
+def test_overrides():
+    git = SimpleGitCommand[str](SimpleGitCR())
+    assert not git.git(no_replace_objects=True).compute_main_cmd_args()
+
+def test_ls_tree(enc_local):
+    git = SimpleGitCommand[str](SimpleGitCR(), enc_local)
+    git.ls_tree.ls_tree('HEAD')

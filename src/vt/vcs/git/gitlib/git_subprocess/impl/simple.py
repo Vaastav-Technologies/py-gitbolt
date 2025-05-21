@@ -5,7 +5,11 @@
 Simple and naive implementations of git commands using subprocess.
 """
 from __future__ import annotations
+
+from pathlib import Path
 from typing import override
+
+from vt.utils.commons.commons.op import RootDirOp
 
 from vt.vcs.git.gitlib import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
@@ -49,6 +53,11 @@ class VersionCommandImpl[T](VersionCommand[T], GitSubcmdCommandImpl['VersionComm
 
 
 class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommandImpl[T]']):
+    def __init__(self, root_dir: Path, git: GitCommand[T],
+                 git_opts_overrider: GitOptsOverriderCommand[T] | None = None):
+        super().__init__(git, git_opts_overrider)
+        self._root_dir = root_dir
+
     @override
     def ls_tree(self, tree_ish: str, *, d: bool = False, r: bool = False, t: bool = False, long: bool = False,
                 z: bool = False, name_only: bool = False, object_only: bool = False, full_name: bool = False,
@@ -97,21 +106,28 @@ class LsTreeCommandImpl[T](LsTreeCommand[T], GitSubcmdCommandImpl['LsTreeCommand
             sub_cmd_args,
             check=True,
             text=True,
-            capture_output=True
+            capture_output=True,
+            cwd=self.root_dir
         )
 
         # Return raw stdout; parsing can be handled upstream or in a separate method
-        return result.stdout  # type: ignore
+        return result.stdout.strip()  # type: ignore
+
+    @override
+    @property
+    def root_dir(self) -> Path:
+        return self._root_dir
 
 
-class SimpleGitCommand[T](GitCommand[T]):
+class SimpleGitCommand[T](GitCommand[T], RootDirOp):
 
-    def __init__(self, runner: GitCommandRunner[T], *,
+    def __init__(self, runner: GitCommandRunner[T], git_root_dir: Path = RootDirOp.from_path(), *,
                  git_version_subcmd: VersionCommand[T] | None = None,
                  ls_tree: LsTreeCommand[T] | None = None):
         super().__init__(runner)
+        self.git_root_dir = git_root_dir
         self._git_version_subcmd = git_version_subcmd or VersionCommandImpl(self)
-        self._ls_tree = ls_tree or LsTreeCommandImpl(self)
+        self._ls_tree = ls_tree or LsTreeCommandImpl(self.root_dir, self)
 
     @override
     @property
@@ -125,4 +141,10 @@ class SimpleGitCommand[T](GitCommand[T]):
 
     @override
     def clone(self) -> SimpleGitCommand[T]:
-        return SimpleGitCommand(self.runner)
+        return SimpleGitCommand(self.runner, self.root_dir)
+
+    @override
+    @property
+    def root_dir(self) -> Path:
+        return self.git_root_dir
+
