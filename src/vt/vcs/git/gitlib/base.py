@@ -257,17 +257,17 @@ class Git[T](ForGit, Protocol):
 
     @property
     @abstractmethod
-    def git_version_subcmd(self) -> Version[T]:
+    def version_subcmd(self) -> Version[T]:
         """
-        :return: ``git version`` command.
+        :return: ``git version`` subcommand.
         """
         ...
 
     @property
     @abstractmethod
-    def ls_tree(self) -> LsTree[T]:
+    def ls_tree_subcmd(self) -> LsTree[T]:
         """
-        :return: ``git ls-tree`` command.
+        :return: ``git ls-tree`` subcommand.
         """
         ...
 
@@ -276,7 +276,7 @@ class Git[T](ForGit, Protocol):
         """
         :return: current git version.
         """
-        return self.git_version_subcmd.version()
+        return self.version_subcmd.version()
 
     @property
     def exec_path(self) -> Path:

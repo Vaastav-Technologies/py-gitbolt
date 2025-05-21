@@ -21,7 +21,7 @@ def test_overrides():
 
 def test_ls_tree(enc_local):
     git = SimpleGitCommand[str](enc_local)
-    git.ls_tree.ls_tree('HEAD')
+    git.ls_tree_subcmd.ls_tree('HEAD')
 
 def test_version():
     git = SimpleGitCommand()
@@ -29,11 +29,11 @@ def test_version():
 
 def test_version_build_options():
     git = SimpleGitCommand[str]()
-    version_build_info = git.git_version_subcmd.version(build_options=True)
+    version_build_info = git.version_subcmd.version(build_options=True)
     assert 'git version 2' in version_build_info
     assert 'cpu: ' in version_build_info
     assert 'built from commit: ' in version_build_info
-    supposed_version_subcmd = git.git_version_subcmd.git_opts_override(namespace='suhas')
+    supposed_version_subcmd = git.version_subcmd.git_opts_override(namespace='suhas')
     ano_build_info = supposed_version_subcmd.version(build_options=True)
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info

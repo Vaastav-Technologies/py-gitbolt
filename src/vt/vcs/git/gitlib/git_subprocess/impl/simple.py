@@ -131,12 +131,12 @@ class SimpleGitCommand[T](GitCommand[T], RootDirOp):
 
     @override
     @property
-    def git_version_subcmd(self) -> VersionCommand[T]:
+    def version_subcmd(self) -> VersionCommand[T]:
         return self._git_version_subcmd
 
     @override
     @property
-    def ls_tree(self) -> LsTreeCommand[T]:
+    def ls_tree_subcmd(self) -> LsTreeCommand[T]:
         return self._ls_tree
 
     @override
