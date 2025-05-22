@@ -6,6 +6,7 @@ Tests for Git command interfaces with default implementation using subprocess ca
 """
 from pathlib import Path
 
+import pytest
 from vt.utils.commons.commons.core_py import UNSET
 
 from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCommand
@@ -117,6 +118,67 @@ class TestMainCmdOverrides:
                     config_env={'auth': 'suhas', 'comm': 'suyog'}).git(exec_path=UNSET).git(
                     exec_path=Path()).compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
                                                                   '--config-env', 'comm=suyog', '--exec-path', '.']
+    class TestIndividualMethods:
+        class TestSmallC:
+            @pytest.mark.parametrize("input_dict,expected", [
+                # Simple key-value
+                ({"foo.bar": "baz"}, ["-c", "foo.bar=baz"]),
+
+                # Empty string value
+                ({"foo.bar": ""}, ["-c", "foo.bar="]),
+
+                # Boolean True (no equals sign)
+                ({"foo.bar": True}, ["-c", "foo.bar"]),
+
+                # Boolean False (explicit empty string)
+                ({"foo.bar": False}, ["-c", "foo.bar="]),
+
+                # None (treated as True)
+                ({"foo.bar": None}, ["-c", "foo.bar"]),
+
+                # Mixed values
+                ({
+                    "a.b": "x",
+                    "c.d": "",
+                    "e.f": True,
+                    "g.h": False,
+                    "i.j": None
+                }, [
+                     "-c", "a.b=x",
+                     "-c", "c.d=",
+                     "-c", "e.f",
+                     "-c", "g.h=",
+                     "-c", "i.j"
+                 ]),
+
+                # Empty config (no args)
+                ({}, []),
+
+                # c is None
+                (None, []),
+
+                # c is UNSET
+                (UNSET, []),
+
+                # Missing key
+                ({}, []),
+
+                # UNSET should remove the key
+                ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+
+                # All keys are unset
+                ({"foo.bar": UNSET}, []),
+
+                # Mixed unset, true, false
+                ({
+                    "a.b": UNSET,
+                    "b.c": True,
+                    "c.d": False
+                }, ["-c", "b.c", "-c", "c.d="])
+            ])
+            def test_main_cmd_c_args(self, input_dict, expected):
+                git = SimpleGitCommand().git(c=input_dict)
+                assert git._main_cmd_small_c_args() == expected
 
 
 def test_ls_tree(enc_local):

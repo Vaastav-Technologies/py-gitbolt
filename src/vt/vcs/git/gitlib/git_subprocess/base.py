@@ -197,7 +197,17 @@ class GitCommand[T](Git[T], ABC):
     def _main_cmd_small_c_args(self) -> list[str]:
         val = self._main_cmd_opts.get("c")
         if val is not None and not is_unset(val):
-            return [item for k, v in val.items() for item in ["-c", f"{k}={v}"]]
+            args = []
+            for k, v in val.items():
+                if is_unset(v):
+                    continue  # explicitly skip unset keys
+                if v is True or v is None: # treat None as True
+                    args += ["-c", k]
+                elif v is False:
+                    args += ["-c", f"{k}="]
+                else:
+                    args += ["-c", f"{k}={v}"]
+            return args
         return []
 
     def _main_cmd_config_env_args(self) -> list[str]:

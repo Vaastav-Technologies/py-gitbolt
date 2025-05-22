@@ -41,7 +41,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt--Cltpathgt>`_.
     """
 
-    c: dict[str, str] | None | Unset
+    c: dict[str, str | None | Unset] | None | Unset
     """
     Mirror of ``-c <name>=<value>``.
 
