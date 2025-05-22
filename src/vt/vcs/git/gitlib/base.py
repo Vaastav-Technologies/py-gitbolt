@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Protocol, override, TypedDict, Unpack
 
+from vt.utils.commons.commons.core_py import Unset
 from vt.utils.commons.commons.op import RootDirOp
 
 
@@ -30,7 +31,7 @@ class GitOpts(TypedDict, total=False):
     For example, in ``git --no-pager log -1 master`` git command, ``--no-pager`` is the main command option.
     """
 
-    C: Sequence[Path] | None
+    C: Sequence[Path] | None | Unset
     """
     Mirror of ``-C <path>``.
 
@@ -40,7 +41,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt--Cltpathgt>`_.
     """
 
-    c: dict[str, str] | None
+    c: dict[str, str] | None | Unset
     """
     Mirror of ``-c <name>=<value>``.
 
@@ -50,7 +51,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt--cltnamegtltvaluegt>`_.
     """
 
-    config_env: dict[str, str] | None
+    config_env: dict[str, str] | None | Unset
     """
     Mirror of ``--config-env=<name>=<env-var>``.
 
@@ -59,7 +60,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---config-envltnamegtltenvvargt>`_.
     """
 
-    exec_path: Path | None
+    exec_path: Path | None | Unset
     """
     Mirror of ``--exec-path[=<path>]``.
 
@@ -69,7 +70,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---exec-pathltpathgt>`_.
     """
 
-    paginate: bool | None
+    paginate: bool | None | Unset
     """
     Mirror of ``--paginate``.
 
@@ -78,7 +79,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---paginate>`_.
     """
 
-    no_pager: bool | None
+    no_pager: bool | None | Unset
     """
     Mirror of ``--no-pager``.
 
@@ -87,7 +88,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---no-pager>`_.
     """
 
-    git_dir: Path | None
+    git_dir: Path | None | Unset
     """
     Mirror of ``--git-dir=<path>``.
 
@@ -96,7 +97,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---git-dirltpathgt>`_.
     """
 
-    work_tree: Path | None
+    work_tree: Path | None | Unset
     """
     Mirror of ``--work-tree=<path>``.
 
@@ -105,7 +106,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---work-treeltpathgt>`_.
     """
 
-    namespace: str | None
+    namespace: str | None | Unset
     """
     Mirror of ``--namespace=<namespace>``.
 
@@ -114,7 +115,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---namespaceltpathgt>`_.
     """
 
-    bare: bool | None
+    bare: bool | None | Unset
     """
     Mirror of ``--bare``.
 
@@ -123,7 +124,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---bare>`_.
     """
 
-    no_replace_objects: bool | None
+    no_replace_objects: bool | None | Unset
     """
     Mirror of ``--no-replace-objects``.
 
@@ -132,7 +133,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---no-replace-objects>`_.
     """
 
-    no_lazy_fetch: bool | None
+    no_lazy_fetch: bool | None | Unset
     """
     Mirror of ``--no-lazy-fetch``.
 
@@ -142,7 +143,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---no-lazy-fetch>`_.
     """
 
-    no_optional_locks: bool | None
+    no_optional_locks: bool | None | Unset
     """
     Mirror of ``--no-optional-locks``.
 
@@ -151,7 +152,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---no-optional-locks>`_.
     """
 
-    no_advice: bool | None
+    no_advice: bool | None | Unset
     """
     Mirror of ``--no-advice``.
 
@@ -160,7 +161,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---no-advice>`_.
     """
 
-    literal_pathspecs: bool | None
+    literal_pathspecs: bool | None | Unset
     """
     Mirror of ``--literal-pathspecs``.
 
@@ -169,7 +170,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---literal-pathspecs>`_.
     """
 
-    glob_pathspecs: bool | None
+    glob_pathspecs: bool | None | Unset
     """
     Mirror of ``--glob-pathspecs``.
 
@@ -178,7 +179,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---glob-pathspecs>`_.
     """
 
-    noglob_pathspecs: bool | None
+    noglob_pathspecs: bool | None | Unset
     """
     Mirror of ``--noglob-pathspecs``.
 
@@ -187,7 +188,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---noglob-pathspecs>`_.
     """
 
-    icase_pathspecs: bool | None
+    icase_pathspecs: bool | None | Unset
     """
     Mirror of ``--icase-pathspecs``.
 
@@ -196,7 +197,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---icase-pathspecs>`_.
     """
 
-    list_cmds: Sequence[str] | None
+    list_cmds: Sequence[str] | None | Unset
     """
     Mirror of ``--list-cmds=<category>``.
 
@@ -205,7 +206,7 @@ class GitOpts(TypedDict, total=False):
     `Documented <https://git-scm.com/docs/git#Documentation/git.txt---list-cmdsltgroupgtltgroupgt82308203>`_.
     """
 
-    attr_source: str | None
+    attr_source: str | None | Unset
     """
     Mirror of ``--attr-source=<tree-ish>``.
 
