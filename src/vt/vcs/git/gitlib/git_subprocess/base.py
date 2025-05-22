@@ -165,101 +165,148 @@ class GitCommand[T](Git[T], ABC):
         return _git_cmd
 
     def compute_main_cmd_args(self) -> list[str]:
-        """
-        :return: constructed git main command args, for example, ``--no-pager`` is a git main command arg in
-            ``git --no-pager log -10``.
-        """
-        opts = self._main_cmd_opts
-        args: list[str] = []
+        return (
+            self._main_cmd_cap_c_args() +
+            self._main_cmd_small_c_args() +
+            self._main_cmd_config_env_args() +
+            self._main_cmd_exec_path_args() +
+            self._main_cmd_paginate_args() +
+            self._main_cmd_no_pager_args() +
+            self._main_cmd_git_dir_args() +
+            self._main_cmd_work_tree_args() +
+            self._main_cmd_namespace_args() +
+            self._main_cmd_bare_args() +
+            self._main_cmd_no_replace_objects_args() +
+            self._main_cmd_no_lazy_fetch_args() +
+            self._main_cmd_no_optional_locks_args() +
+            self._main_cmd_no_advice_args() +
+            self._main_cmd_literal_pathspecs_args() +
+            self._main_cmd_glob_pathspecs_args() +
+            self._main_cmd_noglob_pathspecs_args() +
+            self._main_cmd_icase_pathspecs_args() +
+            self._main_cmd_list_cmds_args() +
+            self._main_cmd_attr_source_args()
+        )
 
-        # -C <path>
-        if C := opts.get('C'):
-            if not is_unset(C):
-                for path in C:
-                    args += ['-C', str(path)]
+    def _main_cmd_cap_c_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("C")
+        if val is not None and not is_unset(val):
+            return [item for path in val for item in ["-C", str(path)]]
+        return []
 
-        # -c key=value
-        if c := opts.get('c'):
-            if not is_unset(c):
-                for k, v in c.items():
-                    args += ['-c', f'{k}={v}']
+    def _main_cmd_small_c_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("c")
+        if val is not None and not is_unset(val):
+            return [item for k, v in val.items() for item in ["-c", f"{k}={v}"]]
+        return []
 
-        # --config-env name=env-var
-        if config_env := opts.get('config_env'):
-            if not is_unset(config_env):
-                for k, v in config_env.items():
-                    args += ['--config-env', f'{k}={v}']
+    def _main_cmd_config_env_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("config_env")
+        if val is not None and not is_unset(val):
+            return [item for k, v in val.items() for item in ["--config-env", f"{k}={v}"]]
+        return []
 
-        if exec_path := opts.get('exec_path'):
-            if not is_unset(exec_path):
-                args += ['--exec-path', str(exec_path)]
+    def _main_cmd_exec_path_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("exec_path")
+        if val is not None and not is_unset(val):
+            return ["--exec-path", str(val)]
+        return []
 
-        if paginate := opts.get('paginate'):
-            if not is_unset(paginate):
-                args.append('--paginate')
+    def _main_cmd_paginate_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("paginate")
+        if val is not None and not is_unset(val):
+            return ["--paginate"]
+        return []
 
-        if no_pager := opts.get('no_pager'):
-            if not is_unset(no_pager):
-                args.append('--no-pager')
+    def _main_cmd_no_pager_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("no_pager")
+        if val is not None and not is_unset(val):
+            return ["--no-pager"]
+        return []
 
-        if git_dir := opts.get('git_dir'):
-            if not is_unset(git_dir):
-                args += ['--git-dir', str(git_dir)]
+    def _main_cmd_git_dir_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("git_dir")
+        if val is not None and not is_unset(val):
+            return ["--git-dir", str(val)]
+        return []
 
-        if work_tree := opts.get('work_tree'):
-            if not is_unset(work_tree):
-                args += ['--work-tree', str(work_tree)]
+    def _main_cmd_work_tree_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("work_tree")
+        if val is not None and not is_unset(val):
+            return ["--work-tree", str(val)]
+        return []
 
-        if namespace := opts.get('namespace'):
-            if not is_unset(namespace):
-                args += ['--namespace', namespace]
+    def _main_cmd_namespace_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("namespace")
+        if val is not None and not is_unset(val):
+            return ["--namespace", val]
+        return []
 
-        if bare := opts.get('bare'):
-            if not is_unset(bare):
-                args.append('--bare')
+    def _main_cmd_bare_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("bare")
+        if val is not None and not is_unset(val):
+            return ["--bare"]
+        return []
 
-        if no_replace_objects := opts.get('no_replace_objects'):
-            if not is_unset(no_replace_objects):
-                args.append('--no-replace-objects')
+    def _main_cmd_no_replace_objects_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("no_replace_objects")
+        if val is not None and not is_unset(val):
+            return ["--no-replace-objects"]
+        return []
 
-        if no_lazy_fetch := opts.get('no_lazy_fetch'):
-            if not is_unset(no_lazy_fetch):
-                args.append('--no-lazy-fetch')
+    def _main_cmd_no_lazy_fetch_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("no_lazy_fetch")
+        if val is not None and not is_unset(val):
+            return ["--no-lazy-fetch"]
+        return []
 
-        if no_optional_locks := opts.get('no_optional_locks'):
-            if not is_unset(no_optional_locks):
-                args.append('--no-optional-locks')
+    def _main_cmd_no_optional_locks_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("no_optional_locks")
+        if val is not None and not is_unset(val):
+            return ["--no-optional-locks"]
+        return []
 
-        if no_advice := opts.get('no_advice'):
-            if not is_unset(no_advice):
-                args.append('--no-advice')
+    def _main_cmd_no_advice_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("no_advice")
+        if val is not None and not is_unset(val):
+            return ["--no-advice"]
+        return []
 
-        if literal_pathspecs := opts.get('literal_pathspecs'):
-            if not is_unset(literal_pathspecs):
-                args.append('--literal-pathspecs')
+    def _main_cmd_literal_pathspecs_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("literal_pathspecs")
+        if val is not None and not is_unset(val):
+            return ["--literal-pathspecs"]
+        return []
 
-        if glob_pathspecs := opts.get('glob_pathspecs'):
-            if not is_unset(glob_pathspecs):
-                args.append('--glob-pathspecs')
+    def _main_cmd_glob_pathspecs_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("glob_pathspecs")
+        if val is not None and not is_unset(val):
+            return ["--glob-pathspecs"]
+        return []
 
-        if noglob_pathspecs := opts.get('noglob_pathspecs'):
-            if not is_unset(noglob_pathspecs):
-                args.append('--noglob-pathspecs')
+    def _main_cmd_noglob_pathspecs_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("noglob_pathspecs")
+        if val is not None and not is_unset(val):
+            return ["--noglob-pathspecs"]
+        return []
 
-        if icase_pathspecs := opts.get('icase_pathspecs'):
-            if not is_unset(icase_pathspecs):
-                args.append('--icase-pathspecs')
+    def _main_cmd_icase_pathspecs_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("icase_pathspecs")
+        if val is not None and not is_unset(val):
+            return ["--icase-pathspecs"]
+        return []
 
-        if list_cmds := opts.get('list_cmds'):
-            if not is_unset(list_cmds):
-                for cmd in list_cmds:
-                    args += ['--list-cmds', cmd]
+    def _main_cmd_list_cmds_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("list_cmds")
+        if val is not None and not is_unset(val):
+            return [item for cmd in val for item in ["--list-cmds", cmd]]
+        return []
 
-        if attr_source := opts.get('attr_source'):
-            if not is_unset(attr_source):
-                args += ['--attr-source', attr_source]
-
-        return args
+    def _main_cmd_attr_source_args(self) -> list[str]:
+        val = self._main_cmd_opts.get("attr_source")
+        if val is not None and not is_unset(val):
+            return ["--attr-source", val]
+        return []
 
     @override
     @property
