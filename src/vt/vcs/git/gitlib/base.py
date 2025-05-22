@@ -272,28 +272,7 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
     # TODO: check why PyCharm says that Type of 'git_opts_override' is incompatible with 'CanOverrideGitOpts'.
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> T:
-        ano_git = self.overrider_git_opts.git_opts_override(
-            C=overrides.get("C"),
-            c=overrides.get("c"),
-            config_env=overrides.get("config_env"),
-            exec_path=overrides.get("exec_path"),
-            paginate=overrides.get("paginate"),
-            no_pager=overrides.get("no_pager"),
-            git_dir=overrides.get("git_dir"),
-            work_tree=overrides.get("work_tree"),
-            namespace=overrides.get("namespace"),
-            bare=overrides.get("bare"),
-            no_replace_objects=overrides.get("no_replace_objects"),
-            no_lazy_fetch=overrides.get("no_lazy_fetch"),
-            no_optional_locks=overrides.get("no_optional_locks"),
-            no_advice=overrides.get("no_advice"),
-            literal_pathspecs=overrides.get("literal_pathspecs"),
-            glob_pathspecs=overrides.get("glob_pathspecs"),
-            noglob_pathspecs=overrides.get("noglob_pathspecs"),
-            icase_pathspecs=overrides.get("icase_pathspecs"),
-            list_cmds=overrides.get("list_cmds"),
-            attr_source=overrides.get("attr_source"))
-        return self._subcmd_git_override(ano_git)
+        return self.overrider_git_opts.git_opts_override(**overrides)
 
     @abstractmethod
     def _subcmd_git_override(self, git: Git[T]) -> GitSubCommand[T]:
