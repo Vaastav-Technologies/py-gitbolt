@@ -270,7 +270,6 @@ class GitSubCommand[U: 'Git', V: 'GitSubCommand'](CanOverrideGitOpts[U, V], Prot
         """
         ...
 
-    # TODO: check why PyCharm says that Type of 'git_opts_override' is incompatible with 'CanOverrideGitOpts'.
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> V:
         return self.overrider_git_opts.git_opts_override(**overrides)

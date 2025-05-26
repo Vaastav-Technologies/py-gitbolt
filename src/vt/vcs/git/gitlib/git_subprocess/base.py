@@ -37,7 +37,6 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
 
-    # TODO: check why PyCharm says that Type of 'git' is incompatible with 'Git'.
     @override
     def git(self, **git_main_opts: Unpack[GitOpts]) -> GitCommand:
         _git_cmd = self.clone()
