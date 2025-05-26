@@ -5,10 +5,11 @@
 interfaces related to processors specific to git commands.
 """
 from __future__ import annotations
+
 from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Protocol, override, TypedDict, Unpack
+from typing import Protocol, override, TypedDict, Unpack, Self
 
 from vt.utils.commons.commons.core_py import Unset
 from vt.utils.commons.commons.op import RootDirOp
@@ -31,7 +32,7 @@ class GitOpts(TypedDict, total=False):
     For example, in ``git --no-pager log -1 master`` git command, ``--no-pager`` is the main command option.
     """
 
-    C: Sequence[Path] | None | Unset
+    C: Sequence[Path] | Unset | None
     """
     Mirror of ``-C <path>``.
 
@@ -216,21 +217,21 @@ class GitOpts(TypedDict, total=False):
     """
 
 
-class HasGitUnderneath[T](Protocol):
+class HasGitUnderneath[G: 'Git'](Protocol):
     """
     Stores a reference to main git instance.
     """
 
     @property
     @abstractmethod
-    def underlying_git(self) -> Git[T]:
+    def underlying_git(self) -> G:
         """
         :return: stored git instance reference.
         """
         ...
 
 
-class CanOverrideGitOpts[T](HasGitUnderneath[T], Protocol):
+class CanOverrideGitOpts[G: 'Git', S: 'CanOverrideGitOpts'](HasGitUnderneath[G], Protocol):
     """
     Can override main git command options.
 
@@ -238,7 +239,7 @@ class CanOverrideGitOpts[T](HasGitUnderneath[T], Protocol):
     """
 
     @abstractmethod
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> T:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> S:
         """
         Temporarily override options to the main git command before current subcommand runs.
         All the parameters mirror options described in the `git documentation <https://git-scm.com/docs/git>`_.
@@ -250,7 +251,7 @@ class CanOverrideGitOpts[T](HasGitUnderneath[T], Protocol):
         ...
 
 
-class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
+class GitSubCommand[U: 'Git', V: 'GitSubCommand'](CanOverrideGitOpts[U, V], Protocol):
     """
     Interface for git subcommands, such as:
 
@@ -263,7 +264,7 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
 
     @property
     @abstractmethod
-    def overrider_git_opts(self) -> CanOverrideGitOpts[T]:
+    def overrider_git_opts(self) -> CanOverrideGitOpts[U, V]:
         """
         :return: the overrider object that helps override main git command options.
         """
@@ -271,15 +272,15 @@ class GitSubCommand[T](CanOverrideGitOpts[T], Protocol):
 
     # TODO: check why PyCharm says that Type of 'git_opts_override' is incompatible with 'CanOverrideGitOpts'.
     @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> T:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> V:
         return self.overrider_git_opts.git_opts_override(**overrides)
 
     @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> GitSubCommand[T]:
+    def _subcmd_git_override(self, git: U) -> V:
         ...
 
 
-class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
+class LsTree[U: 'Git'](GitSubCommand[U, 'LsTree[U]'], RootDirOp, Protocol):
     """
     Interface for ``git ls-tree`` command.
     """
@@ -288,7 +289,7 @@ class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
     def ls_tree(self, tree_ish: str, *, d: bool = False, r: bool = False, t: bool = False, long: bool = False,
                 z: bool = False, name_only: bool = False, object_only: bool = False, full_name: bool = False,
                 full_tree: bool = False, abbrev: int | None = None, format_: str | None = None,
-                path: list[str] | None = None) -> T:
+                path: list[str] | None = None) -> str:
         """
         All the parameters are mirrors of the parameters of ``git ls-tree`` CLI command
         from `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
@@ -297,19 +298,14 @@ class LsTree[T](GitSubCommand['LsTree[T]'], RootDirOp, Protocol):
         """
         ...
 
-    @override
-    @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> LsTree[T]:
-        ...
 
-
-class Version[T](GitSubCommand['Version[T]'], Protocol):
+class Version[U: 'Git'](GitSubCommand[U, 'Version[U]'], Protocol):
     """
     Interface for ``git version`` command.
     """
 
     @abstractmethod
-    def version(self, build_options: bool = False) -> T:
+    def version(self, build_options: bool = False) -> str:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.
@@ -318,19 +314,14 @@ class Version[T](GitSubCommand['Version[T]'], Protocol):
         """
         ...
 
-    @override
-    @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> Version[T]:
-        ...
 
-
-class Git[T](ForGit, Protocol):
+class Git(ForGit, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
 
     @abstractmethod
-    def git(self, **git_main_opts: Unpack[GitOpts]) -> Git[T]:
+    def git(self, **git_main_opts: Unpack[GitOpts]) -> Self:
         """
         Get a new ``Git`` object with the git main command options overridden.
 
@@ -347,7 +338,7 @@ class Git[T](ForGit, Protocol):
 
     @property
     @abstractmethod
-    def version_subcmd(self) -> Version[T]:
+    def version_subcmd(self) -> Version[Self]:
         """
         :return: ``git version`` subcommand.
         """
@@ -355,14 +346,14 @@ class Git[T](ForGit, Protocol):
 
     @property
     @abstractmethod
-    def ls_tree_subcmd(self) -> LsTree[T]:
+    def ls_tree_subcmd(self) -> LsTree[Self]:
         """
         :return: ``git ls-tree`` subcommand.
         """
         ...
 
     @property
-    def version(self) -> T:
+    def version(self) -> str:
         """
         :return: current git version.
         """
@@ -397,7 +388,7 @@ class Git[T](ForGit, Protocol):
         ...
 
     @abstractmethod
-    def clone(self) -> Git[T]:
+    def clone(self) -> Self:
         """
         :return: a clone of this class.
         """
