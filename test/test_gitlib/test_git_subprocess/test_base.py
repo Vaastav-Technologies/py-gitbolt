@@ -5,7 +5,7 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 from vt.vcs.git.gitlib.git_subprocess.base import GitCommand
-from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCR
+from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 
 
 def test_exec_path():

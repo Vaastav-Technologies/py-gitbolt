@@ -18,6 +18,7 @@ from vt.vcs.git.gitlib import Git
 from vt.vcs.git.gitlib.exceptions import GitCmdException
 from vt.vcs.git.gitlib.git_subprocess import GitSubcmdCommand, GitOptsOverriderCommand, GitCommand, VersionCommand, \
     LsTreeCommand, GitCommandRunner, GIT_CMD, VERSION_CMD, LS_TREE_CMD
+from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 
 
 class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
@@ -30,21 +31,7 @@ class SimpleGitOptsOverriderCommand[T](GitOptsOverriderCommand[T]):
         return self._underlying_git
 
 
-class SimpleGitCR[T](GitCommandRunner[T]):
-    """
-    Simple git command runner that simply runs everything `as-is` in a subprocess.
-    """
-
-    def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
-                        **subprocess_run_kwargs) -> CompletedProcess[T]:
-        try:
-            return subprocess.run([GIT_CMD, *main_cmd_args, *subcommand_args],
-                                  *subprocess_run_args, **subprocess_run_kwargs)
-        except CalledProcessError as e:
-            raise GitCmdException(called_process_error=e) from e
-
-
-class GitSubcmdCommandImpl[T](GitSubcmdCommand[T]):
+class GitSubCommandImpl[T](GitSubCommand[T]):
 
     def __init__(self, git: GitCommand[T], git_opts_overrider: GitOptsOverriderCommand[T] | None = None):
         self._underlying_git = git
