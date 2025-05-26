@@ -231,7 +231,7 @@ class HasGitUnderneath[G: 'Git'](Protocol):
         ...
 
 
-class CanOverrideGitOpts[G: 'Git', S: 'CanOverrideGitOpts'](HasGitUnderneath[G], Protocol):
+class CanOverrideGitOpts[G: 'Git'](HasGitUnderneath[G], Protocol):
     """
     Can override main git command options.
 
@@ -239,7 +239,7 @@ class CanOverrideGitOpts[G: 'Git', S: 'CanOverrideGitOpts'](HasGitUnderneath[G],
     """
 
     @abstractmethod
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> S:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
         """
         Temporarily override options to the main git command before current subcommand runs.
         All the parameters mirror options described in the `git documentation <https://git-scm.com/docs/git>`_.
@@ -251,7 +251,7 @@ class CanOverrideGitOpts[G: 'Git', S: 'CanOverrideGitOpts'](HasGitUnderneath[G],
         ...
 
 
-class GitSubCommand[U: 'Git', V: 'GitSubCommand'](CanOverrideGitOpts[U, V], Protocol):
+class GitSubCommand[U: 'Git'](CanOverrideGitOpts[U], Protocol):
     """
     Interface for git subcommands, such as:
 
@@ -264,22 +264,22 @@ class GitSubCommand[U: 'Git', V: 'GitSubCommand'](CanOverrideGitOpts[U, V], Prot
 
     @property
     @abstractmethod
-    def overrider_git_opts(self) -> CanOverrideGitOpts[U, V]:
+    def overrider_git_opts(self) -> CanOverrideGitOpts[U]:
         """
         :return: the overrider object that helps override main git command options.
         """
         ...
 
     @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> V:
-        return self.overrider_git_opts.git_opts_override(**overrides)
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
+        return self._subcmd_git_override(self.overrider_git_opts.git_opts_override(**overrides).underlying_git)
 
     @abstractmethod
-    def _subcmd_git_override(self, git: U) -> V:
+    def _subcmd_git_override(self, git: U) -> Self:
         ...
 
 
-class LsTree[U: 'Git'](GitSubCommand[U, 'LsTree[U]'], RootDirOp, Protocol):
+class LsTree[U: 'Git'](GitSubCommand[U], RootDirOp, Protocol):
     """
     Interface for ``git ls-tree`` command.
     """
@@ -298,7 +298,7 @@ class LsTree[U: 'Git'](GitSubCommand[U, 'LsTree[U]'], RootDirOp, Protocol):
         ...
 
 
-class Version[U: 'Git'](GitSubCommand[U, 'Version[U]'], Protocol):
+class Version[U: 'Git'](GitSubCommand[U], Protocol):
     """
     Interface for ``git version`` command.
     """

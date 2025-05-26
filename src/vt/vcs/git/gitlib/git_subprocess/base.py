@@ -12,17 +12,9 @@ from typing import override, Protocol, Unpack, Self
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, GitOpts
+from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.utils import merge_git_opts
-
-
-class VersionCommand[U: 'GitCommand'](Version[U], GitSubCommand[U, 'VersionCommand[U]'], Protocol):
-    pass
-
-
-class LsTreeCommand[U: 'GitCommand'](LsTree[U], GitSubCommand[U, 'LsTree[U]'], Protocol):
-    pass
 
 
 class GitCommand(Git, ABC):
@@ -240,3 +232,11 @@ class GitCommand(Git, ABC):
         _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
                                     capture_output=True).stdout.strip()
         return Path(_path_str)
+
+
+class VersionCommand[U: GitCommand](Version[U], Protocol):
+    pass
+
+
+class LsTreeCommand[U: GitCommand](LsTree[U], Protocol):
+    pass
