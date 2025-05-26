@@ -11,9 +11,9 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import override, Protocol, Unpack, overload, Literal, Any, Self
 
-from vt.utils.commons.commons.core_py import fallback_on_none, is_unset, not_none_not_unset
+from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, CanOverrideGitOpts, GitSubCommand, ForGit, GitOpts
+from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, GitOpts
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
 
