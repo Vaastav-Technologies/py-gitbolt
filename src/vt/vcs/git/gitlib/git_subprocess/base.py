@@ -9,138 +9,91 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import override, Protocol, Unpack
+from typing import override, Protocol, Unpack, overload, Literal, Any, Self
 
-from vt.utils.commons.commons.core_py import fallback_on_none, is_unset
+from vt.utils.commons.commons.core_py import fallback_on_none, is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, CanOverrideGitOpts, HasGitUnderneath, \
-    GitSubCommand, ForGit, GitOpts
+from vt.vcs.git.gitlib import Git, Version, LsTree, CanOverrideGitOpts, GitSubCommand, ForGit, GitOpts
+from vt.vcs.git.gitlib.utils import merge_git_opts
 
 
-class GitCommandRunner[T](ForGit, Protocol):
+class GitCommandRunner(Protocol):
     """
     Interface to facilitate running git commands in subprocess.
     """
 
+    @overload
     @abstractmethod
-    def run_git_command(self, main_cmd_args: list[str], subcommand_args: list[str], *subprocess_run_args,
-                        **subprocess_run_kwargs) -> CompletedProcess[T]:
-        """
-        Run git subcommands in a separate process.
+    def run_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        _input: str,
+        text: Literal[True],
+        **subprocess_run_kwargs: Any
+    ) -> CompletedProcess[str]: ...
 
-        :param main_cmd_args: git's main command args, i.e. ``git --no-pager log -1 master``. Here, ``--no-pager``
-            is the main command arg.
-        :param subcommand_args: git subcommand args, i.e. ``git --no-pager log -1 master``. Here, ``-1 master`` are
-            the subcommand args.
-        :param subprocess_run_args: Any extra arguments ``(*args)`` to be sent to ``subprocess.run()``.
-        :param subprocess_run_kwargs: Any extra keyword arguments ``(**kwargs)`` to be sent to ``subprocess.run()``.
-        :return: ``CompletedProcess[T]`` instance with captured out, err and return-code.
-        :raise CalledProcessError[T]: in case the process called returns non-zero return-code.
-        """
-        ...
-
-
-class HasUnderlyingGitCommand[T](HasGitUnderneath[T], Protocol):
-    @override
-    @property
+    @overload
     @abstractmethod
-    def underlying_git(self) -> GitCommand[T]:
-        ...
+    def run_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        _input: bytes,
+        text: Literal[False],
+        **subprocess_run_kwargs: Any
+    ) -> CompletedProcess[bytes]: ...
 
-
-class GitOptsOverriderCommand[T](CanOverrideGitOpts[T], HasUnderlyingGitCommand[T], Protocol):
-
-    @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> T:
-        return self.underlying_git.git(**overrides)
-
-
-class GitSubcmdCommand[T](GitSubCommand[T], GitOptsOverriderCommand[T], Protocol):
-
-    @override
-    @property
+    @overload
     @abstractmethod
-    def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
-        ...
+    def run_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        text: Literal[True],
+        **subprocess_run_kwargs: Any
+    ) -> CompletedProcess[str]: ...
 
-    @override
+    @overload
     @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> GitSubcmdCommand[T]:
-        ...
+    def run_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        text: Literal[False] = ...,
+        **subprocess_run_kwargs: Any
+    ) -> CompletedProcess[bytes]: ...
 
 
-class VersionCommand[T](Version[T], GitSubcmdCommand['VersionCommand[T]'], Protocol):
-
-    @override
-    @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> VersionCommand[T]:
-        ...
+class VersionCommand[U: 'GitCommand'](Version[U], GitSubCommand[U, 'VersionCommand[U]'], Protocol):
+    pass
 
 
-class LsTreeCommand[T](LsTree[T], GitSubcmdCommand['LsTree[T]'], Protocol):
-
-    @override
-    @abstractmethod
-    def _subcmd_git_override(self, git: Git[T]) -> LsTreeCommand[T]:
-        ...
+class LsTreeCommand[U: 'GitCommand'](LsTree[U], GitSubCommand[U, 'LsTree[U]'], Protocol):
+    pass
 
 
-class GitCommand[T](Git[T], ABC):
+class GitCommand(Git, ABC):
     """
     Runs git as a command.
     """
 
-    def __init__(self, runner: GitCommandRunner[T]):
+    def __init__(self, runner: GitCommandRunner):
         """
         :param runner: a ``GitCommandRunner`` which eventually runs the cli command in a subprocess.
-
-        ... all other params are mirrors of ``Git`` ctor params.
         """
-        self.runner = runner
+        self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
 
     # TODO: check why PyCharm says that Type of 'git' is incompatible with 'Git'.
     @override
-    def git(self, **git_main_opts: Unpack[GitOpts]) -> GitCommand[T]:
+    def git(self, **git_main_opts: Unpack[GitOpts]) -> GitCommand:
         _git_cmd = self.clone()
-        _main_cmd_opts: GitOpts = {
-            'C': fallback_on_none(git_main_opts.get('C'), self._main_cmd_opts.get('C')),
-            'c': fallback_on_none(git_main_opts.get('c'), self._main_cmd_opts.get('c')),
-            'config_env': fallback_on_none(git_main_opts.get('config_env'), self._main_cmd_opts.get('config_env')),
-            'exec_path': fallback_on_none(git_main_opts.get('exec_path'), self._main_cmd_opts.get('exec_path')),
-            'paginate': fallback_on_none(git_main_opts.get('paginate'), self._main_cmd_opts.get('paginate')),
-            'no_pager': fallback_on_none(git_main_opts.get('no_pager'), self._main_cmd_opts.get('no_pager')),
-            'git_dir': fallback_on_none(git_main_opts.get('git_dir'), self._main_cmd_opts.get('git_dir')),
-            'work_tree': fallback_on_none(git_main_opts.get('work_tree'), self._main_cmd_opts.get('work_tree')),
-            'namespace': fallback_on_none(git_main_opts.get('namespace'), self._main_cmd_opts.get('namespace')),
-            'bare': fallback_on_none(git_main_opts.get('bare'), self._main_cmd_opts.get('bare')),
-            'no_replace_objects': fallback_on_none(
-                git_main_opts.get('no_replace_objects'), self._main_cmd_opts.get('no_replace_objects')
-            ),
-            'no_lazy_fetch': fallback_on_none(
-                git_main_opts.get('no_lazy_fetch'), self._main_cmd_opts.get('no_lazy_fetch')
-            ),
-            'no_optional_locks': fallback_on_none(
-                git_main_opts.get('no_optional_locks'), self._main_cmd_opts.get('no_optional_locks')
-            ),
-            'no_advice': fallback_on_none(
-                git_main_opts.get('no_advice'), self._main_cmd_opts.get('no_advice')
-            ),
-            'literal_pathspecs': fallback_on_none(
-                git_main_opts.get('literal_pathspecs'), self._main_cmd_opts.get('literal_pathspecs')
-            ),
-            'glob_pathspecs': fallback_on_none(
-                git_main_opts.get('glob_pathspecs'), self._main_cmd_opts.get('glob_pathspecs')
-            ),
-            'noglob_pathspecs': fallback_on_none(
-                git_main_opts.get('noglob_pathspecs'), self._main_cmd_opts.get('noglob_pathspecs')
-            ),
-            'icase_pathspecs': fallback_on_none(
-                git_main_opts.get('icase_pathspecs'), self._main_cmd_opts.get('icase_pathspecs')
-            ),
-            'list_cmds': fallback_on_none(git_main_opts.get('list_cmds'), self._main_cmd_opts.get('list_cmds')),
-            'attr_source': fallback_on_none(git_main_opts.get('attr_source'), self._main_cmd_opts.get('attr_source')),
-        }
+        _main_cmd_opts = merge_git_opts(git_main_opts, self._main_cmd_opts)
         _git_cmd._main_cmd_opts = _main_cmd_opts
         return _git_cmd
 
@@ -170,13 +123,13 @@ class GitCommand[T](Git[T], ABC):
 
     def _main_cmd_cap_c_args(self) -> list[str]:
         val = self._main_cmd_opts.get("C")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return [item for path in val for item in ["-C", str(path)]]
         return []
 
     def _main_cmd_small_c_args(self) -> list[str]:
         val = self._main_cmd_opts.get("c")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             args = []
             for k, v in val.items():
                 if is_unset(v):
@@ -192,109 +145,109 @@ class GitCommand[T](Git[T], ABC):
 
     def _main_cmd_config_env_args(self) -> list[str]:
         val = self._main_cmd_opts.get("config_env")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return [item for k, v in val.items() for item in ["--config-env", f"{k}={v}"]]
         return []
 
     def _main_cmd_exec_path_args(self) -> list[str]:
         val = self._main_cmd_opts.get("exec_path")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--exec-path", str(val)]
         return []
 
     def _main_cmd_paginate_args(self) -> list[str]:
         val = self._main_cmd_opts.get("paginate")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--paginate"]
         return []
 
     def _main_cmd_no_pager_args(self) -> list[str]:
         val = self._main_cmd_opts.get("no_pager")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--no-pager"]
         return []
 
     def _main_cmd_git_dir_args(self) -> list[str]:
         val = self._main_cmd_opts.get("git_dir")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--git-dir", str(val)]
         return []
 
     def _main_cmd_work_tree_args(self) -> list[str]:
         val = self._main_cmd_opts.get("work_tree")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--work-tree", str(val)]
         return []
 
     def _main_cmd_namespace_args(self) -> list[str]:
         val = self._main_cmd_opts.get("namespace")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--namespace", val]
         return []
 
     def _main_cmd_bare_args(self) -> list[str]:
         val = self._main_cmd_opts.get("bare")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--bare"]
         return []
 
     def _main_cmd_no_replace_objects_args(self) -> list[str]:
         val = self._main_cmd_opts.get("no_replace_objects")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--no-replace-objects"]
         return []
 
     def _main_cmd_no_lazy_fetch_args(self) -> list[str]:
         val = self._main_cmd_opts.get("no_lazy_fetch")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--no-lazy-fetch"]
         return []
 
     def _main_cmd_no_optional_locks_args(self) -> list[str]:
         val = self._main_cmd_opts.get("no_optional_locks")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--no-optional-locks"]
         return []
 
     def _main_cmd_no_advice_args(self) -> list[str]:
         val = self._main_cmd_opts.get("no_advice")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--no-advice"]
         return []
 
     def _main_cmd_literal_pathspecs_args(self) -> list[str]:
         val = self._main_cmd_opts.get("literal_pathspecs")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--literal-pathspecs"]
         return []
 
     def _main_cmd_glob_pathspecs_args(self) -> list[str]:
         val = self._main_cmd_opts.get("glob_pathspecs")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--glob-pathspecs"]
         return []
 
     def _main_cmd_noglob_pathspecs_args(self) -> list[str]:
         val = self._main_cmd_opts.get("noglob_pathspecs")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--noglob-pathspecs"]
         return []
 
     def _main_cmd_icase_pathspecs_args(self) -> list[str]:
         val = self._main_cmd_opts.get("icase_pathspecs")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--icase-pathspecs"]
         return []
 
     def _main_cmd_list_cmds_args(self) -> list[str]:
         val = self._main_cmd_opts.get("list_cmds")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return [item for cmd in val for item in ["--list-cmds", cmd]]
         return []
 
     def _main_cmd_attr_source_args(self) -> list[str]:
         val = self._main_cmd_opts.get("attr_source")
-        if val is not None and not is_unset(val):
+        if not_none_not_unset(val):
             return ["--attr-source", val]
         return []
 
@@ -322,14 +275,21 @@ class GitCommand[T](Git[T], ABC):
         exec_path_str = '--exec-path'
         return self._get_path(exec_path_str)
 
+    @override
+    @property
+    @abstractmethod
+    def version_subcmd(self) -> VersionCommand[Self]:
+        ...
+
+    @override
+    @property
+    @abstractmethod
+    def ls_tree_subcmd(self) -> LsTreeCommand[Self]:
+        ...
+
     def _get_path(self, path_opt_str: str) -> Path:
         main_opts = self.compute_main_cmd_args()
         main_opts.append(path_opt_str)
         _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
                                     capture_output=True).stdout.strip()
         return Path(_path_str)
-
-    @override
-    @abstractmethod
-    def clone(self) -> GitCommand[T]:
-        ...
