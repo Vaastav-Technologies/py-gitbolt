@@ -8,65 +8,13 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from pathlib import Path
-from subprocess import CompletedProcess
-from typing import override, Protocol, Unpack, overload, Literal, Any, Self
+from typing import override, Protocol, Unpack, Self
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
 from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, GitOpts
+from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.utils import merge_git_opts
-
-
-class GitCommandRunner(Protocol):
-    """
-    Interface to facilitate running git commands in subprocess.
-    """
-
-    @overload
-    @abstractmethod
-    def run_git_command(
-        self,
-        main_cmd_args: list[str],
-        subcommand_args: list[str],
-        *subprocess_run_args: Any,
-        _input: str,
-        text: Literal[True],
-        **subprocess_run_kwargs: Any
-    ) -> CompletedProcess[str]: ...
-
-    @overload
-    @abstractmethod
-    def run_git_command(
-        self,
-        main_cmd_args: list[str],
-        subcommand_args: list[str],
-        *subprocess_run_args: Any,
-        _input: bytes,
-        text: Literal[False],
-        **subprocess_run_kwargs: Any
-    ) -> CompletedProcess[bytes]: ...
-
-    @overload
-    @abstractmethod
-    def run_git_command(
-        self,
-        main_cmd_args: list[str],
-        subcommand_args: list[str],
-        *subprocess_run_args: Any,
-        text: Literal[True],
-        **subprocess_run_kwargs: Any
-    ) -> CompletedProcess[str]: ...
-
-    @overload
-    @abstractmethod
-    def run_git_command(
-        self,
-        main_cmd_args: list[str],
-        subcommand_args: list[str],
-        *subprocess_run_args: Any,
-        text: Literal[False] = ...,
-        **subprocess_run_kwargs: Any
-    ) -> CompletedProcess[bytes]: ...
 
 
 class VersionCommand[U: 'GitCommand'](Version[U], GitSubCommand[U, 'VersionCommand[U]'], Protocol):
