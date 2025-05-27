@@ -14,7 +14,7 @@ from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCommand
 
 def test_exec_path():
     git = SimpleGitCommand()
-    assert git.exec_path is None
+    assert isinstance(git.exec_path, Path)
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
