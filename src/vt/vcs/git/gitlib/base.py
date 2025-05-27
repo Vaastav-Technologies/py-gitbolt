@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Protocol, override, TypedDict, Unpack, Self
+from typing import Protocol, override, TypedDict, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.core_py import Unset
 from vt.utils.commons.commons.op import RootDirOp
@@ -305,6 +305,110 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         return git.ls_tree_subcmd
 
 
+class Add(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git add`` command.
+    """
+
+    @overload
+    @abstractmethod
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec_from_file: Path,
+        pathspec_file_null: bool = False,
+    ) -> str:
+        """
+        Add files listed in a file (`pathspec_from_file`) to the index.
+        `pathspec_file_null` indicates if the file is NUL terminated.
+        No explicit pathspec list is allowed in this overload.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @overload
+    @abstractmethod
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec: list[str],
+    ) -> str:
+        """
+        Add files specified by a list of pathspec strings.
+        `pathspec_from_file` and `pathspec_file_null` are disallowed here.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @overload
+    @abstractmethod
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec_from_file: Literal["-"],
+        pathspec_stdin: str,
+        pathspec_file_null: bool = False,
+    ) -> str:
+        """
+        Add files listed from stdin (when `pathspec_from_file` is '-').
+        The `pathspec_stdin` argument is the string content piped to stdin.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> 'Add':
+        return git.add_subcmd
+
+
 class Version(GitSubCommand, Protocol):
     """
     Interface for ``git version`` command.
@@ -382,6 +486,14 @@ class Git(ForGit, CanOverrideGitOpts, Protocol):
     def ls_tree_subcmd(self) -> LsTree:
         """
         :return: ``git ls-tree`` subcommand.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def add_subcmd(self) -> Add:
+        """
+        :return: ``git add`` subcommand.
         """
         ...
 
