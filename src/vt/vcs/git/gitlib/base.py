@@ -272,7 +272,7 @@ class GitSubCommand[U: 'Git'](CanOverrideGitOpts[U], Protocol):
 
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
-        return self._subcmd_git_override(self.overrider_git_opts.git_opts_override(**overrides).underlying_git)
+        return self._subcmd_git_override(self.overrider_git_opts.git_opts_override(**overrides))
 
     @abstractmethod
     def _subcmd_git_override(self, git: U) -> Self:

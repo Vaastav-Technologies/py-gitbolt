@@ -12,7 +12,7 @@ from typing import override, Protocol, Unpack, Self
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts
+from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts, CanOverrideGitOpts
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
@@ -240,3 +240,30 @@ class VersionCommand[U: GitCommand](Version[U], Protocol):
 
 class LsTreeCommand[U: GitCommand](LsTree[U], Protocol):
     pass
+
+
+class GitOptsOverriderCommand[T: GitCommand](CanOverrideGitOpts[T], Protocol):
+
+    @override
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
+        return self.underlying_git.git(
+            C=overrides.get("C"),
+            c=overrides.get("c"),
+            config_env=overrides.get("config_env"),
+            exec_path=overrides.get("exec_path"),
+            paginate=overrides.get("paginate"),
+            no_pager=overrides.get("no_pager"),
+            git_dir=overrides.get("git_dir"),
+            work_tree=overrides.get("work_tree"),
+            namespace=overrides.get("namespace"),
+            bare=overrides.get("bare"),
+            no_replace_objects=overrides.get("no_replace_objects"),
+            no_lazy_fetch=overrides.get("no_lazy_fetch"),
+            no_optional_locks=overrides.get("no_optional_locks"),
+            no_advice=overrides.get("no_advice"),
+            literal_pathspecs=overrides.get("literal_pathspecs"),
+            glob_pathspecs=overrides.get("glob_pathspecs"),
+            noglob_pathspecs=overrides.get("noglob_pathspecs"),
+            icase_pathspecs=overrides.get("icase_pathspecs"),
+            list_cmds=overrides.get("list_cmds"),
+            attr_source=overrides.get("attr_source"))

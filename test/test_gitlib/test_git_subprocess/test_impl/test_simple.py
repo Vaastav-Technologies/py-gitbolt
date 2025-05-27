@@ -13,22 +13,22 @@ from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCommand
 
 
 def test_exec_path():
-    git = SimpleGitCommand[str]()
+    git = SimpleGitCommand()
     assert git.exec_path is None
 
 def test_overrides_and_exec_path():
-    git = SimpleGitCommand[str]()
+    git = SimpleGitCommand()
     assert git.git(exec_path=None).exec_path is not None
 
 class TestMainCmdOverrides:
     class TestSupplied:
         class TestSameCall:
             def test_one_supplied(self):
-                git = SimpleGitCommand[str]()
+                git = SimpleGitCommand()
                 assert ['--no-replace-objects'] == git.git(no_replace_objects=True).compute_main_cmd_args()
 
             def test_multiple_supplied(self):
-                git = SimpleGitCommand[str]()
+                git = SimpleGitCommand()
                 assert git.git(no_replace_objects=True, git_dir=Path(),
                                paginate=True).compute_main_cmd_args() == ['--paginate', '--git-dir', '.',
                                                                           '--no-replace-objects']
@@ -182,7 +182,7 @@ class TestMainCmdOverrides:
 
 
 def test_ls_tree(enc_local):
-    git = SimpleGitCommand[str](enc_local)
+    git = SimpleGitCommand(enc_local)
     git.ls_tree_subcmd.ls_tree('HEAD')
 
 def test_version():
@@ -190,11 +190,12 @@ def test_version():
     assert 'git version 2' in git.version
 
 def test_version_build_options():
-    git = SimpleGitCommand[str]()
+    git = SimpleGitCommand()
     version_build_info = git.version_subcmd.version(build_options=True)
     assert 'git version 2' in version_build_info
     assert 'cpu: ' in version_build_info
     assert 'built from commit: ' in version_build_info
+    git.version_subcmd.git_opts_override().git_opts_override(no_advice=True).version()
     ano_build_info = git.version_subcmd.git_opts_override(namespace='suhas').version(build_options=True)
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info
