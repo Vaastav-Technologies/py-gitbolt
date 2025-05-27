@@ -12,7 +12,7 @@ from typing import override, Protocol, Unpack, Self
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts, CanOverrideGitOpts
+from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts, CanOverrideGitOpts, GitSubCommand
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
@@ -234,18 +234,22 @@ class GitCommand(Git, ABC):
         return Path(_path_str)
 
 
-class VersionCommand[U: GitCommand](Version[U], Protocol):
+class GitSubcmdCommand[G: GitCommand, S: 'GitSubcmdCommand[G, S]'](GitSubCommand[G, S], Protocol):
     pass
 
 
-class LsTreeCommand[U: GitCommand](LsTree[U], Protocol):
+class VersionCommand[G: GitCommand, V: 'VersionCommand[G, V]'](Version[G], GitSubcmdCommand[G, V], Protocol):
     pass
 
 
-class GitOptsOverriderCommand[T: GitCommand](CanOverrideGitOpts[T], Protocol):
+class LsTreeCommand[G: GitCommand, L: 'LsTreeCommand[G, L]'](LsTree[G], GitSubcmdCommand[G, L], Protocol):
+    pass
+
+
+class GitOptsOverriderCommand[T: GitCommand, S: 'GitSubcmdCommand[T, S]'](CanOverrideGitOpts[T, S], Protocol):
 
     @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> S:
         return self.underlying_git.git(
             C=overrides.get("C"),
             c=overrides.get("c"),
