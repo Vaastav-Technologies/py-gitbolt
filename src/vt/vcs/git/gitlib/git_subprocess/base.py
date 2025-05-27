@@ -227,7 +227,6 @@ class GitCommand(Git, ABC):
     def version_subcmd(self) -> VersionCommand:
         ...
 
-
     @override
     @property
     @abstractmethod
