@@ -236,6 +236,10 @@ class GitCommand(Git, ABC):
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
+    """
+    A ``GitSubCommand`` that holds a reference to ``git`` and provides ``git_opts_override`` by default.
+    """
+
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
         overridden_git = self.underlying_git.git_opts_override(**overrides)
@@ -244,6 +248,13 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
 
     @abstractmethod
     def _set_underlying_git(self, git: 'GitCommand') -> None:
+        """
+        Protected. Designed to be overridden not called publicly.
+
+        Set the `_underlying_git` in the derived class.
+
+        :param git: git to override current class's `underlying_git` to.
+        """
         ...
 
 
