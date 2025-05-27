@@ -264,12 +264,21 @@ class GitSubCommand(CanOverrideGitOpts, Protocol):
     * ...
     etc.
     """
+
     @abstractmethod
     def clone(self) -> Self:
+        """
+        :return: a clone of the underlying subcommand.
+        """
         ...
 
     @abstractmethod
     def _subcmd_from_git(self, git: 'Git') -> 'GitSubCommand':
+        """
+        Protected. Intended for inheritance only.
+
+        :return: specific implementation of subcommand from ``git``.
+        """
         ...
 
 
