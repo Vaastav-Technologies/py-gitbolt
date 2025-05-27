@@ -231,7 +231,7 @@ class HasGitUnderneath[G: 'Git'](Protocol):
         ...
 
 
-class CanOverrideGitOpts[G: 'Git', C: 'CanOverrideGitOpts[G, C]'](HasGitUnderneath[G], Protocol):
+class CanOverrideGitOpts(Protocol):
     """
     Can override main git command options.
 
@@ -239,19 +239,22 @@ class CanOverrideGitOpts[G: 'Git', C: 'CanOverrideGitOpts[G, C]'](HasGitUndernea
     """
 
     @abstractmethod
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> C:
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
         """
         Temporarily override options to the main git command before current subcommand runs.
+
+        Get a new ``Git`` object with the git main command options overridden.
+
         All the parameters mirror options described in the `git documentation <https://git-scm.com/docs/git>`_.
 
         For example, in ``git --no-pager log -1 master`` git command, ``--no-pager`` is the main command arg.
 
-        :return: the subcommand instance with overridden git main command args.
+        :return: instance with overridden git main command args.
         """
         ...
 
 
-class GitSubCommand[U: 'Git', S: 'GitSubCommand[U, S]'](CanOverrideGitOpts[U, S], Protocol):
+class GitSubCommand(CanOverrideGitOpts, Protocol):
     """
     Interface for git subcommands, such as:
 
@@ -261,25 +264,16 @@ class GitSubCommand[U: 'Git', S: 'GitSubCommand[U, S]'](CanOverrideGitOpts[U, S]
     * ...
     etc.
     """
-
-    @property
     @abstractmethod
-    def overrider_git_opts(self) -> CanOverrideGitOpts[U, S]:
-        """
-        :return: the overrider object that helps override main git command options.
-        """
+    def clone(self) -> Self:
         ...
 
-    @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> S:
-        return self._subcmd_git_override(self.overrider_git_opts.git_opts_override(**overrides))
-
     @abstractmethod
-    def _subcmd_git_override(self, git: U) -> S:
+    def _subcmd_from_git(self, git: 'Git') -> 'GitSubCommand':
         ...
 
 
-class LsTree[U: 'Git'](GitSubCommand[U, 'LsTree[U]'], RootDirOp, Protocol):
+class LsTree(GitSubCommand, RootDirOp, Protocol):
     """
     Interface for ``git ls-tree`` command.
     """
@@ -293,12 +287,16 @@ class LsTree[U: 'Git'](GitSubCommand[U, 'LsTree[U]'], RootDirOp, Protocol):
         All the parameters are mirrors of the parameters of ``git ls-tree`` CLI command
         from `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
 
-        :return: ``ls-tree`` output morphed into ``T``.
+        :return: ``ls-tree`` output.
         """
         ...
 
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> 'LsTree':
+        return git.ls_tree_subcmd
 
-class Version[U: 'Git'](GitSubCommand[U, 'Version[U]'], Protocol):
+
+class Version(GitSubCommand, Protocol):
     """
     Interface for ``git version`` command.
     """
@@ -313,43 +311,15 @@ class Version[U: 'Git'](GitSubCommand[U, 'Version[U]'], Protocol):
         """
         ...
 
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> 'Version':
+        return git.version_subcmd
 
-class Git(ForGit, Protocol):
+
+class Git(ForGit, CanOverrideGitOpts, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
-
-    @abstractmethod
-    def git(self, **git_main_opts: Unpack[GitOpts]) -> Self:
-        """
-        Get a new ``Git`` object with the git main command options overridden.
-
-        All the parameters in ``**git_main_opts`` are mirrors of the parameters of the ``git`` CLI command from
-        `git documentation <https://git-scm.com/docs/git>`_.
-
-        For example, in ``git --no-pager log -1 master`` git command, ``--no-pager`` is the main command option.
-
-        :param git_main_opts: All the parameters are mirrors of the parameters of the ``git`` CLI command
-            from `git documentation <https://git-scm.com/docs/git>`_.
-        :return: overridden options for ``git``.
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def version_subcmd(self) -> Version[Self]:
-        """
-        :return: ``git version`` subcommand.
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def ls_tree_subcmd(self) -> LsTree[Self]:
-        """
-        :return: ``git ls-tree`` subcommand.
-        """
-        ...
 
     @property
     def version(self) -> str:
@@ -359,6 +329,7 @@ class Git(ForGit, Protocol):
         return self.version_subcmd.version()
 
     @property
+    @abstractmethod
     def exec_path(self) -> Path:
         """
         :return: Path to wherever your core Git programs are installed.
@@ -366,6 +337,7 @@ class Git(ForGit, Protocol):
         ...
 
     @property
+    @abstractmethod
     def html_path(self) -> Path:
         """
         :return: the path, without trailing slash, where Git’s HTML documentation is installed.
@@ -373,6 +345,7 @@ class Git(ForGit, Protocol):
         ...
 
     @property
+    @abstractmethod
     def info_path(self) -> Path:
         """
         :return: the path where the Info files documenting this version of Git are installed.
@@ -380,9 +353,26 @@ class Git(ForGit, Protocol):
         ...
 
     @property
+    @abstractmethod
     def man_path(self) -> Path:
         """
         :return: the man path (see man(1)) for the man pages for this version of Git.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def version_subcmd(self) -> Version:
+        """
+        :return: ``git version`` subcommand.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def ls_tree_subcmd(self) -> LsTree:
+        """
+        :return: ``git ls-tree`` subcommand.
         """
         ...
 

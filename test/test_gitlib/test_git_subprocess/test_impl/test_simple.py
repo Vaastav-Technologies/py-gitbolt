@@ -18,30 +18,30 @@ def test_exec_path():
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
-    assert git.git(exec_path=None).exec_path is not None
+    assert git.git_opts_override(exec_path=None).exec_path is not None
 
 class TestMainCmdOverrides:
     class TestSupplied:
         class TestSameCall:
             def test_one_supplied(self):
                 git = SimpleGitCommand()
-                assert ['--no-replace-objects'] == git.git(no_replace_objects=True).compute_main_cmd_args()
+                assert ['--no-replace-objects'] == git.git_opts_override(no_replace_objects=True).compute_main_cmd_args()
 
             def test_multiple_supplied(self):
                 git = SimpleGitCommand()
-                assert git.git(no_replace_objects=True, git_dir=Path(),
+                assert git.git_opts_override(no_replace_objects=True, git_dir=Path(),
                                paginate=True).compute_main_cmd_args() == ['--paginate', '--git-dir', '.',
                                                                           '--no-replace-objects']
 
     class TestMultipleCalls:
         def test_one_supplied(self):
             git = SimpleGitCommand()
-            assert git.git().git(exec_path=Path('tmp')).git(
+            assert git.git_opts_override().git_opts_override(exec_path=Path('tmp')).git_opts_override(
                 noglob_pathspecs=True).compute_main_cmd_args() == ['--exec-path', 'tmp', '--noglob-pathspecs']
 
         def test_multiple_supplied(self):
             git = SimpleGitCommand()
-            assert git.git(exec_path=Path('tmp')).git(noglob_pathspecs=True, no_advice=True).git(
+            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(noglob_pathspecs=True, no_advice=True).git_opts_override(
                 config_env={'auth': 'suhas', 'comm': 'suyog'}).compute_main_cmd_args() == ['--config-env',
                                                                                            'auth=suhas',
                                                                                            '--config-env',
@@ -53,69 +53,69 @@ class TestMainCmdOverrides:
     class TestOverrideValues:
         def test_unset_value_alone(self):
             """
-            only --exec-path is set in first ``git()`` call and is unset in next ``git()`` call.
+            only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
             """
             git = SimpleGitCommand()
-            assert git.git(exec_path=Path('tmp')).git(exec_path=UNSET).compute_main_cmd_args() == []
+            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(exec_path=UNSET).compute_main_cmd_args() == []
 
         def test_unset_value_defined_with_others(self):
             """
-            -C and --exec-path is set in first ``git()`` call and is unset in next ``git()`` call.
+            -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
             """
             git = SimpleGitCommand()
-            assert  git.git(exec_path=Path('tmp'), C=[Path()]).git(exec_path=UNSET).compute_main_cmd_args() == ['-C',
+            assert  git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(exec_path=UNSET).compute_main_cmd_args() == ['-C',
                                                                                                                 '.']
 
         class TestMultipleCalls:
             def test_unset_value_on_last_call(self):
                 """
-                * -C and --exec-path is set in first ``git()`` call.
-                * --config-env is set in the next ``git()`` call.
-                * --exec-path is unset in last ``git()`` call.
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git(exec_path=Path('tmp'), C=[Path()]).git(config_env={'auth': 'suhas',
-                                                                                  'comm': 'suyog'}).git(
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas',
+                                                                                  'comm': 'suyog'}).git_opts_override(
                     exec_path=UNSET).compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
                                                                  '--config-env', 'comm=suyog']
 
             def test_unset_value_on_non_last_call(self):
                 """
-                * -C and --exec-path is set in first ``git()`` call.
-                * --config-env is set in the next ``git()`` call.
-                * --exec-path is unset in next ``git()`` call.
-                * --no-replace-objects is set in last ``git()`` call.
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * --no-replace-objects is set in last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git(exec_path=Path('tmp'), C=[Path()]).git(
-                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git(exec_path=UNSET).git(
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     no_replace_objects=True).compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
                                                                          '--config-env', 'comm=suyog',
                                                                          '--no-replace-objects']
 
             def test_no_value_on_non_last_call(self):
                 """
-                * -C and --exec-path is set in first ``git()`` call.
-                * --config-env is set in the next ``git()`` call.
-                * --exec-path is unset in next ``git()`` call.
-                * no value given to last ``git()`` call.
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * no value given to last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git(
-                    exec_path=Path('tmp'), C=[Path()]).git(config_env={'auth': 'suhas', 'comm': 'suyog'}).git(
-                    exec_path=UNSET).git().compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
+                assert git.git_opts_override(
+                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
+                    exec_path=UNSET).git_opts_override().compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
                                                                        '--config-env', 'comm=suyog']
 
             def test_re_set_value_on_non_last_call(self):
                 """
-                * -C and --exec-path is set in first ``git()`` call.
-                * --config-env is set in the next ``git()`` call.
-                * --exec-path is unset in next ``git()`` call.
-                * --no-replace-objects is set in last ``git()`` call.
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * --no-replace-objects is set in last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git(exec_path=Path('tmp'), C=[Path()]).git(
-                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git(exec_path=UNSET).git(
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     exec_path=Path()).compute_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
                                                                   '--config-env', 'comm=suyog', '--exec-path', '.']
     class TestIndividualMethods:
@@ -177,7 +177,7 @@ class TestMainCmdOverrides:
                 }, ["-c", "b.c", "-c", "c.d="])
             ])
             def test_main_cmd_c_args(self, input_dict, expected):
-                git = SimpleGitCommand().git(c=input_dict)
+                git = SimpleGitCommand().git_opts_override(c=input_dict)
                 assert git._main_cmd_small_c_args() == expected
 
 
@@ -195,7 +195,7 @@ def test_version_build_options():
     assert 'git version 2' in version_build_info
     assert 'cpu: ' in version_build_info
     assert 'built from commit: ' in version_build_info
-    git.version_subcmd.git_opts_override().git_opts_override(no_advice=True).version()
+    git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
     ano_build_info = git.version_subcmd.git_opts_override(namespace='suhas').version(build_options=True)
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info

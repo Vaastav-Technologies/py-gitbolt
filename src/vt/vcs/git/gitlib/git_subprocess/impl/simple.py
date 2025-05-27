@@ -8,42 +8,28 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override, Self
+from typing import override
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib import GitSubCommand
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
-    LsTreeCommand, GitCommandRunner, VERSION_CMD, LS_TREE_CMD, GitOptsOverriderCommand
+    LsTreeCommand, GitCommandRunner, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 
 
-class SimpleGitOptsOverriderCommand[T: 'SimpleGitCommand'](GitOptsOverriderCommand[T]):
-
-    def __init__(self, simple_git_command: T):
-        self._underlying_git = simple_git_command
+class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
+    def __init__(self, git: GitCommand):
+        self._underlying_git = git
 
     @property
     def underlying_git(self) -> GitCommand:
         return self._underlying_git
 
-
-class GitSubCommandImpl[T: 'SimpleGitCommand'](GitSubCommand[T], ABC):
-
-    def __init__(self, git: T, git_opts_overrider: GitOptsOverriderCommand[T] | None = None):
+    def _set_underlying_git(self, git: 'GitCommand') -> None:
         self._underlying_git = git
-        self._overrider_git_opts = git_opts_overrider or SimpleGitOptsOverriderCommand(self.underlying_git)
-
-    @property
-    def underlying_git(self) -> T:
-        return self._underlying_git
-
-    @property
-    def overrider_git_opts(self) -> GitOptsOverriderCommand[T]:
-        return self._overrider_git_opts
 
 
-class VersionCommandImpl[T: 'SimpleGitCommand'](VersionCommand[T], GitSubCommandImpl[T]):
+class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
 
     @override
     def version(self, build_options: bool = False) -> str:
@@ -54,16 +40,14 @@ class VersionCommandImpl[T: 'SimpleGitCommand'](VersionCommand[T], GitSubCommand
         return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
                                                    capture_output=True).stdout.strip()
 
-    @override
-    def _subcmd_git_override(self, git: T) -> Self:
-        self._underlying_git = git
-        return self.underlying_git.version_subcmd
+    def clone(self) -> 'VersionCommandImpl':
+        return VersionCommandImpl(self.underlying_git)
 
 
-class LsTreeCommandImpl[T: 'SimpleGitCommand'](LsTreeCommand[T], GitSubCommandImpl[T]):
-    def __init__(self, root_dir: Path, git: T,
-                 git_opts_overrider: GitOptsOverriderCommand[T] | None = None):
-        super().__init__(git, git_opts_overrider)
+class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
+
+    def __init__(self, root_dir: Path, git: GitCommand):
+        super().__init__(git)
         self._root_dir = root_dir
 
     @override
@@ -126,17 +110,15 @@ class LsTreeCommandImpl[T: 'SimpleGitCommand'](LsTreeCommand[T], GitSubCommandIm
     def root_dir(self) -> Path:
         return self._root_dir
 
-    @override
-    def _subcmd_git_override(self, git: T) -> Self:
-        self._underlying_git = git
-        return self.underlying_git.ls_tree_subcmd
+    def clone(self) -> 'LsTreeCommandImpl':
+        return LsTreeCommandImpl(self.root_dir, self.underlying_git)
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
 
     def __init__(self, git_root_dir: Path = Path.cwd(), runner: GitCommandRunner = SimpleGitCR(), *,
-                 version_subcmd: VersionCommand[Self] | None = None,
-                 ls_tree_subcmd: LsTreeCommand[Self] | None = None):
+                 version_subcmd: VersionCommand | None = None,
+                 ls_tree_subcmd: LsTreeCommand | None = None):
         super().__init__(runner)
         self.git_root_dir = git_root_dir
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
@@ -144,16 +126,16 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     @override
     @property
-    def version_subcmd(self) -> VersionCommand[Self]:
+    def version_subcmd(self) -> VersionCommand:
         return self._version_subcmd
 
     @override
     @property
-    def ls_tree_subcmd(self) -> LsTreeCommand[Self]:
+    def ls_tree_subcmd(self) -> LsTreeCommand:
         return self._ls_tree
 
     @override
-    def clone(self) -> Self:
+    def clone(self) -> 'SimpleGitCommand':
         return SimpleGitCommand(self.root_dir, self.runner,
                                 version_subcmd=self.version_subcmd,
                                 ls_tree_subcmd=self.ls_tree_subcmd)
