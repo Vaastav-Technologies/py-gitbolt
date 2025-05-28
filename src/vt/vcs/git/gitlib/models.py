@@ -12,6 +12,7 @@ from typing import TypedDict, Sequence
 from vt.utils.commons.commons.core_py import Unset
 
 
+# git main command options
 class GitOpts(TypedDict, total=False):
     """
     All the parameters are mirrors of the options of the ``git`` CLI command
