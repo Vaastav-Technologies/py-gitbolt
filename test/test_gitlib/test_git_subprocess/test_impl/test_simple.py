@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 from vt.utils.commons.commons.core_py import UNSET
+from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
+from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCommand
 
 
@@ -181,9 +183,48 @@ class TestMainCmdOverrides:
                 assert git._main_cmd_small_c_args() == expected
 
 
-def test_ls_tree(enc_local):
-    git = SimpleGitCommand(enc_local)
-    git.ls_tree_subcmd.ls_tree('HEAD')
+class TestLsTreeSubcmd:
+
+    def test_ls_tree(self, enc_local):
+        git = SimpleGitCommand(enc_local)
+        git.ls_tree_subcmd.ls_tree('HEAD')
+
+    class TestArgValidation:
+        @pytest.mark.parametrize('tree_ish', [True, False, 20, -90.0, None, ['tree', 'ish'], {'key': 'value'},
+                                              (1, 2, 3), {1, 2}, bytes("tree", "utf-8"), b"HEAD", object()])
+        def test_tree_ish_must_be_str(self, tree_ish):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand().ls_tree_subcmd.ls_tree(
+                    tree_ish) # type: ignore[arg-type] # expects str and provided Any
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        @pytest.mark.parametrize('abbrev', ["abc", True, 5.5, [5], None])
+        def test_abbrev_must_be_int(self, abbrev):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
+                    abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        @pytest.mark.parametrize('abbrev', [-1, 41, 100])
+        def test_abbrev_must_be_in_range(self, abbrev):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", abbrev=abbrev)
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+        @pytest.mark.parametrize('format_', [10, True, None, ['format'], {'format': 'value'}, 5.5, b"%(objectname)"])
+        def test_format_must_be_str(self, format_):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
+                    format_=format_)  # type: ignore[arg-type] # expects str, provided Any
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        @pytest.mark.parametrize('path', ["src/", 123, None, [1, 2, 3], [None, "file"], [b"bytes"], (["tuple"],),
+                                          {'a', 'b'}])
+        def test_path_must_be_list_of_strings(self, path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
+                    path=path)  # type: ignore[arg-type] # expects list[str], provided Any
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
 def test_version():
     git = SimpleGitCommand()

@@ -15,6 +15,7 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
+from vt.vcs.git.gitlib.utils import validate_ls_tree_args
 
 
 class ForGit(Protocol):
@@ -105,6 +106,17 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         :return: ``ls-tree`` output.
         """
         ...
+
+    @staticmethod
+    def _require_valid_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> None:
+        """
+        Validate arguments passed to the ``ls_tree()`` method.
+
+        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
+        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
+        :raise GitExitingException: if any argument check fails.
+        """
+        validate_ls_tree_args(tree_ish, **ls_tree_opts)
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'LsTree':

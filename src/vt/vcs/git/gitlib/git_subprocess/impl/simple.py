@@ -58,6 +58,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
     @override
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
+        self._require_valid_args(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
         sub_cmd_args = [LS_TREE_CMD]
 
