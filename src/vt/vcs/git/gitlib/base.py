@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Protocol, override, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.op import RootDirOp
-from vt.utils.errors.error_specs import ERR_INVALID_USAGE
+from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
@@ -203,7 +203,7 @@ class Version(GitSubCommand, Protocol):
         """
         if not isinstance(build_options, bool):
             errmsg = 'build_options should be bool.'
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from TypeError(errmsg)
+            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'Version':
