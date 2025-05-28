@@ -120,14 +120,12 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     def add(
         self,
         *,
-        pathspec_from_file: Path,
-        pathspec_file_null: bool = False,
+        pathspec: list[str],
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
-        Add files listed in a file (`pathspec_from_file`) to the index.
-        `pathspec_file_null` indicates if the file is NUL terminated.
-        No explicit pathspec list is allowed in this overload.
+        Add files specified by a list of pathspec strings.
+        `pathspec_from_file` and `pathspec_file_null` are disallowed here.
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
@@ -138,12 +136,14 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     def add(
         self,
         *,
-        pathspec: list[str],
+        pathspec_from_file: Path,
+        pathspec_file_null: bool = False,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
-        Add files specified by a list of pathspec strings.
-        `pathspec_from_file` and `pathspec_file_null` are disallowed here.
+        Add files listed in a file (`pathspec_from_file`) to the index.
+        `pathspec_file_null` indicates if the file is NUL terminated.
+        No explicit pathspec list is allowed in this overload.
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
