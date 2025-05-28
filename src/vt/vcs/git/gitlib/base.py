@@ -217,7 +217,7 @@ class GitOpts(TypedDict, total=False):
     """
 
 
-class HasGitUnderneath[G: 'Git'](Protocol):
+class HasGitUnderneath[G: 'Git'](ForGit, Protocol):
     """
     Stores a reference to main git instance.
     """
@@ -231,7 +231,7 @@ class HasGitUnderneath[G: 'Git'](Protocol):
         ...
 
 
-class CanOverrideGitOpts(Protocol):
+class CanOverrideGitOpts(ForGit, Protocol):
     """
     Can override main git command options.
 
