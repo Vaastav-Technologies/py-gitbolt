@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Protocol, override, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.op import RootDirOp
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
+from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
 
 
@@ -179,9 +181,21 @@ class Version(GitSubCommand, Protocol):
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.
 
-        :return: ``version`` output morphed into ``T``.
+        :return: ``version`` output.
         """
         ...
+
+    @staticmethod
+    def require_valid_args(build_options: bool = False) -> None:
+        """
+        Require that arguments sent to the version command is valid.
+
+        :param build_options: argument to be validated.
+        :raise GitExitingException: if supplied ``build_options`` is invalid.
+        """
+        if not isinstance(build_options, bool):
+            errmsg = 'build_options should be bool.'
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from TypeError(errmsg)
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'Version':
