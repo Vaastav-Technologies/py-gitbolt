@@ -100,6 +100,8 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         All the parameters are mirrors of the parameters of ``git ls-tree`` CLI command
         from `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
 
+        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
+        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
         :return: ``ls-tree`` output.
         """
         ...
@@ -127,6 +129,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
+
+        :return: output of ``git add``.
         """
 
     @overload
@@ -145,6 +149,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
+
+        :return: output of ``git add``.
         """
 
     @overload
@@ -163,6 +169,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
+
+        :return: output of ``git add``.
         """
 
     @override
