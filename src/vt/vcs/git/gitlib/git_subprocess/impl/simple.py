@@ -131,7 +131,6 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @overload
     def add(
         self,
-        *,
         pathspec: list[str],
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
@@ -182,8 +181,8 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @override
     def add(
             self,
-            *,
             pathspec: list[str] | None = None,
+            *,
             pathspec_from_file: Path | Literal["-"] | None = None,
             pathspec_stdin: str | None = None,
             pathspec_file_null: bool = False,

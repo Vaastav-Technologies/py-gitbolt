@@ -119,7 +119,6 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @abstractmethod
     def add(
         self,
-        *,
         pathspec: list[str],
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
