@@ -78,7 +78,7 @@ class GitSubCommand(CanOverrideGitOpts, Protocol):
         ...
 
     @abstractmethod
-    def _subcmd_from_git(self, git: 'Git') -> 'GitSubCommand':
+    def _subcmd_from_git(self, git: 'Git') -> Self:
         """
         Protected. Intended for inheritance only.
 
