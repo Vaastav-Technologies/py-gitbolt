@@ -5,7 +5,7 @@
 Git command interfaces with default implementation using subprocess calls.
 """
 
-from vt.vcs.git.gitlib.base import *
+from vt.vcs.git.gitlib.base import Git, CanOverrideGitOpts, HasGitUnderneath, GitSubCommand, LsTree, Version, Add
 
 from vt.utils.errors.error_specs import ErrorMsgFormer
 

@@ -16,7 +16,8 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 from vt.vcs.git.gitlib import errmsg_creator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
-    LsTreeCommand, GitCommandRunner, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
+    LsTreeCommand, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
+from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 
 

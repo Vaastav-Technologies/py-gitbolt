@@ -4,7 +4,7 @@
 """
 Utility functions related to processors specific to git commands.
 """
-from vt.vcs.git.gitlib import GitOpts
+from vt.vcs.git.gitlib.models import GitOpts
 
 
 def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:

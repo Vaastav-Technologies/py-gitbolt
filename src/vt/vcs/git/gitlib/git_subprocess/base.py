@@ -12,8 +12,9 @@ from typing import override, Protocol, Unpack, Self
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, GitOpts, GitSubCommand, HasGitUnderneath, Add
+from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
+from vt.vcs.git.gitlib.models import GitOpts
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
 
@@ -261,6 +262,13 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
         :param git: git to override current class's `underlying_git` to.
         """
         ...
+
+    # @abstractmethod
+    # def compute_subcmd_args(self) -> list[str]:
+    #     """
+    #     :return: computed subcommand arguments that need to be passed to the subprocess runner.
+    #     """
+    #     ...
 
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):

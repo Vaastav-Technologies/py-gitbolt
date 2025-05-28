@@ -234,7 +234,7 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
-class Git(ForGit, CanOverrideGitOpts, Protocol):
+class Git(CanOverrideGitOpts, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
