@@ -363,3 +363,131 @@ class GitAddOpts(TypedDict, total=False):
     ``+x`` makes the file executable, ``-x`` removes the executable bit.
     """
 
+
+class GitLsTreeOpts(TypedDict, total=False):
+    """
+    All the parameters mirror the options for the ``git ls-tree`` subcommand as described in the
+    official `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
+
+    These options allow introspection into the contents of a tree object in Git, including filtering,
+    formatting, and controlling recursion.
+
+    The required positional argument ``tree_ish`` (e.g., a commit, branch, or tree hash) is excluded from this dict.
+    """
+
+    d: bool
+    """
+    Mirror of ``-d``.
+
+    Show only the named tree entries themselves, not their children.
+
+    Useful for showing just directory entries at the current level, rather than listing all contents recursively.
+    """
+
+    r: bool
+    """
+    Mirror of ``-r``.
+
+    Recurse into sub-trees.
+
+    Allows the command to descend recursively into directories to show nested files.
+    """
+
+    t: bool
+    """
+    Mirror of ``-t``.
+
+    Show tree entries even when recursing.
+
+    Without this, only blobs (files) are shown when ``-r`` is used. With ``-t``, directory entries are shown too.
+    """
+
+    long: bool
+    """
+    Mirror of ``-l``.
+
+    Show object size and mode information (long listing format).
+
+    Includes blob size and extended information similar to ``ls -l`` in Unix.
+    """
+
+    z: bool
+    """
+    Mirror of ``-z``.
+
+    Output entries separated with NUL characters instead of newlines.
+
+    Useful when paths may contain special characters or when scripting.
+    """
+
+    name_only: bool
+    """
+    Mirror of ``--name-only``.
+
+    Show only the file names (without mode, type, object, or size).
+
+    Useful for extracting just the file paths from the tree object.
+    """
+
+    name_status: bool
+    """
+    Mirror of ``--name-status``.
+
+    Show the names and status of the objects in the tree (added, modified, deleted).
+
+    Useful for understanding the changes represented by the tree entries.
+    """
+
+    object_only: bool
+    """
+    Mirror of ``--object-only``.
+
+    Show only the object IDs (SHA1 hashes) of the tree entries.
+
+    Excludes path names and other metadata from output.
+    """
+
+    full_name: bool
+    """
+    Mirror of ``--full-name``.
+
+    Show full paths relative to the root of the tree.
+
+    This overrides Git’s default behavior of printing paths relative to the current working directory.
+    """
+
+    full_tree: bool
+    """
+    Mirror of ``--full-tree``.
+
+    Pretend as if the command is run from the root of the working tree.
+
+    This affects path filtering and is often used in scripts for predictable output.
+    """
+
+    abbrev: int | None
+    """
+    Mirror of ``--abbrev=<n>``.
+
+    Specify the number of digits for abbreviated object names (SHA1).
+
+    Git typically shortens object hashes in output; this controls the length explicitly.
+    """
+
+    format_: str | None
+    """
+    Mirror of ``--format=<format>``.
+
+    Customize the output format.
+
+    This is useful for scripting or processing structured output.
+    """
+
+    path: list[str] | None
+    """
+    Mimics the optional ``[--] <path>...`` component of the command.
+
+    Restrict the tree listing to specific paths or directories.
+
+    Works similarly to pathspec in other Git commands.
+    """

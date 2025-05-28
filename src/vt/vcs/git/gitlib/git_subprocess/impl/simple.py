@@ -19,7 +19,7 @@ from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
-from vt.vcs.git.gitlib.models import GitAddOpts
+from vt.vcs.git.gitlib.models import GitAddOpts, GitLsTreeOpts
 
 
 class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
@@ -56,44 +56,46 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
         self._root_dir = root_dir
 
     @override
-    def ls_tree(self, tree_ish: str, *, d: bool = False, r: bool = False, t: bool = False, long: bool = False,
-                z: bool = False, name_only: bool = False, object_only: bool = False, full_name: bool = False,
-                full_tree: bool = False, abbrev: int | None = None, format_: str | None = None,
-                path: list[str] | None = None) -> str:
+    def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
         sub_cmd_args = [LS_TREE_CMD]
-        # Add boolean flags
-        if d:
+
+        # Boolean flags
+        if ls_tree_opts.get('d'):
             sub_cmd_args.append('-d')
-        if r:
+        if ls_tree_opts.get('r'):
             sub_cmd_args.append('-r')
-        if t:
+        if ls_tree_opts.get('t'):
             sub_cmd_args.append('-t')
-        if long:
+        if ls_tree_opts.get('long'):
             sub_cmd_args.append('-l')
-        if z:
+        if ls_tree_opts.get('z'):
             sub_cmd_args.append('-z')
-        if name_only:
+        if ls_tree_opts.get('name_only'):
             sub_cmd_args.append('--name-only')
-        if object_only:
+        if ls_tree_opts.get('name_status'):
+            sub_cmd_args.append('--name-status')
+        if ls_tree_opts.get('object_only'):
             sub_cmd_args.append('--object-only')
-        if full_name:
+        if ls_tree_opts.get('full_name'):
             sub_cmd_args.append('--full-name')
-        if full_tree:
+        if ls_tree_opts.get('full_tree'):
             sub_cmd_args.append('--full-tree')
 
-        # Add abbrev if specified
+        # Optional arguments with values
+        abbrev = ls_tree_opts.get('abbrev')
         if abbrev is not None:
             sub_cmd_args.append(f'--abbrev={abbrev}')
 
-        # Add format if specified
-        if format_:
+        format_ = ls_tree_opts.get('format_')
+        if format_ is not None:
             sub_cmd_args.append(f'--format={format_}')
 
-        # Add the tree-ish argument
+        # Required positional argument
         sub_cmd_args.append(tree_ish)
 
-        # Add paths if provided
+        # Optional path list
+        path = ls_tree_opts.get('path')
         if path:
             sub_cmd_args.extend(path)
 
@@ -107,8 +109,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
             cwd=self.root_dir
         )
 
-        # Return raw stdout; parsing can be handled upstream or in a separate method
-        return result.stdout.strip()  # type: ignore
+        return result.stdout.strip()
 
     @override
     @property

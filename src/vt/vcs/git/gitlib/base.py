@@ -12,7 +12,7 @@ from typing import Protocol, override, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
 
 
 class ForGit(Protocol):
@@ -93,10 +93,7 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
     """
 
     @abstractmethod
-    def ls_tree(self, tree_ish: str, *, d: bool = False, r: bool = False, t: bool = False, long: bool = False,
-                z: bool = False, name_only: bool = False, object_only: bool = False, full_name: bool = False,
-                full_tree: bool = False, abbrev: int | None = None, format_: str | None = None,
-                path: list[str] | None = None) -> str:
+    def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
         """
         All the parameters are mirrors of the parameters of ``git ls-tree`` CLI command
         from `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
