@@ -5,7 +5,7 @@
 Exceptions specific to git.
 """
 
-from vt.utils.errors.error_specs.exceptions import VTException
+from vt.utils.errors.error_specs.exceptions import VTException, VTExitingException
 
 
 class GitException(VTException):
@@ -33,5 +33,12 @@ class GitException(VTException):
         gitlib.exceptions.GitException: ValueError
 
     ... rest examples mimic ``VTException`` examples.
+    """
+    pass
+
+
+class GitExitingException(GitException, VTExitingException):
+    """
+    ``GitException`` that carries an ``exit_code``.
     """
     pass
