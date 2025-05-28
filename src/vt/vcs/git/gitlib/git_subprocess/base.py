@@ -13,8 +13,9 @@ from typing import override, Protocol, Unpack, Self
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
 from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from vt.vcs.git.gitlib.git_subprocess.constants import LS_TREE_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
-from vt.vcs.git.gitlib.models import GitOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
 
@@ -276,7 +277,60 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
-    pass
+
+    def compute_subcmd_args(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> list[str]:
+        """
+        Compute CLI options to be passed to ``git ls-tree`` command.
+
+        Here ``-r HEAD`` are subcommand arguments in ``git --no-pager ls-tree -r HEAD``.
+
+        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
+        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
+        :return: list of formed subcommand arguments for ``git ls-tree``.
+        """
+        self._require_valid_args(tree_ish, **ls_tree_opts)
+        sub_cmd_args = [LS_TREE_CMD]
+
+        # Boolean flags
+        if ls_tree_opts.get('d'):
+            sub_cmd_args.append('-d')
+        if ls_tree_opts.get('r'):
+            sub_cmd_args.append('-r')
+        if ls_tree_opts.get('t'):
+            sub_cmd_args.append('-t')
+        if ls_tree_opts.get('long'):
+            sub_cmd_args.append('-l')
+        if ls_tree_opts.get('z'):
+            sub_cmd_args.append('-z')
+        if ls_tree_opts.get('name_only'):
+            sub_cmd_args.append('--name-only')
+        if ls_tree_opts.get('name_status'):
+            sub_cmd_args.append('--name-status')
+        if ls_tree_opts.get('object_only'):
+            sub_cmd_args.append('--object-only')
+        if ls_tree_opts.get('full_name'):
+            sub_cmd_args.append('--full-name')
+        if ls_tree_opts.get('full_tree'):
+            sub_cmd_args.append('--full-tree')
+
+        # Optional arguments with values
+        abbrev = ls_tree_opts.get('abbrev')
+        if abbrev is not None:
+            sub_cmd_args.append(f'--abbrev={abbrev}')
+
+        format_ = ls_tree_opts.get('format_')
+        if format_ is not None:
+            sub_cmd_args.append(f'--format={format_}')
+
+        # Required positional argument
+        sub_cmd_args.append(tree_ish)
+
+        # Optional path list
+        path = ls_tree_opts.get('path')
+        if path:
+            sub_cmd_args.extend(path)
+
+        return sub_cmd_args
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):

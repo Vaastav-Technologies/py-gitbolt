@@ -16,7 +16,8 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 from vt.vcs.git.gitlib import errmsg_creator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
-    LsTreeCommand, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
+    LsTreeCommand, GitSubcmdCommand, AddCommand
+from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD, ADD_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 from vt.vcs.git.gitlib.models import GitAddOpts, GitLsTreeOpts
@@ -58,48 +59,8 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
     @override
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
-        self._require_valid_args(tree_ish, **ls_tree_opts)
+        sub_cmd_args = self.compute_subcmd_args(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
-        sub_cmd_args = [LS_TREE_CMD]
-
-        # Boolean flags
-        if ls_tree_opts.get('d'):
-            sub_cmd_args.append('-d')
-        if ls_tree_opts.get('r'):
-            sub_cmd_args.append('-r')
-        if ls_tree_opts.get('t'):
-            sub_cmd_args.append('-t')
-        if ls_tree_opts.get('long'):
-            sub_cmd_args.append('-l')
-        if ls_tree_opts.get('z'):
-            sub_cmd_args.append('-z')
-        if ls_tree_opts.get('name_only'):
-            sub_cmd_args.append('--name-only')
-        if ls_tree_opts.get('name_status'):
-            sub_cmd_args.append('--name-status')
-        if ls_tree_opts.get('object_only'):
-            sub_cmd_args.append('--object-only')
-        if ls_tree_opts.get('full_name'):
-            sub_cmd_args.append('--full-name')
-        if ls_tree_opts.get('full_tree'):
-            sub_cmd_args.append('--full-tree')
-
-        # Optional arguments with values
-        abbrev = ls_tree_opts.get('abbrev')
-        if abbrev is not None:
-            sub_cmd_args.append(f'--abbrev={abbrev}')
-
-        format_ = ls_tree_opts.get('format_')
-        if format_ is not None:
-            sub_cmd_args.append(f'--format={format_}')
-
-        # Required positional argument
-        sub_cmd_args.append(tree_ish)
-
-        # Optional path list
-        path = ls_tree_opts.get('path')
-        if path:
-            sub_cmd_args.extend(path)
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
