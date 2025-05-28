@@ -8,12 +8,15 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override
+from typing import override, Literal, overload
 
 from vt.utils.commons.commons.op import RootDirOp
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
+from vt.vcs.git.gitlib import errmsg_creator
+from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
-    LsTreeCommand, GitCommandRunner, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand
+    LsTreeCommand, GitCommandRunner, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 
 
@@ -114,15 +117,221 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
         return LsTreeCommandImpl(self.root_dir, self.underlying_git)
 
 
+class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
+
+    def __init__(self, root_dir: Path, git: GitCommand):
+        super().__init__(git)
+        self._root_dir = root_dir
+
+    # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
+
+    @override
+    @overload
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec_from_file: Path,
+        pathspec_file_null: bool = False,
+    ) -> str:
+        """
+        Add files listed in a file (`pathspec_from_file`) to the index.
+        `pathspec_file_null` indicates if the file is NUL terminated.
+        No explicit pathspec list is allowed in this overload.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @override
+    @overload
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec: list[str],
+    ) -> str:
+        """
+        Add files specified by a list of pathspec strings.
+        `pathspec_from_file` and `pathspec_file_null` are disallowed here.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @override
+    @overload
+    def add(
+        self,
+        *,
+        verbose: bool = False,
+        dry_run: bool = False,
+        force: bool = False,
+        interactive: bool = False,
+        patch: bool = False,
+        edit: bool = False,
+        no_all: bool | None = None,
+        no_ignore_removal: bool | None = None,
+        sparse: bool = False,
+        intent_to_add: bool = False,
+        refresh: bool = False,
+        ignore_errors: bool = False,
+        ignore_missing: bool = False,
+        renormalize: bool = False,
+        chmod: Literal["+x", "-x"] | None = None,
+        pathspec_from_file: Literal["-"],
+        pathspec_stdin: str,
+        pathspec_file_null: bool = False,
+    ) -> str:
+        """
+        Add files listed from stdin (when `pathspec_from_file` is '-').
+        The `pathspec_stdin` argument is the string content piped to stdin.
+
+        Mirrors the parameters of ``git add`` CLI command
+        from `git add documentation <https://git-scm.com/docs/git-add>`_.
+        """
+
+    @override
+    def add(self, *, verbose: bool = False, dry_run: bool = False, force: bool = False, interactive: bool = False,
+            patch: bool = False, edit: bool = False, no_all: bool | None = None, no_ignore_removal: bool | None = None,
+            sparse: bool = False, intent_to_add: bool = False, refresh: bool = False, ignore_errors: bool = False,
+            ignore_missing: bool = False, renormalize: bool = False, chmod: Literal["+x", "-x"] | None = None,
+            pathspec_from_file: Path | Literal['-'] | None = None, pathspec: list[str] | None = None,
+            pathspec_stdin: str | None = None, pathspec_file_null: bool = False) -> str:
+        # Exclusive argument checks
+        if pathspec is not None and pathspec_from_file is not None:
+            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_from_file')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec is not None and pathspec_stdin is not None:
+            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_stdin')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec_from_file == "-" and pathspec_stdin is None:
+            errmsg = errmsg_creator.all_required('pathspec_stdin', 'pathspec_from_file',
+                                                 suffix=" when pathspec_from_file is '-'.")
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec_from_file != '-' and pathspec_stdin is not None:
+            errmsg = errmsg_creator.not_allowed_together('pathspec_form_file', 'pathspec_stdin',
+                                                         suffix=" when pathspec_from_file is not equal to '-'.")
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+
+        main_cmd_args = self.underlying_git.compute_main_cmd_args()
+        sub_cmd_args = [ADD_CMD]
+
+        # Add flags based on truthy value
+        if verbose:
+            sub_cmd_args.append("--verbose")
+        if dry_run:
+            sub_cmd_args.append("--dry-run")
+        if force:
+            sub_cmd_args.append("--force")
+        if interactive:
+            sub_cmd_args.append("--interactive")
+        if patch:
+            sub_cmd_args.append("--patch")
+        if edit:
+            sub_cmd_args.append("--edit")
+        if sparse:
+            sub_cmd_args.append("--sparse")
+        if intent_to_add:
+            sub_cmd_args.append("--intent-to-add")
+        if refresh:
+            sub_cmd_args.append("--refresh")
+        if ignore_errors:
+            sub_cmd_args.append("--ignore-errors")
+        if ignore_missing:
+            sub_cmd_args.append("--ignore-missing")
+        if renormalize:
+            sub_cmd_args.append("--renormalize")
+
+        # Handle conditional bool | None flags
+        if no_all is True:
+            sub_cmd_args.append("--no-all")
+        elif no_all is False:
+            sub_cmd_args.append("--all")
+
+        if no_ignore_removal is True:
+            sub_cmd_args.append("--no-ignore-removal")
+        elif no_ignore_removal is False:
+            sub_cmd_args.append("--ignore-removal")
+
+        if chmod is not None:
+            sub_cmd_args.append(f"--chmod={chmod}")
+
+        # Handle pathspec argument sets
+        input_data = None
+        if pathspec_from_file is not None:
+            sub_cmd_args.append(f"--pathspec-from-file={str(pathspec_from_file)}")
+            if pathspec_file_null:
+                sub_cmd_args.append("--pathspec-file-nul")
+            if pathspec_from_file == "-":
+                input_data = pathspec_stdin
+        elif pathspec is not None:
+            sub_cmd_args.extend(pathspec)
+        else:
+            errmsg = errmsg_creator.at_least_one_required('pathspec', 'pathspec_from_file',
+                                                 "'pathspec_stdin' when pathspec_from_file=-")
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+
+        result = self.underlying_git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            input=input_data,
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=self._root_dir,
+        )
+
+        return result.stdout.strip()
+
+    @override
+    @property
+    def root_dir(self) -> Path:
+        return self._root_dir
+
+    def clone(self) -> 'AddCommandImpl':
+        return AddCommandImpl(self.root_dir, self.underlying_git)
+
+
 class SimpleGitCommand(GitCommand, RootDirOp):
 
     def __init__(self, git_root_dir: Path = Path.cwd(), runner: GitCommandRunner = SimpleGitCR(), *,
                  version_subcmd: VersionCommand | None = None,
-                 ls_tree_subcmd: LsTreeCommand | None = None):
+                 ls_tree_subcmd: LsTreeCommand | None = None,
+                 add_subcmd: AddCommand | None = None):
         super().__init__(runner)
         self.git_root_dir = git_root_dir
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
         self._ls_tree = ls_tree_subcmd or LsTreeCommandImpl(self.root_dir, self)
+        self._add_subcmd = add_subcmd or AddCommandImpl(self.root_dir, self)
 
     @override
     @property
@@ -135,10 +344,16 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return self._ls_tree
 
     @override
+    @property
+    def add_subcmd(self) -> AddCommand:
+        return self._add_subcmd
+
+    @override
     def clone(self) -> 'SimpleGitCommand':
         return SimpleGitCommand(self.root_dir, self.runner,
                                 version_subcmd=self.version_subcmd,
-                                ls_tree_subcmd=self.ls_tree_subcmd)
+                                ls_tree_subcmd=self.ls_tree_subcmd,
+                                add_subcmd=self.add_subcmd)
 
     @override
     @property
