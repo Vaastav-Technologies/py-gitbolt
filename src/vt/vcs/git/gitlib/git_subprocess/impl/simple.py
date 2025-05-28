@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override, Literal, overload
+from typing import override, Literal, overload, Unpack
 
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
@@ -19,6 +19,7 @@ from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, VERSION_CMD, LS_TREE_CMD, GitSubcmdCommand, AddCommand, ADD_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
+from vt.vcs.git.gitlib.models import GitAddOpts
 
 
 class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
@@ -131,23 +132,9 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec_from_file: Path,
         pathspec_file_null: bool = False,
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed in a file (`pathspec_from_file`) to the index.
@@ -163,22 +150,8 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec: list[str],
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files specified by a list of pathspec strings.
@@ -193,24 +166,10 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec_from_file: Literal["-"],
         pathspec_stdin: str,
         pathspec_file_null: bool = False,
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed from stdin (when `pathspec_from_file` is '-').
@@ -221,12 +180,15 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         """
 
     @override
-    def add(self, *, verbose: bool = False, dry_run: bool = False, force: bool = False, interactive: bool = False,
-            patch: bool = False, edit: bool = False, no_all: bool | None = None, no_ignore_removal: bool | None = None,
-            sparse: bool = False, intent_to_add: bool = False, refresh: bool = False, ignore_errors: bool = False,
-            ignore_missing: bool = False, renormalize: bool = False, chmod: Literal["+x", "-x"] | None = None,
-            pathspec_from_file: Path | Literal['-'] | None = None, pathspec: list[str] | None = None,
-            pathspec_stdin: str | None = None, pathspec_file_null: bool = False) -> str:
+    def add(
+            self,
+            *,
+            pathspec: list[str] | None = None,
+            pathspec_from_file: Path | Literal["-"] | None = None,
+            pathspec_stdin: str | None = None,
+            pathspec_file_null: bool = False,
+            **add_opts: Unpack[GitAddOpts]
+    ) -> str:
         # Exclusive argument checks
         if pathspec is not None and pathspec_from_file is not None:
             errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_from_file')
@@ -247,42 +209,45 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         sub_cmd_args = [ADD_CMD]
 
         # Add flags based on truthy value
-        if verbose:
+        if add_opts.get("verbose"):
             sub_cmd_args.append("--verbose")
-        if dry_run:
+        if add_opts.get("dry_run"):
             sub_cmd_args.append("--dry-run")
-        if force:
+        if add_opts.get("force"):
             sub_cmd_args.append("--force")
-        if interactive:
+        if add_opts.get("interactive"):
             sub_cmd_args.append("--interactive")
-        if patch:
+        if add_opts.get("patch"):
             sub_cmd_args.append("--patch")
-        if edit:
+        if add_opts.get("edit"):
             sub_cmd_args.append("--edit")
-        if sparse:
+        if add_opts.get("sparse"):
             sub_cmd_args.append("--sparse")
-        if intent_to_add:
+        if add_opts.get("intent_to_add"):
             sub_cmd_args.append("--intent-to-add")
-        if refresh:
+        if add_opts.get("refresh"):
             sub_cmd_args.append("--refresh")
-        if ignore_errors:
+        if add_opts.get("ignore_errors"):
             sub_cmd_args.append("--ignore-errors")
-        if ignore_missing:
+        if add_opts.get("ignore_missing"):
             sub_cmd_args.append("--ignore-missing")
-        if renormalize:
+        if add_opts.get("renormalize"):
             sub_cmd_args.append("--renormalize")
 
         # Handle conditional bool | None flags
+        no_all = add_opts.get("no_all")
         if no_all is True:
             sub_cmd_args.append("--no-all")
         elif no_all is False:
             sub_cmd_args.append("--all")
 
+        no_ignore_removal = add_opts.get("no_ignore_removal")
         if no_ignore_removal is True:
             sub_cmd_args.append("--no-ignore-removal")
         elif no_ignore_removal is False:
             sub_cmd_args.append("--ignore-removal")
 
+        chmod = add_opts.get("chmod")
         if chmod is not None:
             sub_cmd_args.append(f"--chmod={chmod}")
 
@@ -304,7 +269,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         result = self.underlying_git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
-            input=input_data,
+            _input=input_data,
             check=True,
             text=True,
             capture_output=True,

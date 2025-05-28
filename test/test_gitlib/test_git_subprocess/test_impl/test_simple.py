@@ -200,3 +200,23 @@ def test_version_build_options():
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info
     assert 'built from commit: ' in ano_build_info
+
+class TestAddSubcmd:
+    def test_add(self, enc_local):
+        Path(enc_local, 'a-file').write_text('a-file')
+        git = SimpleGitCommand(enc_local)
+        git.add_subcmd.add(pathspec=['.'])
+
+    def test_with_pathspec(self, enc_local):
+        Path(enc_local, 'a-file').write_text('a-file')
+        Path(enc_local, 'b-file').write_text('b-file')
+        git = SimpleGitCommand(enc_local)
+        git.add_subcmd.add(pathspec=['*-file'])
+
+    def test_with_pathspec_from_file(self, enc_local, tmp_path):
+        Path(enc_local, 'a-file').write_text('a-file')
+        Path(enc_local, 'b-file').write_text('b-file')
+        pathspec_file = Path(tmp_path, 'pathspec-file.txt')
+        pathspec_file.write_text('*-file')
+        git = SimpleGitCommand(enc_local)
+        git.add_subcmd.add(pathspec_from_file=pathspec_file)

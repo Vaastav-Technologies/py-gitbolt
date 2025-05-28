@@ -12,7 +12,7 @@ from typing import Protocol, override, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib.models import GitOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts
 
 
 class ForGit(Protocol):
@@ -120,23 +120,9 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec_from_file: Path,
         pathspec_file_null: bool = False,
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed in a file (`pathspec_from_file`) to the index.
@@ -152,22 +138,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec: list[str],
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files specified by a list of pathspec strings.
@@ -182,24 +154,10 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     def add(
         self,
         *,
-        verbose: bool = False,
-        dry_run: bool = False,
-        force: bool = False,
-        interactive: bool = False,
-        patch: bool = False,
-        edit: bool = False,
-        no_all: bool | None = None,
-        no_ignore_removal: bool | None = None,
-        sparse: bool = False,
-        intent_to_add: bool = False,
-        refresh: bool = False,
-        ignore_errors: bool = False,
-        ignore_missing: bool = False,
-        renormalize: bool = False,
-        chmod: Literal["+x", "-x"] | None = None,
         pathspec_from_file: Literal["-"],
         pathspec_stdin: str,
         pathspec_file_null: bool = False,
+        **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed from stdin (when `pathspec_from_file` is '-').
