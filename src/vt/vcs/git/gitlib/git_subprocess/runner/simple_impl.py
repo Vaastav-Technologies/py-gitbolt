@@ -74,4 +74,4 @@ class SimpleGitCR(GitCommandRunner):
             return subprocess.run([GIT_CMD, *main_cmd_args, *subcommand_args],
                                   *subprocess_run_args, input=_input, text=text, **subprocess_run_kwargs)
         except subprocess.CalledProcessError as e:
-            raise GitCmdException(called_process_error=e) from e
+            raise GitCmdException(called_process_error=e, exit_code=e.returncode) from e
