@@ -188,13 +188,13 @@ class TestMainCmdOverrides:
 
 class TestLsTreeSubcmd:
 
-
+    # TODO: refactor when commit_subcmd is implemented.
     def test_ls_tree(self, enc_local):
         git = SimpleGitCommand(enc_local)
         Path(enc_local, 'a-file').write_text('a-file')
         git.add_subcmd.add(['.'])
         subprocess.run(['git', 'commit', '-m', 'committed a-file'], check=True, cwd=enc_local)
-        print(git.ls_tree_subcmd.ls_tree('HEAD'), file=sys.stderr)
+        assert git.ls_tree_subcmd.ls_tree('HEAD') == '100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file'
 
     class TestArgValidation:
         @pytest.mark.parametrize('tree_ish', [True, False, 20, -90.0, None, ['tree', 'ish'], {'key': 'value'},
