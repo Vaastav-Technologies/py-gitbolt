@@ -190,7 +190,7 @@ class TestLsTreeSubcmd:
     def test_ls_tree(self, enc_local):
         git = SimpleGitCommand(enc_local)
         Path(enc_local, 'a-file').write_text('a-file')
-        git.add_subcmd.add(['.'])
+        git.add_subcmd.add('.')
         subprocess.run(['git', 'commit', '-m', 'committed a-file'], check=True, cwd=enc_local)
         assert git.ls_tree_subcmd.ls_tree('HEAD') == '100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file'
 
@@ -251,13 +251,19 @@ class TestAddSubcmd:
     def test_add(self, enc_local):
         Path(enc_local, 'a-file').write_text('a-file')
         git = SimpleGitCommand(enc_local)
-        git.add_subcmd.add(['.'])
+        git.add_subcmd.add('.')
 
     def test_with_pathspec(self, enc_local):
         Path(enc_local, 'a-file').write_text('a-file')
         Path(enc_local, 'b-file').write_text('b-file')
         git = SimpleGitCommand(enc_local)
-        git.add_subcmd.add(['*-file'])
+        git.add_subcmd.add('*-file')
+
+    def test_with_pathspecs(self, enc_local):
+        Path(enc_local, 'a-file').write_text('a-file')
+        Path(enc_local, 'b-file').write_text('b-file')
+        git = SimpleGitCommand(enc_local)
+        git.add_subcmd.add('a-file', 'b-file')
 
     def test_with_pathspec_from_file(self, enc_local, tmp_path):
         Path(enc_local, 'a-file').write_text('a-file')

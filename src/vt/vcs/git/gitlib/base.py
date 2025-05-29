@@ -132,7 +132,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @abstractmethod
     def add(
         self,
-        pathspec: list[str],
+        pathspec: str,
+        *pathspecs: str,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """

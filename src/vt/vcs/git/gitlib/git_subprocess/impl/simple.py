@@ -78,7 +78,8 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @overload
     def add(
         self,
-        pathspec: list[str],
+        pathspec: str,
+        *pathspecs: str,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
@@ -128,8 +129,8 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @override
     def add(
             self,
-            pathspec: list[str] | None = None,
-            *,
+            pathspec: str | None = None,
+            *pathspecs: str,
             pathspec_from_file: Path | Literal["-"] | None = None,
             pathspec_stdin: str | None = None,
             pathspec_file_null: bool = False,
@@ -206,7 +207,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
             if pathspec_from_file == "-":
                 input_data = pathspec_stdin
         elif pathspec is not None:
-            sub_cmd_args.extend(pathspec)
+            sub_cmd_args.extend((pathspec, *pathspecs))
         else:
             errmsg = errmsg_creator.at_least_one_required('pathspec', 'pathspec_from_file',
                                                  "'pathspec_stdin' when pathspec_from_file=-")
