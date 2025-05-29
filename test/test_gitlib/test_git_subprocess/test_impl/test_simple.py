@@ -4,6 +4,8 @@
 """
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -186,11 +188,13 @@ class TestMainCmdOverrides:
 
 class TestLsTreeSubcmd:
 
-    # TODO: make ls-tree run and remove xfail
-    @pytest.mark.xfail(reason="ls-tree WIP", raises=GitCmdException)
+
     def test_ls_tree(self, enc_local):
         git = SimpleGitCommand(enc_local)
-        git.ls_tree_subcmd.ls_tree('HEAD')
+        Path(enc_local, 'a-file').write_text('a-file')
+        git.add_subcmd.add(['.'])
+        subprocess.run(['git', 'commit', '-m', 'committed a-file'], check=True, cwd=enc_local)
+        print(git.ls_tree_subcmd.ls_tree('HEAD'), file=sys.stderr)
 
     class TestArgValidation:
         @pytest.mark.parametrize('tree_ish', [True, False, 20, -90.0, None, ['tree', 'ish'], {'key': 'value'},
