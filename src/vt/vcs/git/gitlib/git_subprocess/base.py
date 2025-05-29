@@ -278,7 +278,8 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
 
-    def compute_subcmd_args(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> list[str]:
+    @classmethod
+    def compute_subcmd_args(cls, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> list[str]:
         """
         Compute CLI options to be passed to ``git ls-tree`` command.
 
@@ -288,30 +289,26 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
         :return: list of formed subcommand arguments for ``git ls-tree``.
         """
-        self._require_valid_args(tree_ish, **ls_tree_opts)
+        cls._require_valid_args(tree_ish, **ls_tree_opts)
         sub_cmd_args = [LS_TREE_CMD]
 
-        # Boolean flags
-        if ls_tree_opts.get('d'):
-            sub_cmd_args.append('-d')
-        if ls_tree_opts.get('r'):
-            sub_cmd_args.append('-r')
-        if ls_tree_opts.get('t'):
-            sub_cmd_args.append('-t')
-        if ls_tree_opts.get('long'):
-            sub_cmd_args.append('-l')
-        if ls_tree_opts.get('z'):
-            sub_cmd_args.append('-z')
-        if ls_tree_opts.get('name_only'):
-            sub_cmd_args.append('--name-only')
-        if ls_tree_opts.get('name_status'):
-            sub_cmd_args.append('--name-status')
-        if ls_tree_opts.get('object_only'):
-            sub_cmd_args.append('--object-only')
-        if ls_tree_opts.get('full_name'):
-            sub_cmd_args.append('--full-name')
-        if ls_tree_opts.get('full_tree'):
-            sub_cmd_args.append('--full-tree')
+        # Canonical ordering of boolean flags
+        flag_map: dict[str, str] = {
+            'd': '-d',
+            'r': '-r',
+            't': '-t',
+            'long': '-l',
+            'z': '-z',
+            'name_only': '--name-only',
+            'name_status': '--name-status',
+            'object_only': '--object-only',
+            'full_name': '--full-name',
+            'full_tree': '--full-tree',
+        }
+
+        for key, flag in flag_map.items():
+            if ls_tree_opts.get(key): # type: ignore[arg-type] # required as mypy and PyCharm think that key is not str
+                sub_cmd_args.append(flag)
 
         # Optional arguments with values
         abbrev = ls_tree_opts.get('abbrev')

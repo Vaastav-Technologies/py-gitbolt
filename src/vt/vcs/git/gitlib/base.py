@@ -107,8 +107,8 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         """
         ...
 
-    @staticmethod
-    def _require_valid_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> None:
+    @classmethod
+    def _require_valid_args(cls, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> None:
         """
         Validate arguments passed to the ``ls_tree()`` method.
 
