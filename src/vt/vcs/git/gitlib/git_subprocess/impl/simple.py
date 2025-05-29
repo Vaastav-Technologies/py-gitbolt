@@ -39,7 +39,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
 
     @override
     def version(self, build_options: bool = False) -> str:
-        self.require_valid_args(build_options)
+        self._require_valid_args(build_options)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
         if build_options:

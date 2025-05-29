@@ -206,7 +206,7 @@ class Version(GitSubCommand, Protocol):
         ...
 
     @staticmethod
-    def require_valid_args(build_options: bool = False) -> None:
+    def _require_valid_args(build_options: bool = False) -> None:
         """
         Require that arguments sent to the version command is valid.
 
