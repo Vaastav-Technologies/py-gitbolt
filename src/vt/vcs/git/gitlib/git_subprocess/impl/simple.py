@@ -59,7 +59,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
     @override
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
-        sub_cmd_args = self.compute_subcmd_args(tree_ish, **ls_tree_opts)
+        sub_cmd_args = self.build_sub_cmd_args(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.compute_main_cmd_args()
 
         # Run the git command
