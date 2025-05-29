@@ -5,7 +5,6 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -13,7 +12,6 @@ from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.git_subprocess.exceptions import GitCmdException
 from vt.vcs.git.gitlib.git_subprocess.impl.simple import SimpleGitCommand
 
 
