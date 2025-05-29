@@ -40,7 +40,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
     @override
     def version(self, build_options: bool = False) -> str:
         self.require_valid_args(build_options)
-        main_cmd_args = self.underlying_git.compute_main_cmd_args()
+        main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
         if build_options:
             sub_cmd_args.append('--build-options')
@@ -60,7 +60,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
     @override
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
         sub_cmd_args = self.build_sub_cmd_args(tree_ish, **ls_tree_opts)
-        main_cmd_args = self.underlying_git.compute_main_cmd_args()
+        main_cmd_args = self.underlying_git.build_main_cmd_args()
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
@@ -168,7 +168,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
                                                          suffix=" when pathspec_from_file is not equal to '-'.")
             raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
 
-        main_cmd_args = self.underlying_git.compute_main_cmd_args()
+        main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [ADD_CMD]
 
         # Add flags based on truthy value

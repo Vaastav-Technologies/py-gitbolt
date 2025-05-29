@@ -38,7 +38,14 @@ class GitCommand(Git, ABC):
         _git_cmd._main_cmd_opts = _main_cmd_opts
         return _git_cmd
 
-    def compute_main_cmd_args(self) -> list[str]:
+    def build_main_cmd_args(self) -> list[str]:
+        """
+        Terminal operation to build and return CLI args for git main cli command.
+
+        For example, ``--no-pager --no-advice`` is the git main command in ``git --no-pager --no-advice log master -1``.
+
+        :return: CLI args for git main cli command.
+        """
         return (
             self._main_cmd_cap_c_args() +
             self._main_cmd_small_c_args() +
@@ -217,7 +224,7 @@ class GitCommand(Git, ABC):
         return self._get_path(exec_path_str)
 
     def _get_path(self, path_opt_str: str) -> Path:
-        main_opts = self.compute_main_cmd_args()
+        main_opts = self.build_main_cmd_args()
         main_opts.append(path_opt_str)
         _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
                                     capture_output=True).stdout.strip()
