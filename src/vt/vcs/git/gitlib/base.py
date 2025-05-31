@@ -15,7 +15,7 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
-from vt.vcs.git.gitlib.utils import validate_ls_tree_args
+from vt.vcs.git.gitlib.utils import validate_ls_tree_args, validate_add_args
 
 
 class ForGit(Protocol):
@@ -185,6 +185,24 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
         :return: output of ``git add``.
         """
+
+    @classmethod
+    def _require_valid_args(cls,
+                            pathspec: str | None = None,
+                            *pathspecs: str,
+                            pathspec_from_file: Path | Literal['-'] | None = None,
+                            pathspec_stdin: str | None = None,
+                            pathspec_file_nul: bool = False,
+                            **add_opts: Unpack[GitAddOpts]) -> None:
+        """
+        Validate arguments passed to the ``ls_tree()`` method.
+
+        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
+        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
+        :raise GitExitingException: if any argument check fails.
+        """
+        validate_add_args(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file, pathspec_stdin=pathspec_stdin,
+                          pathspec_file_nul=pathspec_file_nul, **add_opts)
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'Add':

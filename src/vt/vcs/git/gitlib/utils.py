@@ -4,14 +4,18 @@
 """
 Utility functions related to processors specific to git commands.
 """
-from typing import Unpack
+from __future__ import annotations
 
-from vt.utils.commons.commons.core_py import strictly_int
+from pathlib import Path
+from typing import Unpack, Literal
+
+from vt.utils.commons.commons.core_py import strictly_int, has_atleast_one_arg, ensure_atleast_one_arg
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
+from vt.utils.errors.error_specs.utils import require_type, require_iterable
 
 from vt.vcs.git.gitlib._internal_init import errmsg_creator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts
 
 
 def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
@@ -134,76 +138,109 @@ def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) 
 
     Invalid Examples (will raise GitExitingException), printing these just for doctesting::
 
-        >>> try:
-        ...     validate_ls_tree_args(42)  # noqa: as tree_ish expects str and int is provided
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: tree_ish should be a string.
+        >>> validate_ls_tree_args(42) # type: ignore[arg-type] # tree_ish expects str and int is provided
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'tree_ish' must be of type str
 
-        >>> try:
-        ...     validate_ls_tree_args("HEAD",
-        ...                           abbrev="abc")  # noqa: as abbrev expects int and str is provided
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: abbrev must be an integer.
+        >>> validate_ls_tree_args("HEAD", abbrev="abc") # type: ignore[arg-type] # abbrev expects int and str is provided
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be of type int
 
-        >>> try:
-        ...     validate_ls_tree_args("HEAD",
-        ...                           abbrev=True)  # noqa: as abbrev expects int and bool is provided
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: abbrev must be an integer.
+        >>> validate_ls_tree_args("HEAD", abbrev=True) # type: ignore[arg-type] # abbrev expects int and bool is provided
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be of type int
 
-        >>> try:
-        ...     validate_ls_tree_args("HEAD",
-        ...                           abbrev=100)
-        ... except GitExitingException as e:
-        ...     print(e)
-        ValueError: abbrev must be between 0 and 40.
+        >>> validate_ls_tree_args("HEAD", abbrev=100)
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: abbrev must be between 0 and 40.
 
-        >>> try:
-        ...     validate_ls_tree_args("HEAD",
-        ...                           path="src/")  # noqa: as path expects list[str] and str is provided.
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: path must be a list of strings.
+        >>> validate_ls_tree_args("HEAD",
+        ...                       path="src/")  # type: ignore[arg-type] as path expects list[str] and str is provided.
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
 
-        >>> try:
-        ...     validate_ls_tree_args("HEAD",
-        ...                           z="yes")  # noqa: as z expects bool and str is provided.
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: 'z' must be a boolean.
+        >>> validate_ls_tree_args("HEAD",
+        ...                       path=1)  # type: ignore[arg-type] as path expects list[str] and str is provided.
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
+
+        >>> validate_ls_tree_args("HEAD",
+        ...                         z="yes")  # type: ignore[arg-type] as z expects bool and str is provided.
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'z' must be of type bool
     """
-    if not isinstance(tree_ish, str):
-        errmsg = "tree_ish should be a string."
-        raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
+    require_type(tree_ish, 'tree_ish', str, GitExitingException)
 
     bool_keys = [
         'd', 'r', 't', 'long', 'z', 'name_only', 'object_only',
         'full_name', 'full_tree', 'name_status'
     ]
     for key in bool_keys:
-        if key in ls_tree_opts and \
-                not isinstance(ls_tree_opts[key], bool): # type: ignore # required as mypy thinks key is not str
-            errmsg = f"'{key}' must be a boolean."
-            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
+        if key in ls_tree_opts:
+            the_key = ls_tree_opts[key] # type: ignore[arg-type] # required as mypy thinks key is not str
+            require_type(the_key, key, bool, GitExitingException)
 
     if "abbrev" in ls_tree_opts:
         abbrev = ls_tree_opts["abbrev"]
+        require_type(abbrev, 'abbrev', int, GitExitingException)
         if not strictly_int(abbrev):
-            errmsg = "abbrev must be an integer."
+            errmsg = "'abbrev' must be of type int"
             raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
         if not (0 <= abbrev <= 40):
             errmsg = "abbrev must be between 0 and 40."
             raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
 
-    if "format_" in ls_tree_opts and not isinstance(ls_tree_opts["format_"], str):
-        errmsg = "format_ must be a string."
-        raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
+    if "format_" in ls_tree_opts:
+        format_ = ls_tree_opts['format_']
+        require_type(format_, 'format_', str, GitExitingException)
 
     if "path" in ls_tree_opts:
         path = ls_tree_opts["path"]
-        if not isinstance(path, list) or not all(isinstance(p, str) for p in path):
-            errmsg = "path must be a list of strings."
-            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
+        require_iterable(path, 'path', str, list, GitExitingException)
+
+
+def validate_add_args(pathspec: str | None = None,
+                      *pathspecs: str,
+                      pathspec_from_file: Path | Literal['-'] | None = None,
+                      pathspec_stdin: str | None = None,
+                      pathspec_file_nul: bool = False,
+                      **add_opts: Unpack[GitAddOpts]):
+    """
+
+    :param pathspec:
+    :param pathspecs:
+    :param pathspec_from_file:
+    :param pathspec_stdin:
+    :param pathspec_file_nul:
+    :param add_opts:
+    :raises GitExitingException: if any validation fails.
+    """
+    # region Argument exclusivity checks
+    if has_atleast_one_arg(pathspec, *pathspecs, enforce_type=False):
+        try:
+            ensure_atleast_one_arg(pathspec, *pathspecs)
+        except TypeError as te:
+            raise GitExitingException(exit_code=ERR_DATA_FORMAT_ERR) from te
+
+        if pathspec_from_file is not None:
+            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_from_file')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec_stdin is not None:
+            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_stdin')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec_file_nul:
+            errmsg = errmsg_creator.not_allowed_together('pathspec_file_null', 'pathspec')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+
+    if pathspec_from_file == "-" and pathspec_stdin is None:
+        errmsg = errmsg_creator.all_required('pathspec_stdin', 'pathspec_from_file',
+                                             suffix=" when pathspec_from_file is '-'.")
+        raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+    if pathspec_from_file != '-' and pathspec_stdin is not None:
+        errmsg = errmsg_creator.not_allowed_together('pathspec_form_file', 'pathspec_stdin',
+                                                     suffix=" when pathspec_from_file is not equal to '-'.")
+        raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+    # endregion
+
+    if verbose := add_opts.get('verbose'):
+        require_type(verbose, 'verbose', bool)

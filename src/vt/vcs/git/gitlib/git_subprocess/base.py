@@ -346,28 +346,28 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         ...     LsTreeCommand.build_sub_cmd_args(42)  # type: ignore[arg-type] # as tree_ish expects str and int is provided
         ... except GitExitingException as e:
         ...     print(e)
-        TypeError: tree_ish should be a string.
+        TypeError: 'tree_ish' must be of type str
 
         >>> try:
         ...     LsTreeCommand.build_sub_cmd_args("HEAD",
         ...         abbrev="abc")  # type: ignore[arg-type] # as abbrev expects int and str is provided
         ... except GitExitingException as e:
         ...     print(e)
-        TypeError: abbrev must be an integer.
+        TypeError: 'abbrev' must be of type int
 
         >>> try:
         ...     LsTreeCommand.build_sub_cmd_args("HEAD",
         ...         path="src/")  # type: ignore[arg-type] # as path expects list[str] and str is provided.
         ... except GitExitingException as e:
         ...     print(e)
-        TypeError: path must be a list of strings.
+        TypeError: 'path' must be a non-str iterable
 
         >>> try:
         ...     LsTreeCommand.build_sub_cmd_args("HEAD",
         ...         z="yes")  # type: ignore[arg-type] # as z expects bool and str is provided.
         ... except GitExitingException as e:
         ...     print(e)
-        TypeError: 'z' must be a boolean.
+        TypeError: 'z' must be of type bool
         """
         cls._require_valid_args(tree_ish, **ls_tree_opts)
         sub_cmd_args = [LS_TREE_CMD]
