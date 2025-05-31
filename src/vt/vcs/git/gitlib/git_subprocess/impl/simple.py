@@ -13,7 +13,7 @@ from typing import override, Literal, overload, Unpack
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
-from vt.vcs.git.gitlib import errmsg_creator
+from vt.vcs.git.gitlib._internal_init import errmsg_creator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, GitSubcmdCommand, AddCommand

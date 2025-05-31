@@ -9,6 +9,7 @@ from typing import Unpack
 from vt.utils.commons.commons.core_py import strictly_int
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
+from vt.vcs.git.gitlib._internal_init import errmsg_creator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts
 
