@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Unpack, Literal
 
-from vt.utils.commons.commons.core_py import strictly_int, has_atleast_one_arg, ensure_atleast_one_arg
+from vt.utils.commons.commons.core_py import has_atleast_one_arg, ensure_atleast_one_arg
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 from vt.utils.errors.error_specs.utils import require_type, require_iterable
 
@@ -183,9 +183,6 @@ def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) 
     if "abbrev" in ls_tree_opts:
         abbrev = ls_tree_opts["abbrev"]
         require_type(abbrev, 'abbrev', int, GitExitingException)
-        if not strictly_int(abbrev):
-            errmsg = "'abbrev' must be of type int"
-            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
         if not (0 <= abbrev <= 40):
             errmsg = "abbrev must be between 0 and 40."
             raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
