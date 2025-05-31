@@ -465,7 +465,7 @@ class GitLsTreeOpts(TypedDict, total=False):
     This affects path filtering and is often used in scripts for predictable output.
     """
 
-    abbrev: int | None
+    abbrev: int
     """
     Mirror of ``--abbrev=<n>``.
 
@@ -474,7 +474,7 @@ class GitLsTreeOpts(TypedDict, total=False):
     Git typically shortens object hashes in output; this controls the length explicitly.
     """
 
-    format_: str | None
+    format_: str
     """
     Mirror of ``--format=<format>``.
 
@@ -483,7 +483,7 @@ class GitLsTreeOpts(TypedDict, total=False):
     This is useful for scripting or processing structured output.
     """
 
-    path: list[str] | None
+    path: list[str]
     """
     Mimics the optional ``[--] <path>...`` component of the command.
 
