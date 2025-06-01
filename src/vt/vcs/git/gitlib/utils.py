@@ -140,15 +140,15 @@ def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) 
 
         >>> validate_ls_tree_args(42) # type: ignore[arg-type] # tree_ish expects str and int is provided
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'tree_ish' must be of type str
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'tree_ish' must be a string
 
         >>> validate_ls_tree_args("HEAD", abbrev="abc") # type: ignore[arg-type] # abbrev expects int and str is provided
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be of type int
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
 
         >>> validate_ls_tree_args("HEAD", abbrev=True) # type: ignore[arg-type] # abbrev expects int and bool is provided
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be of type int
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
 
         >>> validate_ls_tree_args("HEAD", abbrev=100)
         Traceback (most recent call last):
@@ -167,7 +167,7 @@ def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) 
         >>> validate_ls_tree_args("HEAD",
         ...                         z="yes")  # type: ignore[arg-type] as z expects bool and str is provided.
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'z' must be of type bool
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'z' must be a boolean
     """
     require_type(tree_ish, 'tree_ish', str, GitExitingException)
 
