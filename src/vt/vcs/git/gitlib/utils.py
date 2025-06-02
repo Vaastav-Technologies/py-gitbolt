@@ -7,15 +7,8 @@ Utility functions related to processors specific to git commands.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Unpack, Literal
 
-from vt.utils.commons.commons.core_py import has_atleast_one_arg, ensure_atleast_one_arg
-from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
-from vt.utils.errors.error_specs.utils import require_type, require_iterable
-
-from vt.vcs.git.gitlib._internal_init import errmsg_creator
-from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts
+from vt.vcs.git.gitlib.models import GitOpts
 
 
 def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
@@ -100,97 +93,3 @@ def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
             val = fallback.get(k) # type: ignore # required as mypy thinks k is not str
         merged[k] = val # type: ignore # required as mypy thinks k is not str
     return merged
-
-
-def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> None:
-    """
-    Validate the inputs provided to the ``git ls-tree`` command.
-
-    This utility ensures type safety and logical correctness of arguments
-    passed to the ``git ls-tree`` subcommand.
-
-    This includes:
-    * Enforcing that ``tree_ish`` is a string.
-    * Checking that each supported boolean flag (like ``d``, ``r``, ``z``, etc.)
-      is a valid boolean if provided.
-    * Validating that ``abbrev`` is an integer between 0 and 40 (inclusive).
-    * Ensuring ``format_`` is a string if specified.
-    * Checking that ``path`` is a list of strings if specified.
-
-    All validations will raise a ``GitExitingException`` with a specific
-    exit code depending on the nature of the failure:
-
-    * ``TypeError`` leads to ``ERR_DATA_FORMAT_ERR``.
-    * ``ValueError`` leads to ``ERR_INVALID_USAGE``.
-
-    See: `git ls-tree documentation <https://git-scm.com/docs/git-ls-tree>`_.
-
-    :param tree_ish: A valid Git tree-ish identifier (e.g., branch name, commit hash).
-    :param ls_tree_opts: Keyword arguments that map to valid ls-tree options.
-    :raises GitExitingException: When validation fails.
-
-    Examples::
-
-        >>> validate_ls_tree_args("HEAD", d=True, abbrev=10)
-        >>> validate_ls_tree_args("abc123", format_="%(objectname)", path=["src/", "README.md"])
-        >>> validate_ls_tree_args("main", name_only=False, z=True)
-
-
-    Invalid Examples (will raise GitExitingException), printing these just for doctesting::
-
-        >>> validate_ls_tree_args(42) # type: ignore[arg-type] # tree_ish expects str and int is provided
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'tree_ish' must be a string
-
-        >>> validate_ls_tree_args("HEAD", abbrev="abc") # type: ignore[arg-type] # abbrev expects int and str is provided
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
-
-        >>> validate_ls_tree_args("HEAD", abbrev=True) # type: ignore[arg-type] # abbrev expects int and bool is provided
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
-
-        >>> validate_ls_tree_args("HEAD", abbrev=100)
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: abbrev must be between 0 and 40.
-
-        >>> validate_ls_tree_args("HEAD",
-        ...                       path="src/")  # type: ignore[arg-type] as path expects list[str] and str is provided.
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
-
-        >>> validate_ls_tree_args("HEAD",
-        ...                       path=1)  # type: ignore[arg-type] as path expects list[str] and str is provided.
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
-
-        >>> validate_ls_tree_args("HEAD",
-        ...                         z="yes")  # type: ignore[arg-type] as z expects bool and str is provided.
-        Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'z' must be a boolean
-    """
-    require_type(tree_ish, 'tree_ish', str, GitExitingException)
-
-    bool_keys: list[Literal['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
-        'name_status']] = ['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
-                           'name_status']
-
-    for key in bool_keys:
-        if key in ls_tree_opts:
-            the_key = ls_tree_opts[key]
-            require_type(the_key, key, bool, GitExitingException)
-
-    if "abbrev" in ls_tree_opts:
-        abbrev = ls_tree_opts["abbrev"]
-        require_type(abbrev, 'abbrev', int, GitExitingException)
-        if not (0 <= abbrev <= 40):
-            errmsg = "abbrev must be between 0 and 40."
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-
-    if "format_" in ls_tree_opts:
-        format_ = ls_tree_opts['format_']
-        require_type(format_, 'format_', str, GitExitingException)
-
-    if "path" in ls_tree_opts:
-        path = ls_tree_opts["path"]
-        require_iterable(path, 'path', str, list, GitExitingException)
