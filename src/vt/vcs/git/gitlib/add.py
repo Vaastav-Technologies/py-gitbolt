@@ -491,6 +491,9 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_pathspec_from_file(123) # type: ignore[arg-type] # expected Path | Literal['-'] # provided int
         Traceback (most recent call last):
         vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+        >>> UtilAddArgsValidator().validate_pathspec_from_file('file.txt') # type: ignore[arg-type] # expected Path | Literal['-'] # provided str
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
         """
         if pathspec_from_file is not None:
             if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
