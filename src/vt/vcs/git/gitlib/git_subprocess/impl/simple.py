@@ -14,12 +14,14 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from vt.vcs.git.gitlib._internal_init import errmsg_creator
+from vt.vcs.git.gitlib.add import AddArgsValidator, UtilAddArgsValidator
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, GitSubcmdCommand, AddCommand
 from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD, ADD_CMD
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
+from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from vt.vcs.git.gitlib.models import GitAddOpts
 
 
@@ -53,14 +55,21 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
 
 class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
-    def __init__(self, root_dir: Path, git: GitCommand):
+    def __init__(self, root_dir: Path, git: GitCommand, *,
+                 args_validator: LsTreeArgsValidator | None = None):
         super().__init__(git)
         self._root_dir = root_dir
+        self._args_validator = args_validator or UtilLsTreeArgsValidator()
 
     @override
     @property
     def root_dir(self) -> Path:
         return self._root_dir
+
+    @override
+    @property
+    def args_validator(self) -> LsTreeArgsValidator:
+        return self._args_validator
 
     def clone(self) -> 'LsTreeCommandImpl':
         return LsTreeCommandImpl(self.root_dir, self.underlying_git)
@@ -68,9 +77,11 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
-    def __init__(self, root_dir: Path, git: GitCommand):
+    def __init__(self, root_dir: Path, git: GitCommand, *,
+                 args_validator: AddArgsValidator | None = None):
         super().__init__(git)
         self._root_dir = root_dir
+        self._args_validator = args_validator or UtilAddArgsValidator()
 
     # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
 
@@ -216,6 +227,11 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @property
     def root_dir(self) -> Path:
         return self._root_dir
+
+    @override
+    @property
+    def args_validator(self) -> AddArgsValidator:
+        return self._args_validator
 
     def clone(self) -> 'AddCommandImpl':
         return AddCommandImpl(self.root_dir, self.underlying_git)
