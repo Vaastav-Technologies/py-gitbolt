@@ -2,7 +2,7 @@
 # coding=utf-8
 
 """
-Interfaces specific to ``git ls-tree`` subcommand.
+Helper interfaces specific to ``git ls-tree`` subcommand.
 """
 from abc import abstractmethod
 from typing import Protocol, Unpack, override, Literal
