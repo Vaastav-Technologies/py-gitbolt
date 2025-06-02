@@ -84,7 +84,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     ) -> str:
         """
         Add files specified by a list of pathspec strings.
-        `pathspec_from_file` and `pathspec_file_null` are disallowed here.
+        `pathspec_from_file` and `pathspec_file_nul` are disallowed here.
 
         Mirrors the parameters of ``git add`` CLI command
         from `git add documentation <https://git-scm.com/docs/git-add>`_.
@@ -96,12 +96,12 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         self,
         *,
         pathspec_from_file: Path,
-        pathspec_file_null: bool = False,
+        pathspec_file_nul: bool = False,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed in a file (`pathspec_from_file`) to the index.
-        `pathspec_file_null` indicates if the file is NUL terminated.
+        `pathspec_file_nul` indicates if the file is NUL terminated.
         No explicit pathspec list is allowed in this overload.
 
         Mirrors the parameters of ``git add`` CLI command
@@ -115,7 +115,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         *,
         pathspec_from_file: Literal["-"],
         pathspec_stdin: str,
-        pathspec_file_null: bool = False,
+        pathspec_file_nul: bool = False,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
@@ -133,24 +133,11 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
             *pathspecs: str,
             pathspec_from_file: Path | Literal["-"] | None = None,
             pathspec_stdin: str | None = None,
-            pathspec_file_null: bool = False,
+            pathspec_file_nul: bool = False,
             **add_opts: Unpack[GitAddOpts]
     ) -> str:
-        # Exclusive argument checks
-        if pathspec is not None and pathspec_from_file is not None:
-            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_from_file')
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-        if pathspec is not None and pathspec_stdin is not None:
-            errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_stdin')
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-        if pathspec_from_file == "-" and pathspec_stdin is None:
-            errmsg = errmsg_creator.all_required('pathspec_stdin', 'pathspec_from_file',
-                                                 suffix=" when pathspec_from_file is '-'.")
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-        if pathspec_from_file != '-' and pathspec_stdin is not None:
-            errmsg = errmsg_creator.not_allowed_together('pathspec_form_file', 'pathspec_stdin',
-                                                         suffix=" when pathspec_from_file is not equal to '-'.")
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        self.args_validator.validate(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
+                          pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul, **add_opts)
 
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [ADD_CMD]
@@ -202,7 +189,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         input_data = None
         if pathspec_from_file is not None:
             sub_cmd_args.append(f"--pathspec-from-file={str(pathspec_from_file)}")
-            if pathspec_file_null:
+            if pathspec_file_nul:
                 sub_cmd_args.append("--pathspec-file-nul")
             if pathspec_from_file == "-":
                 input_data = pathspec_stdin

@@ -15,7 +15,8 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
-from vt.vcs.git.gitlib.utils import validate_ls_tree_args, validate_add_args
+from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
+from vt.vcs.git.gitlib.add import AddArgsValidator, UtilAddArgsValidator
 
 
 class ForGit(Protocol):
@@ -107,20 +108,18 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         """
         ...
 
-    @classmethod
-    def _require_valid_args(cls, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> None:
-        """
-        Validate arguments passed to the ``ls_tree()`` method.
-
-        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
-        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
-        :raise GitExitingException: if any argument check fails.
-        """
-        validate_ls_tree_args(tree_ish, **ls_tree_opts)
-
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'LsTree':
         return git.ls_tree_subcmd
+
+    @property
+    def args_validator(self) -> LsTreeArgsValidator:
+        """
+        The argument validator for ``git ls-tree`` subcommand.
+
+        :return: a validator for ls_tree subcommand arguments.
+        """
+        return UtilLsTreeArgsValidator()
 
 
 class Add(GitSubCommand, RootDirOp, Protocol):
@@ -152,7 +151,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         self,
         *,
         pathspec_from_file: Path,
-        pathspec_file_null: bool = False,
+        pathspec_file_nul: bool = False,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
@@ -173,7 +172,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         *,
         pathspec_from_file: Literal["-"],
         pathspec_stdin: str,
-        pathspec_file_null: bool = False,
+        pathspec_file_nul: bool = False,
         **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
@@ -186,23 +185,14 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         :return: output of ``git add``.
         """
 
-    @classmethod
-    def _require_valid_args(cls,
-                            pathspec: str | None = None,
-                            *pathspecs: str,
-                            pathspec_from_file: Path | Literal['-'] | None = None,
-                            pathspec_stdin: str | None = None,
-                            pathspec_file_nul: bool = False,
-                            **add_opts: Unpack[GitAddOpts]) -> None:
+    @property
+    def args_validator(self) -> AddArgsValidator:
         """
-        Validate arguments passed to the ``ls_tree()`` method.
+        The argument validator for ``git add`` subcommand.
 
-        :param tree_ish: A tree-ish identifier (commit SHA, branch name, etc.).
-        :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
-        :raise GitExitingException: if any argument check fails.
+        :return: a validator for add subcommand arguments.
         """
-        validate_add_args(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file, pathspec_stdin=pathspec_stdin,
-                          pathspec_file_nul=pathspec_file_nul, **add_opts)
+        return UtilAddArgsValidator()
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> 'Add':

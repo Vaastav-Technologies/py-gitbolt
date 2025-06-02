@@ -286,6 +286,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
 
     @override
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
+        self.args_validator.validate(tree_ish, **ls_tree_opts)
         sub_cmd_args = self.build_sub_cmd_args(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
 
@@ -337,39 +338,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         ['ls-tree', '-z', '--abbrev=0', 'main']
         >>> LsTreeCommand.build_sub_cmd_args("main", z=True, full_name=False, abbrev=0, format_='%(objectname)')
         ['ls-tree', '-z', '--abbrev=0', '--format=%(objectname)', 'main']
-
-
-        Exceptional input validation examples:
-
-        >>> from vt.vcs.git.gitlib.exceptions import GitExitingException
-        >>> try:
-        ...     LsTreeCommand.build_sub_cmd_args(42)  # type: ignore[arg-type] # as tree_ish expects str and int is provided
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: 'tree_ish' must be a string
-
-        >>> try:
-        ...     LsTreeCommand.build_sub_cmd_args("HEAD",
-        ...         abbrev="abc")  # type: ignore[arg-type] # as abbrev expects int and str is provided
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: 'abbrev' must be an int
-
-        >>> try:
-        ...     LsTreeCommand.build_sub_cmd_args("HEAD",
-        ...         path="src/")  # type: ignore[arg-type] # as path expects list[str] and str is provided.
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: 'path' must be a non-str iterable
-
-        >>> try:
-        ...     LsTreeCommand.build_sub_cmd_args("HEAD",
-        ...         z="yes")  # type: ignore[arg-type] # as z expects bool and str is provided.
-        ... except GitExitingException as e:
-        ...     print(e)
-        TypeError: 'z' must be a boolean
         """
-        cls._require_valid_args(tree_ish, **ls_tree_opts)
         sub_cmd_args = [LS_TREE_CMD]
 
         sub_cmd_args.extend(cls._d_arg(ls_tree_opts.get("d")))
@@ -616,6 +585,11 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         []
         """
         return path if path else []
+
+    @property
+    @abstractmethod
+    def cli_args_builder(self) -> LsTreeArgsBuilder:
+        ...
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
