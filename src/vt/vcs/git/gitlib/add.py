@@ -152,7 +152,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         self.validate_git_add_opts(**add_opts)
 
         # region Type checks for non add-opts
-        require_type(pathspec_file_nul, 'pathspec_file_nul', bool, GitExitingException)
+        self.validate_pathspec_file_nul(pathspec_file_nul)
 
         if pathspec_from_file is not None:
             if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
