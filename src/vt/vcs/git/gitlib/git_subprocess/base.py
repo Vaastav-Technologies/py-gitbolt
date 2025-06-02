@@ -586,11 +586,6 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         """
         return path if path else []
 
-    @property
-    @abstractmethod
-    def cli_args_builder(self) -> LsTreeArgsBuilder:
-        ...
-
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
     pass
