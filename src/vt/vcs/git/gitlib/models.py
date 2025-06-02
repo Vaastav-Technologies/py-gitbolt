@@ -354,7 +354,7 @@ class GitAddOpts(TypedDict, total=False):
     Useful after changing `.gitattributes` to ensure files are normalized properly.
     """
 
-    chmod: Literal["+x", "-x"] | None
+    chmod: Literal["+x", "-x"]
     """
     Mirror of ``--chmod={+x,-x}``.
 
