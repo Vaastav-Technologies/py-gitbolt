@@ -150,22 +150,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         self.validate_exclusive_args(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
                                      pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul)
         self.validate_git_add_opts(**add_opts)
-
-        # region Type checks for non add-opts
-        self.validate_pathspec_file_nul(pathspec_file_nul)
-
-        if pathspec_from_file is not None:
-            if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
-                    pathspec_from_file, Path):
-                errmsg = "'pathspec_from_file' must be a pathlib.Path or the string literal '-'."
-                raise GitExitingException(
-                    errmsg,
-                    exit_code=ERR_DATA_FORMAT_ERR
-                ) from TypeError(errmsg)
-
-        if pathspec_stdin is not None:
-            require_type(pathspec_stdin, 'pathspec_stdin', str, GitExitingException)
-        # endregion
+        self.validate_non_git_add_opts(pathspec_file_nul, pathspec_from_file, pathspec_stdin)
 
     def validate_exclusive_args(self, pathspec: str | None, *pathspecs: str,
                                 pathspec_from_file: Path | Literal["-"] | None,
@@ -468,6 +453,24 @@ class UtilAddArgsValidator(AddArgsValidator):
     # endregion
 
     # region validate_non_git_add_opts
+    def validate_non_git_add_opts(self,
+                                  pathspec_file_nul: bool,
+                                  pathspec_from_file: Path | Literal["-"] | None,
+                                  pathspec_stdin: str | None) -> None:
+        """
+        Validate non-GitAddOpts arguments like pathspec_from_file and pathspec_stdin.
+
+        >>> validator = UtilAddArgsValidator()
+        >>> validator.validate_non_git_add_opts(False, None, None)
+        >>> validator.validate_non_git_add_opts(True, '-', 'abc')
+        >>> validator.validate_non_git_add_opts(True, '-', 123) # type: ignore[arg-type] # expected str # provided int
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
+        """
+        self.validate_pathspec_file_nul(pathspec_file_nul)
+        self.validate_pathspec_from_file(pathspec_from_file)
+        self.validate_pathspec_stdin(pathspec_stdin)
+
     def validate_pathspec_file_nul(self, pathspec_file_nul: bool) -> None:
         """
         Validate `pathspec_file_nul` argument.
@@ -478,4 +481,37 @@ class UtilAddArgsValidator(AddArgsValidator):
         vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_file_nul' must be a boolean
         """
         require_type(pathspec_file_nul, 'pathspec_file_nul', bool, GitExitingException)
+
+    def validate_pathspec_from_file(self, pathspec_from_file: Path | Literal['-'] | None) -> None:
+        """
+        Validate `pathspec_from_file` argument.
+
+        >>> UtilAddArgsValidator().validate_pathspec_from_file(Path("foo.txt"))
+        >>> UtilAddArgsValidator().validate_pathspec_from_file('-')
+        >>> UtilAddArgsValidator().validate_pathspec_from_file(123) # type: ignore[arg-type] # expected Path | Literal['-'] # provided int
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+        """
+        if pathspec_from_file is not None:
+            if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
+                    pathspec_from_file, Path):
+                errmsg = "'pathspec_from_file' must be a pathlib.Path or the string literal '-'."
+                raise GitExitingException(
+                    errmsg,
+                    exit_code=ERR_DATA_FORMAT_ERR
+                ) from TypeError(errmsg)
+
+    def validate_pathspec_stdin(self, pathspec_stdin: str | None):
+        """
+
+        Validate `pathspec_stdin` argument.
+
+        >>> UtilAddArgsValidator().validate_pathspec_stdin('-')
+        >>> UtilAddArgsValidator().validate_pathspec_stdin('some stdin')
+        >>> UtilAddArgsValidator().validate_pathspec_stdin(123) # type: ignore[arg-type] # expected str # provided int
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
+        """
+        if pathspec_stdin is not None:
+            require_type(pathspec_stdin, 'pathspec_stdin', str, GitExitingException)
     # endregion
