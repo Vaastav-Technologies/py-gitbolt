@@ -19,9 +19,10 @@ from vt.vcs.git.gitlib.exceptions import GitExitingException
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, GitSubcmdCommand, AddCommand
 from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD, ADD_CMD
+from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
-from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
+from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator
 from vt.vcs.git.gitlib.models import GitAddOpts
 
 
@@ -55,21 +56,36 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
 
 class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 
-    def __init__(self, root_dir: Path, git: GitCommand, *,
-                 args_validator: LsTreeArgsValidator | None = None):
+    def __init__(self, git_root_dir: Path, git: GitCommand, *,
+                 args_validator: LsTreeArgsValidator | None = None,
+                 cli_args_builder: LsTreeCLIArgsBuilder | None = None):
+        """
+        ``ls-tree`` cli command implementation using subprocess.
+
+        :param git_root_dir: Path to the Git repository root.
+        :param git: Underlying Git command interface.
+        :param args_validator: Optional custom argument validator. If None, uses the default from superclass.
+        :param cli_args_builder: Optional CLI args builder. If None, uses the default from superclass.
+        """
         super().__init__(git)
-        self._root_dir = root_dir
-        self._args_validator = args_validator or UtilLsTreeArgsValidator()
+        self._git_root_dir = git_root_dir
+        self._args_validator = args_validator or super().args_validator
+        self._cli_args_builder = cli_args_builder or super().cli_args_builder
 
     @override
     @property
     def root_dir(self) -> Path:
-        return self._root_dir
+        return self._git_root_dir
 
     @override
     @property
     def args_validator(self) -> LsTreeArgsValidator:
         return self._args_validator
+
+    @override
+    @property
+    def cli_args_builder(self) -> LsTreeCLIArgsBuilder:
+        return self._cli_args_builder
 
     def clone(self) -> 'LsTreeCommandImpl':
         return LsTreeCommandImpl(self.root_dir, self.underlying_git)
@@ -78,7 +94,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
     def __init__(self, root_dir: Path, git: GitCommand, *,
-                 args_validator: AddArgsValidator | None = None):
+                 args_validator: AddArgsValidator | None = None,):
         super().__init__(git)
         self._root_dir = root_dir
         self._args_validator = args_validator or UtilAddArgsValidator()
