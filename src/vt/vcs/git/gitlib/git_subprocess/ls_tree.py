@@ -52,6 +52,103 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
 
     @override
     def build(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> list[str]:
+        """
+        Build the full list of arguments to be passed to ``git ls-tree``.
+
+        This includes flags, optional arguments, tree-ish identifier, and optional paths.
+
+        >>> builder = IndividuallyOverridableLTCAB()
+
+        * Basic case: only tree-ish::
+
+        >>> builder.build("HEAD")
+        ['ls-tree', 'HEAD']
+
+        * With single boolean option::
+
+        >>> builder.build("HEAD", r=True)
+        ['ls-tree', '-r', 'HEAD']
+
+        * With multiple boolean flags::
+
+        >>> builder.build("HEAD", r=True, t=True, d=True)
+        ['ls-tree', '-d', '-r', '-t', 'HEAD']
+
+        * Long listing format::
+
+        >>> builder.build("HEAD", long=True)
+        ['ls-tree', '-l', 'HEAD']
+
+        * All common flags::
+
+        >>> builder.build("HEAD", r=True, t=True, long=True, z=True,
+        ...               name_only=True, full_name=True, full_tree=True)
+        ['ls-tree', '-r', '-t', '-l', '-z', '--name-only', '--full-name', '--full-tree', 'HEAD']
+
+        * With --name-status::
+
+        >>> builder.build("HEAD", name_status=True)
+        ['ls-tree', '--name-status', 'HEAD']
+
+        * With --object-only::
+
+        >>> builder.build("HEAD", object_only=True)
+        ['ls-tree', '--object-only', 'HEAD']
+
+        * With --abbrev (edge cases)::
+
+        >>> builder.build("HEAD", abbrev=0)
+        ['ls-tree', '--abbrev=0', 'HEAD']
+        >>> builder.build("HEAD", abbrev=40)
+        ['ls-tree', '--abbrev=40', 'HEAD']
+        >>> builder.build("HEAD", abbrev=7)
+        ['ls-tree', '--abbrev=7', 'HEAD']
+
+        * With --format::
+
+        >>> builder.build("HEAD", format_="%(objectname)")
+        ['ls-tree', '--format=%(objectname)', 'HEAD']
+        >>> builder.build("HEAD", format_="")
+        ['ls-tree', '--format=', 'HEAD']
+
+        * With paths::
+
+        >>> builder.build("HEAD", path=["src", "README.md"])
+        ['ls-tree', 'HEAD', 'src', 'README.md']
+
+        * With flags and paths::
+
+        >>> builder.build("HEAD", r=True, path=["src/module.py"])
+        ['ls-tree', '-r', 'HEAD', 'src/module.py']
+
+        * All supported options::
+
+        >>> builder.build(
+        ...     "HEAD",
+        ...     d=True,
+        ...     r=True,
+        ...     t=True,
+        ...     long=True,
+        ...     z=True,
+        ...     name_only=True,
+        ...     name_status=False,
+        ...     object_only=True,
+        ...     full_name=True,
+        ...     full_tree=True,
+        ...     abbrev=10,
+        ...     format_="%(objectname) %(path)",
+        ...     path=["dir1", "dir2/file.txt"]
+        ... )
+        ['ls-tree', '-d', '-r', '-t', '-l', '-z', '--name-only', '--object-only', '--full-name', '--full-tree', '--abbrev=10', '--format=%(objectname) %(path)', 'HEAD', 'dir1', 'dir2/file.txt']
+
+        * Empty or falsy values, mostly will fail at validation::
+
+        >>> builder.build("HEAD", d=False,
+        ...             abbrev=None, # type: ignore[arg-type] # expected int provided None
+        ...             path=[],
+        ...             format_=None) # type: ignore[arg-type] # expected str provided None
+        ['ls-tree', 'HEAD']
+        """
         sub_cmd_args = [LS_TREE_CMD]
 
         sub_cmd_args.extend(self.d_arg(ls_tree_opts.get("d")))
