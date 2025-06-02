@@ -94,10 +94,10 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
     def __init__(self, root_dir: Path, git: GitCommand, *,
-                 args_validator: AddArgsValidator | None = None,):
+                 args_validator: AddArgsValidator | None = None):
         super().__init__(git)
         self._root_dir = root_dir
-        self._args_validator = args_validator or UtilAddArgsValidator()
+        self._args_validator = args_validator or super().args_validator
 
     # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
 
