@@ -171,13 +171,13 @@ def validate_ls_tree_args(tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) 
     """
     require_type(tree_ish, 'tree_ish', str, GitExitingException)
 
-    bool_keys = [
-        'd', 'r', 't', 'long', 'z', 'name_only', 'object_only',
-        'full_name', 'full_tree', 'name_status'
-    ]
+    bool_keys: list[Literal['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
+        'name_status']] = ['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
+                           'name_status']
+
     for key in bool_keys:
         if key in ls_tree_opts:
-            the_key = ls_tree_opts[key] # type: ignore[arg-type] # required as mypy thinks key is not str
+            the_key = ls_tree_opts[key]
             require_type(the_key, key, bool, GitExitingException)
 
     if "abbrev" in ls_tree_opts:
