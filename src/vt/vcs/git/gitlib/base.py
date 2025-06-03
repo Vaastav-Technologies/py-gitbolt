@@ -72,7 +72,7 @@ class CanOverrideGitEnvs(ForGit, Protocol):
     """
 
     @abstractmethod
-    def git_env_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
+    def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
         """
         Temporarily override environment variables supplied to the git command before current subcommand runs.
 
@@ -88,7 +88,7 @@ class CanOverrideGitEnvs(ForGit, Protocol):
         ...
 
 
-class GitSubCommand(CanOverrideGitOpts, Protocol):
+class GitSubCommand(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Interface for git subcommands, such as:
 
@@ -256,7 +256,7 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
-class Git(CanOverrideGitOpts, Protocol):
+class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """

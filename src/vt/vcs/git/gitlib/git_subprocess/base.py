@@ -16,8 +16,8 @@ from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, HasGitUnderne
 from vt.vcs.git.gitlib.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder, IndividuallyOverridableLTCAB
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
-from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts
-from vt.vcs.git.gitlib.utils import merge_git_opts
+from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
+from vt.vcs.git.gitlib.utils import merge_git_opts, merge_git_envs
 
 
 class GitCommand(Git, ABC):
@@ -31,14 +31,9 @@ class GitCommand(Git, ABC):
         """
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
+        self._env_vars: GitEnvVars = {}
 
-    @override
-    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
-        _git_cmd = self.clone()
-        _main_cmd_opts = merge_git_opts(overrides, self._main_cmd_opts)
-        _git_cmd._main_cmd_opts = _main_cmd_opts
-        return _git_cmd
-
+    # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
         """
         Terminal operation to build and return CLI args for git main cli command.
@@ -69,6 +64,13 @@ class GitCommand(Git, ABC):
                 self._main_cmd_list_cmds_args() +
                 self._main_cmd_attr_source_args()
         )
+
+    @override
+    def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
+        _git_cmd = self.clone()
+        _main_cmd_opts = merge_git_opts(overrides, self._main_cmd_opts)
+        _git_cmd._main_cmd_opts = _main_cmd_opts
+        return _git_cmd
 
     def _main_cmd_cap_c_args(self) -> list[str]:
         val = self._main_cmd_opts.get("C")
@@ -199,6 +201,32 @@ class GitCommand(Git, ABC):
         if not_none_not_unset(val):
             return ["--attr-source", val]
         return []
+    # endregion
+
+    # region build_git_envs
+    def build_git_envs(self) -> dict[str, str]:
+        """
+        Terminal operation to build and return effective Git environment variables
+        from the merged ``GitEnvVars`` object.
+
+        Skips values that are ``Unset`` or ``None``-like using ``not_none_not_unset()``.
+        Converts ``Path`` and ``datetime`` instances to ``str``.
+
+        :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
+        """
+        env: dict[str, str] = {}
+        for key, val in self._env_vars.items():
+            if not_none_not_unset(val):
+                env[key] = str(val)
+        return env
+
+    @override
+    def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
+        _git_cmd = self.clone()
+        _env_vars = merge_git_envs(overrides, self._env_vars)
+        _git_cmd._env_vars = _env_vars
+        return _git_cmd
+    # endregion
 
     @override
     @property
@@ -258,6 +286,12 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
         overridden_git = self.underlying_git.git_opts_override(**overrides)
+        self._set_underlying_git(overridden_git)
+        return self
+
+    @override
+    def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
+        overridden_git = self.underlying_git.git_envs_override(**overrides)
         self._set_underlying_git(overridden_git)
         return self
 
