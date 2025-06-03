@@ -252,18 +252,28 @@ class TestAddSubcmd:
         Path(enc_local, 'a-file').write_text('a-file')
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add('.')
+        assert 'a-file' in subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
+                                          stdout=subprocess.PIPE, text=True).stdout
 
     def test_with_pathspec(self, enc_local):
         Path(enc_local, 'a-file').write_text('a-file')
         Path(enc_local, 'b-file').write_text('b-file')
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add('*-file')
+        indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
+                                          stdout=subprocess.PIPE, text=True).stdout
+        assert 'a-file' in indexed_files
+        assert 'b-file' in indexed_files
 
     def test_with_pathspecs(self, enc_local):
         Path(enc_local, 'a-file').write_text('a-file')
         Path(enc_local, 'b-file').write_text('b-file')
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add('a-file', 'b-file')
+        indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
+                                          stdout=subprocess.PIPE, text=True).stdout
+        assert 'a-file' in indexed_files
+        assert 'b-file' in indexed_files
 
     def test_with_pathspec_from_file(self, enc_local, tmp_path):
         Path(enc_local, 'a-file').write_text('a-file')
@@ -272,3 +282,7 @@ class TestAddSubcmd:
         pathspec_file.write_text('*-file')
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add(pathspec_from_file=pathspec_file)
+        indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
+                                          stdout=subprocess.PIPE, text=True).stdout
+        assert 'a-file' in indexed_files
+        assert 'b-file' in indexed_files
