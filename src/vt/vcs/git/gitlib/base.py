@@ -14,7 +14,7 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
 from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from vt.vcs.git.gitlib.add import AddArgsValidator, UtilAddArgsValidator
 
@@ -68,11 +68,11 @@ class CanOverrideGitEnvs(ForGit, Protocol):
     Can override main git command environment variables.
 
     For example, in ``GIT_COMMITTER_NAME=vt git --no-pager commit -m "a message"`` git command,
-    ``GIT_COMMITTER_NAME=vt``, particularly ``GIT_COMMITTER_NAME`` is the git environment variable.
+    ``GIT_COMMITTER_NAME=ss``, particularly ``GIT_COMMITTER_NAME`` is the git environment variable.
     """
 
     @abstractmethod
-    def git_env_override(self, **overrides: Unpack[GitOpts]) -> Self:
+    def git_env_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
         """
         Temporarily override environment variables supplied to the git command before current subcommand runs.
 
