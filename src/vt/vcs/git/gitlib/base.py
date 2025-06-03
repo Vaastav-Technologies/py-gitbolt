@@ -63,6 +63,31 @@ class CanOverrideGitOpts(ForGit, Protocol):
         ...
 
 
+class CanOverrideGitEnvs(ForGit, Protocol):
+    """
+    Can override main git command environment variables.
+
+    For example, in ``GIT_COMMITTER_NAME=vt git --no-pager commit -m "a message"`` git command,
+    ``GIT_COMMITTER_NAME=vt``, particularly ``GIT_COMMITTER_NAME`` is the git environment variable.
+    """
+
+    @abstractmethod
+    def git_env_override(self, **overrides: Unpack[GitOpts]) -> Self:
+        """
+        Temporarily override environment variables supplied to the git command before current subcommand runs.
+
+        Get a new ``Git`` object with the git environment variables overridden.
+
+        All the environment variables mirror envs described in the `git documentation <https://git-scm.com/docs/git#_environment_variables>`_.
+
+        For example, in ``GIT_COMMITTER_NAME=vt git --no-pager commit -m "a message"`` git command,
+        ``GIT_COMMITTER_NAME=vt``, particularly ``GIT_COMMITTER_NAME`` is the git environment variable.
+
+        :return: instance with overridden git environment variables.
+        """
+        ...
+
+
 class GitSubCommand(CanOverrideGitOpts, Protocol):
     """
     Interface for git subcommands, such as:

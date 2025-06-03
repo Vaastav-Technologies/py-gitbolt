@@ -208,6 +208,283 @@ class GitOpts(TypedDict, total=False):
     """
 
 
+# git env vars
+from typing import TypedDict, Literal, Union
+from pathlib import Path
+
+class GitEnvVars(TypedDict, total=False):
+    """
+    Environment variables that control Git's runtime behavior.
+
+    These variables correspond to official Git environment variables
+    described in the Git documentation:
+
+    - General environment variables: https://git-scm.com/docs/git#_environment_variables
+    - Git Trace variables: https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
+    - Git configuration environment variables: https://git-scm.com/docs/git-config#Documentation/git-config.txt
+
+    Each field corresponds to a known environment variable that influences
+    Git's operation or configuration during execution.
+
+    All variables are optional and can be set to control specific aspects
+    of Git's behavior.
+    """
+
+    HOME: Path
+    """
+    Specifies the path to the user’s home directory. On Windows, if unset, Git will set a process environment 
+    variable equal to: $HOMEDRIVE$HOMEPATH if both $HOMEDRIVE and $HOMEPATH exist; otherwise $USERPROFILE if 
+    $USERPROFILE exists.
+    
+    Mirrors the `HOME` env var documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-codeHOMEcode
+    """
+
+    GIT_AUTHOR_NAME: str
+    """
+    The name used for the author field of commits.
+
+    Mirrors the `GIT_AUTHOR_NAME` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-codeGITAUTHORNAMEcode
+
+    Overrides the configured user name for commits.
+    """
+
+    GIT_AUTHOR_EMAIL: str
+    """
+    The email used for the author field of commits.
+
+    Mirrors the `GIT_AUTHOR_EMAIL` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-codeGITAUTHOREMAILcode
+
+    Overrides the configured user email for commits.
+    """
+
+    GIT_COMMITTER_NAME: str
+    """
+    The name used for the committer field of commits.
+
+    Mirrors the `GIT_COMMITTER_NAME` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_COMMITTER_NAME
+
+    Overrides the configured committer name.
+    """
+
+    GIT_COMMITTER_EMAIL: str
+    """
+    The email used for the committer field of commits.
+
+    Mirrors the `GIT_COMMITTER_EMAIL` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_COMMITTER_EMAIL
+
+    Overrides the configured committer email.
+    """
+
+    GIT_EDITOR: str
+    """
+    Command to use as the editor for commit messages and other Git prompts.
+
+    Mirrors the `GIT_EDITOR` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_EDITOR
+
+    Overrides the editor specified in core.editor config.
+    """
+
+    GIT_PAGER: str
+    """
+    Pager command to use for displaying Git output.
+
+    Mirrors the `GIT_PAGER` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_PAGER
+
+    Overrides the pager specified in core.pager config.
+    """
+
+    GIT_SSH: Path
+    """
+    Path to the SSH executable to use for Git network operations.
+
+    Mirrors the `GIT_SSH` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_SSH
+
+    Overrides the default SSH command used by Git.
+    """
+
+    GIT_SSH_COMMAND: str
+    """
+    Full SSH command line to execute.
+
+    Mirrors the `GIT_SSH_COMMAND` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_SSH_COMMAND
+
+    Overrides `GIT_SSH` if set.
+    """
+
+    GIT_TRACE: Literal[1, 2] | bool | Path
+    """
+    Enables tracing of Git's internal operations.
+
+    Mirrors the `GIT_TRACE` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_TRACE
+
+    Can be set to:
+    - `1` or `True` to enable basic tracing to stderr,
+    - `2` for more verbose tracing,
+    - or a file path to log traces to a file.
+    """
+
+    GIT_TRACE_SETUP: Literal[1, 2] | bool | Path
+    """
+    Enables tracing specifically for Git's setup phase.
+
+    Mirrors the `GIT_TRACE_SETUP` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_TRACE_SETUP
+
+    Accepts the same values and semantics as `GIT_TRACE`.
+    """
+
+    GIT_TRACE_PERFORMANCE: Literal[1, 2] | bool | Path
+    """
+    Enables tracing of Git's performance data.
+
+    Mirrors the `GIT_TRACE_PERFORMANCE` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_TRACE_PERFORMANCE
+
+    Accepts the same values and semantics as `GIT_TRACE`.
+    """
+
+    GIT_TRACE_PACKET: Literal[1, 2] | bool | Path
+    """
+    Enables tracing of Git's packet-level communication.
+
+    Mirrors the `GIT_TRACE_PACKET` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_TRACE_PACKET
+
+    Accepts the same values and semantics as `GIT_TRACE`.
+    """
+
+    GIT_CONFIG_NOSYSTEM: Literal[1] | bool
+    """
+    Prevents Git from reading the system-wide config file.
+
+    Mirrors the `GIT_CONFIG_NOSYSTEM` environment variable documented at:
+    https://git-scm.com/docs/git-config#Documentation/git-config.txt-GIT_CONFIG_NOSYSTEM
+
+    Useful for isolated environments.
+    """
+
+    GIT_CONFIG_GLOBAL: Path
+    """
+    Path to a custom global Git configuration file.
+
+    Mirrors the `GIT_CONFIG_GLOBAL` environment variable documented at:
+    https://git-scm.com/docs/git-config#Documentation/git-config.txt-GIT_CONFIG_GLOBAL
+
+    Overrides the default global config path.
+    """
+
+    GIT_DIR: Path
+    """
+    Path to the Git repository’s `.git` directory.
+
+    Mirrors the `GIT_DIR` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_DIR
+
+    Useful for operating on a non-standard repository location.
+    """
+
+    GIT_WORK_TREE: Path
+    """
+    Path to the working tree directory.
+
+    Mirrors the `GIT_WORK_TREE` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_WORK_TREE
+
+    Useful for operating on a working tree separate from the repository.
+    """
+
+    GIT_INDEX_FILE: Path
+    """
+    Path to the Git index file.
+
+    Mirrors the `GIT_INDEX_FILE` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_INDEX_FILE
+
+    Useful for using a custom staging area.
+    """
+
+    GIT_OBJECT_DIRECTORY: Path
+    """
+    Path to the directory storing Git object files.
+
+    Mirrors the `GIT_OBJECT_DIRECTORY` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_OBJECT_DIRECTORY
+
+    Useful for object database manipulation.
+    """
+
+    GIT_ALTERNATE_OBJECT_DIRECTORIES: Path
+    """
+    Colon-separated list of alternate object directories.
+
+    Mirrors the `GIT_ALTERNATE_OBJECT_DIRECTORIES` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_ALTERNATE_OBJECT_DIRECTORIES
+
+    Enables object database sharing.
+    """
+
+    GIT_TERMINAL_PROMPT: Literal[0, 1] | bool
+    """
+    Controls whether Git prompts for credentials on the terminal.
+
+    Mirrors the `GIT_TERMINAL_PROMPT` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_TERMINAL_PROMPT
+
+    `1` or `True` enables prompts, `0` or `False` disables.
+    """
+
+    GIT_HTTP_USER_AGENT: str
+    """
+    Custom User-Agent string for Git HTTP operations.
+
+    Mirrors the `GIT_HTTP_USER_AGENT` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_HTTP_USER_AGENT
+
+    Useful for proxy or server-specific behavior.
+    """
+
+    GIT_HTTP_PROXY: str
+    """
+    URL of the HTTP proxy for Git network operations.
+
+    Mirrors the `GIT_HTTP_PROXY` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_HTTP_PROXY
+
+    Overrides system proxy settings.
+    """
+
+    GIT_HTTPS_PROXY: str
+    """
+    URL of the HTTPS proxy for Git network operations.
+
+    Mirrors the `GIT_HTTPS_PROXY` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_HTTPS_PROXY
+
+    Overrides system proxy settings.
+    """
+
+    GIT_NO_REPLACE_OBJECTS: Literal[1] | bool
+    """
+    Disables use of replacement refs.
+
+    Mirrors the `GIT_NO_REPLACE_OBJECTS` environment variable documented at:
+    https://git-scm.com/docs/git#Documentation/git.txt-GIT_NO_REPLACE_OBJECTS
+
+    Useful when you want to ensure original objects are used.
+    """
+
+
+
 # git add subcommand options
 class GitAddOpts(TypedDict, total=False):
     """
