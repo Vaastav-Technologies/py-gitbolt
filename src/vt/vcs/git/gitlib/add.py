@@ -101,7 +101,7 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file='-', pathspec_stdin=None)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Both pathspec_stdin and pathspec_from_file are required when pathspec_from_file is '-'.
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file=Path("x.txt"), pathspec_stdin="foo")
             Traceback (most recent call last):
@@ -129,7 +129,7 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate(pathspec_stdin="README.md")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
 
             >>> UtilAddArgsValidator().validate(pathspec="a.py",
             ...     chmod="777")  # type: ignore[arg-type] # expected +x, -x or None # provided int
@@ -145,12 +145,71 @@ class UtilAddArgsValidator(AddArgsValidator):
             ...     renormalize="sometimes")  # type: ignore[arg-type] # expected bool # provided str
             Traceback (most recent call last):
             vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
-        """
 
+            >>> UtilAddArgsValidator().validate(verbose=True)
+            Traceback (most recent call last):
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+        """
+        self.mandate_required_arguments(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
+                                        pathspec_stdin=pathspec_stdin)
         self.validate_exclusive_args(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
                                      pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul)
         self.validate_git_add_opts(**add_opts)
         self.validate_non_git_add_opts(pathspec_file_nul, pathspec_from_file, pathspec_stdin)
+
+    def mandate_required_arguments(self, pathspec: str | None, *pathspecs: str,
+                                   pathspec_from_file: Path | Literal['-'] | None, pathspec_stdin: str | None):
+        """
+        One of ``pathspec``, ``pathspec_from_file`` or ``pathspec_from_file=- pathspec_stdin`` must be provided.
+
+        Examples:
+
+        * All three provided, no issue:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments('add.py', 'more-add.py', 'even-more.txt',
+        ...                 pathspec_from_file=Path('a-file.txt'), pathspec_stdin='a str')
+
+        * Pairs provided, no issue:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments('add.py', 'more-add.py', 'even-more.txt',
+        ...                 pathspec_from_file=Path('a-file.txt'), pathspec_stdin=None)
+        >>> UtilAddArgsValidator().mandate_required_arguments('add.py', 'more-add.py', 'even-more.txt',
+        ...                 pathspec_from_file=None, pathspec_stdin='a stdin str')
+        >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file=Path('a-file.txt'),
+        ...                 pathspec_stdin='a stdin str')
+
+        * Provided single required, no issue:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments('add.py', pathspec_from_file=None, pathspec_stdin=None)
+        >>> UtilAddArgsValidator().mandate_required_arguments('add.py', 'more-add.py', 'even-more.txt', pathspec_from_file=None, pathspec_stdin=None)
+        >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file=Path('a-file.txt'), pathspec_stdin=None)
+
+        * Provided ``pathspec_stdin`` with pathpec_from_file=-``, no issue:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file='-', pathspec_stdin='stdin pathspec')
+
+        Error examples:
+
+        * No mandatory args provided:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file=None, pathspec_stdin=None)
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+
+        * ``pathspec_stdin`` not provided when ``pathspec_from_file=-``:
+
+        >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file='-', pathspec_stdin=None)
+        Traceback (most recent call last):
+        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+
+        :raises GitExitingException: if no mandatory args are provided.
+        """
+        if not has_atleast_one_arg(pathspec, *pathspecs, enforce_type=False) and pathspec_from_file is None:
+            errmsg = errmsg_creator.at_least_one_required('pathspec', 'pathspec_from_file')
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if pathspec_from_file=='-' and pathspec_stdin is None:
+            errmsg = 'pathspec_stdin must be provided when pathspec_form_file is -'
+            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
 
     def validate_exclusive_args(self, pathspec: str | None, *pathspecs: str,
                                 pathspec_from_file: Path | Literal["-"] | None,
@@ -168,7 +227,11 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file='-', pathspec_stdin=None)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Both pathspec_stdin and pathspec_from_file are required when pathspec_from_file is '-'.
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+
+            >>> UtilAddArgsValidator().validate(pathspec_from_file='-')
+            Traceback (most recent call last):
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file=Path("x.txt"), pathspec_stdin="foo")
             Traceback (most recent call last):
@@ -184,7 +247,7 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate(pathspec_stdin="README.md")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
+            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
 
         :raises GitExitingException: if exclusive args are provided together.
         """
