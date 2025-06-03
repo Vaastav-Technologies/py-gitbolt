@@ -8,22 +8,19 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override, Literal, overload, Unpack
+from typing import override
 
 from vt.utils.commons.commons.op import RootDirOp
-from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
-from vt.vcs.git.gitlib._internal_init import errmsg_creator
-from vt.vcs.git.gitlib.add import AddArgsValidator, UtilAddArgsValidator
-from vt.vcs.git.gitlib.exceptions import GitExitingException
+from vt.vcs.git.gitlib.add import AddArgsValidator
 from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, GitSubcmdCommand, AddCommand
-from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD, ADD_CMD
+from vt.vcs.git.gitlib.git_subprocess.add import AddCLIArgsBuilder
+from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD
 from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
 from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
 from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator
-from vt.vcs.git.gitlib.models import GitAddOpts
 
 
 class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
@@ -48,7 +45,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         if build_options:
             sub_cmd_args.append('--build-options')
         return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
-                                                   capture_output=True).stdout.strip()
+                                                          capture_output=True).stdout.strip()
 
     def clone(self) -> 'VersionCommandImpl':
         return VersionCommandImpl(self.underlying_git)
@@ -94,150 +91,12 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
     def __init__(self, root_dir: Path, git: GitCommand, *,
-                 args_validator: AddArgsValidator | None = None):
+                 args_validator: AddArgsValidator | None = None,
+                 cli_args_builder: AddCLIArgsBuilder | None = None):
         super().__init__(git)
         self._root_dir = root_dir
         self._args_validator = args_validator or super().args_validator
-
-    # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
-
-    @override
-    @overload
-    def add(
-        self,
-        pathspec: str,
-        *pathspecs: str,
-        **add_opts: Unpack[GitAddOpts]
-    ) -> str:
-        """
-        Add files specified by a list of pathspec strings.
-        `pathspec_from_file` and `pathspec_file_nul` are disallowed here.
-
-        Mirrors the parameters of ``git add`` CLI command
-        from `git add documentation <https://git-scm.com/docs/git-add>`_.
-        """
-
-    @override
-    @overload
-    def add(
-        self,
-        *,
-        pathspec_from_file: Path,
-        pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
-    ) -> str:
-        """
-        Add files listed in a file (`pathspec_from_file`) to the index.
-        `pathspec_file_nul` indicates if the file is NUL terminated.
-        No explicit pathspec list is allowed in this overload.
-
-        Mirrors the parameters of ``git add`` CLI command
-        from `git add documentation <https://git-scm.com/docs/git-add>`_.
-        """
-
-    @override
-    @overload
-    def add(
-        self,
-        *,
-        pathspec_from_file: Literal["-"],
-        pathspec_stdin: str,
-        pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
-    ) -> str:
-        """
-        Add files listed from stdin (when `pathspec_from_file` is '-').
-        The `pathspec_stdin` argument is the string content piped to stdin.
-
-        Mirrors the parameters of ``git add`` CLI command
-        from `git add documentation <https://git-scm.com/docs/git-add>`_.
-        """
-
-    @override
-    def add(
-            self,
-            pathspec: str | None = None,
-            *pathspecs: str,
-            pathspec_from_file: Path | Literal["-"] | None = None,
-            pathspec_stdin: str | None = None,
-            pathspec_file_nul: bool = False,
-            **add_opts: Unpack[GitAddOpts]
-    ) -> str:
-        self.args_validator.validate(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
-                          pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul, **add_opts)
-
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        sub_cmd_args = [ADD_CMD]
-
-        # Add flags based on truthy value
-        if add_opts.get("verbose"):
-            sub_cmd_args.append("--verbose")
-        if add_opts.get("dry_run"):
-            sub_cmd_args.append("--dry-run")
-        if add_opts.get("force"):
-            sub_cmd_args.append("--force")
-        if add_opts.get("interactive"):
-            sub_cmd_args.append("--interactive")
-        if add_opts.get("patch"):
-            sub_cmd_args.append("--patch")
-        if add_opts.get("edit"):
-            sub_cmd_args.append("--edit")
-        if add_opts.get("sparse"):
-            sub_cmd_args.append("--sparse")
-        if add_opts.get("intent_to_add"):
-            sub_cmd_args.append("--intent-to-add")
-        if add_opts.get("refresh"):
-            sub_cmd_args.append("--refresh")
-        if add_opts.get("ignore_errors"):
-            sub_cmd_args.append("--ignore-errors")
-        if add_opts.get("ignore_missing"):
-            sub_cmd_args.append("--ignore-missing")
-        if add_opts.get("renormalize"):
-            sub_cmd_args.append("--renormalize")
-
-        # Handle conditional bool | None flags
-        no_all = add_opts.get("no_all")
-        if no_all is True:
-            sub_cmd_args.append("--no-all")
-        elif no_all is False:
-            sub_cmd_args.append("--all")
-
-        no_ignore_removal = add_opts.get("no_ignore_removal")
-        if no_ignore_removal is True:
-            sub_cmd_args.append("--no-ignore-removal")
-        elif no_ignore_removal is False:
-            sub_cmd_args.append("--ignore-removal")
-
-        chmod = add_opts.get("chmod")
-        if chmod is not None:
-            sub_cmd_args.append(f"--chmod={chmod}")
-
-        # Handle pathspec argument sets
-        input_data = None
-        if pathspec_from_file is not None:
-            sub_cmd_args.append(f"--pathspec-from-file={str(pathspec_from_file)}")
-            if pathspec_file_nul:
-                sub_cmd_args.append("--pathspec-file-nul")
-            if pathspec_from_file == "-":
-                input_data = pathspec_stdin
-        elif pathspec is not None:
-            sub_cmd_args.extend((pathspec, *pathspecs))
-        else:
-            errmsg = errmsg_creator.at_least_one_required('pathspec', 'pathspec_from_file',
-                                                 "'pathspec_stdin' when pathspec_from_file=-")
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-
-        result = self.underlying_git.runner.run_git_command(
-            main_cmd_args,
-            sub_cmd_args,
-            _input=input_data,
-            check=True,
-            text=True,
-            capture_output=True,
-            cwd=self._root_dir,
-        )
-
-        return result.stdout.strip()
+        self._cli_args_builder = cli_args_builder or super().cli_args_builder
 
     @override
     @property
@@ -248,6 +107,11 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     @property
     def args_validator(self) -> AddArgsValidator:
         return self._args_validator
+
+    @override
+    @property
+    def cli_args_builder(self) -> AddCLIArgsBuilder:
+        return self._cli_args_builder
 
     def clone(self) -> 'AddCommandImpl':
         return AddCommandImpl(self.root_dir, self.underlying_git)

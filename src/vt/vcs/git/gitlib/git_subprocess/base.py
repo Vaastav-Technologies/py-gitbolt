@@ -8,14 +8,15 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import override, Protocol, Unpack, Self
+from typing import override, Protocol, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
 from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from vt.vcs.git.gitlib.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder, IndividuallyOverridableLTCAB
 from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
-from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts
 from vt.vcs.git.gitlib.utils import merge_git_opts
 
 
@@ -47,26 +48,26 @@ class GitCommand(Git, ABC):
         :return: CLI args for git main cli command.
         """
         return (
-            self._main_cmd_cap_c_args() +
-            self._main_cmd_small_c_args() +
-            self._main_cmd_config_env_args() +
-            self._main_cmd_exec_path_args() +
-            self._main_cmd_paginate_args() +
-            self._main_cmd_no_pager_args() +
-            self._main_cmd_git_dir_args() +
-            self._main_cmd_work_tree_args() +
-            self._main_cmd_namespace_args() +
-            self._main_cmd_bare_args() +
-            self._main_cmd_no_replace_objects_args() +
-            self._main_cmd_no_lazy_fetch_args() +
-            self._main_cmd_no_optional_locks_args() +
-            self._main_cmd_no_advice_args() +
-            self._main_cmd_literal_pathspecs_args() +
-            self._main_cmd_glob_pathspecs_args() +
-            self._main_cmd_noglob_pathspecs_args() +
-            self._main_cmd_icase_pathspecs_args() +
-            self._main_cmd_list_cmds_args() +
-            self._main_cmd_attr_source_args()
+                self._main_cmd_cap_c_args() +
+                self._main_cmd_small_c_args() +
+                self._main_cmd_config_env_args() +
+                self._main_cmd_exec_path_args() +
+                self._main_cmd_paginate_args() +
+                self._main_cmd_no_pager_args() +
+                self._main_cmd_git_dir_args() +
+                self._main_cmd_work_tree_args() +
+                self._main_cmd_namespace_args() +
+                self._main_cmd_bare_args() +
+                self._main_cmd_no_replace_objects_args() +
+                self._main_cmd_no_lazy_fetch_args() +
+                self._main_cmd_no_optional_locks_args() +
+                self._main_cmd_no_advice_args() +
+                self._main_cmd_literal_pathspecs_args() +
+                self._main_cmd_glob_pathspecs_args() +
+                self._main_cmd_noglob_pathspecs_args() +
+                self._main_cmd_icase_pathspecs_args() +
+                self._main_cmd_list_cmds_args() +
+                self._main_cmd_attr_source_args()
         )
 
     def _main_cmd_cap_c_args(self) -> list[str]:
@@ -82,7 +83,7 @@ class GitCommand(Git, ABC):
             for k, v in val.items():
                 if is_unset(v):
                     continue  # explicitly skip unset keys
-                if v is True or v is None: # treat None as True
+                if v is True or v is None:  # treat None as True
                     args += ["-c", k]
                 elif v is False:
                     args += ["-c", f"{k}="]
@@ -227,7 +228,7 @@ class GitCommand(Git, ABC):
         main_opts = self.build_main_cmd_args()
         main_opts.append(path_opt_str)
         _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
-                                    capture_output=True).stdout.strip()
+                                                capture_output=True).stdout.strip()
         return Path(_path_str)
 
     @override
@@ -314,4 +315,76 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
-    pass
+
+    # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
+
+    @override
+    @overload
+    def add(
+            self,
+            pathspec: str,
+            *pathspecs: str,
+            **add_opts: Unpack[GitAddOpts]
+    ) -> str: ...
+
+    @override
+    @overload
+    def add(
+            self,
+            *,
+            pathspec_from_file: Path,
+            pathspec_file_nul: bool = False,
+            **add_opts: Unpack[GitAddOpts]
+    ) -> str: ...
+
+    @override
+    @overload
+    def add(
+            self,
+            *,
+            pathspec_from_file: Literal["-"],
+            pathspec_stdin: str,
+            pathspec_file_nul: bool = False,
+            **add_opts: Unpack[GitAddOpts]
+    ) -> str: ...
+
+    @override
+    def add(
+            self,
+            pathspec: str | None = None,
+            *pathspecs: str,
+            pathspec_from_file: Path | Literal["-"] | None = None,
+            pathspec_stdin: str | None = None,
+            pathspec_file_nul: bool = False,
+            **add_opts: Unpack[GitAddOpts]
+    ) -> str:
+        self.args_validator.validate(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
+                                     pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul, **add_opts)
+        sub_cmd_args = self.cli_args_builder.build(pathspec, *pathspecs,
+                                                   pathspec_from_file=pathspec_from_file,
+                                                   pathspec_file_nul=pathspec_file_nul, **add_opts)
+        main_cmd_args = self.underlying_git.build_main_cmd_args()
+
+        # Run the git command
+        result = self.underlying_git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            _input=pathspec_stdin,
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=self.root_dir,
+        )
+
+        return result.stdout.strip()
+
+    @property
+    def cli_args_builder(self) -> AddCLIArgsBuilder:
+        """
+        The builder assembles the subcommand CLI portion of the git command invocation, such as
+        in ``git --no-pager add --ignore-missing add-file.py``, where ``--ignore-missing add-file.py`` is the
+        subcommand argument list.
+
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git add`` subprocess.
+        """
+        return IndividuallyOverridableACAB()
