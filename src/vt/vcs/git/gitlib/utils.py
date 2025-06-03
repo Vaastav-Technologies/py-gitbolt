@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vt.vcs.git.gitlib.models import GitOpts
+from vt.vcs.git.gitlib.models import GitOpts, GitEnvVars
 
 
 def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
@@ -86,10 +86,93 @@ def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
         fallbacks on the corresponding property from the ``fallback`` ``GitOpts`` object if that corresponding property
         is ``None`` in the ``primary`` ``GitOpts`` object.
     """
-    merged: GitOpts = {}
-    for k in GitOpts.__annotations__.keys(): # type: ignore
-        val = primary.get(k) # type: ignore # required as mypy thinks k is not str
+    return merge_typed_dicts(primary, fallback, GitOpts)
+
+
+def merge_git_envs(primary: GitEnvVars, fallback: GitEnvVars) -> GitEnvVars:
+    """
+    Merge the ``primary`` and ``fallback`` ``GitEnvVars`` objects and return a new ``GitEnvVars`` object.
+
+    Construction of the new ``GitEnvVars`` object is done such that:
+
+    * values from ``primary`` are prioritized.
+    * if a key exists in both, and the value in ``primary`` is explicitly ``None``, then the value from ``fallback`` is used.
+    * if a value in ``primary`` is ``Unset``, it is retained and does not fall back.
+    * any keys missing from ``primary`` but present in ``fallback`` are included.
+
+    Example usage:
+
+    >>> from pathlib import Path
+    >>> from datetime import datetime
+    >>> from typing import cast
+    >>> _primary = cast(GitEnvVars, {
+    ...     "GIT_AUTHOR_NAME": "Alice",
+    ...     "GIT_AUTHOR_EMAIL": "alice@example.com",
+    ...     "GIT_COMMITTER_DATE": None,
+    ...     "GIT_EDITOR": None,
+    ...     "GIT_TRACE": 2,
+    ...     "GIT_SSH": Path("/usr/bin/ssh"),
+    ... })
+    >>> _fallback = cast(GitEnvVars, {
+    ...     "GIT_AUTHOR_NAME": "Bob",
+    ...     "GIT_AUTHOR_EMAIL": "bob@example.com",
+    ...     "GIT_COMMITTER_DATE": datetime(2020, 1, 1),
+    ...     "GIT_EDITOR": "vim",
+    ...     "GIT_TRACE": Path("/tmp/trace.log"),
+    ...     "GIT_SSH": None,
+    ...     "GIT_CONFIG_GLOBAL": Path("/home/bob/.gitconfig"),
+    ...     "GIT_REDACT_COOKIES": "sessionid"
+    ... })
+    >>> _merged = merge_git_envs(_primary, _fallback)
+    >>> _merged["GIT_AUTHOR_NAME"]
+    'Alice'
+    >>> _merged["GIT_AUTHOR_EMAIL"]
+    'alice@example.com'
+    >>> _merged["GIT_COMMITTER_DATE"]
+    datetime.datetime(2020, 1, 1, 0, 0)
+    >>> _merged["GIT_EDITOR"]
+    'vim'
+    >>> _merged["GIT_TRACE"]
+    2
+    >>> _merged["GIT_SSH"]==Path('/usr/bin/ssh')
+    True
+    >>> _merged["GIT_CONFIG_GLOBAL"]==Path('/home/bob/.gitconfig')
+    True
+
+    Empty example:
+
+    >>> empty = merge_git_envs({}, {})
+    >>> isinstance(empty, dict)
+    True
+
+    Partial fallback behavior:
+
+    >>> merge_git_envs({"GIT_EDITOR": None}, {"GIT_EDITOR": "nano"})["GIT_EDITOR"]
+    'nano'
+    >>> merge_git_envs({"GIT_EDITOR": None}, {"GIT_EDITOR": None})["GIT_EDITOR"] is None
+    True
+    >>> merge_git_envs({"GIT_EDITOR": "code"}, {"GIT_EDITOR": "nano"})["GIT_EDITOR"]
+    'code'
+
+    >>> from vt.utils.commons.commons.core_py import Unset, UNSET
+    >>> merge_git_envs({"GIT_EDITOR": UNSET}, {"GIT_EDITOR": "nano"})["GIT_EDITOR"] is UNSET
+    True
+
+    :param primary: The first priority ``GitEnvVars`` object.
+    :param fallback: The second priority or fallback ``GitEnvVars`` object.
+    :return: A new ``GitEnvVars`` object that contains all the properties from the ``primary`` ``GitEnvVars`` object and
+        fallbacks on the corresponding property from the ``fallback`` ``GitEnvVars`` object if that corresponding property
+        is explicitly ``None`` in the ``primary`` ``GitEnvVars`` object.
+    """
+    return merge_typed_dicts(primary, fallback, GitEnvVars)
+
+
+# TODO: check for typing this function
+def merge_typed_dicts(primary, fallback, the_typed_dict):
+    merged = {}
+    for k in the_typed_dict.__annotations__.keys():  # type: ignore
+        val = primary.get(k)  # type: ignore # required as mypy thinks k is not str
         if val is None:
-            val = fallback.get(k) # type: ignore # required as mypy thinks k is not str
-        merged[k] = val # type: ignore # required as mypy thinks k is not str
+            val = fallback.get(k)  # type: ignore # required as mypy thinks k is not str
+        merged[k] = val  # type: ignore # required as mypy thinks k is not str
     return merged
