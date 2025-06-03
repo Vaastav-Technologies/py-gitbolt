@@ -214,76 +214,76 @@ class GitCommitEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_git_commits
     """
-    GIT_AUTHOR_NAME: str
-    GIT_AUTHOR_EMAIL: str
-    GIT_AUTHOR_DATE: str | datetime | int
-    GIT_COMMITTER_NAME: str
-    GIT_COMMITTER_EMAIL: str
-    GIT_COMMITTER_DATE: str | datetime | int
+    GIT_AUTHOR_NAME: str | Unset
+    GIT_AUTHOR_EMAIL: str | Unset
+    GIT_AUTHOR_DATE: str | datetime | int | Unset
+    GIT_COMMITTER_NAME: str | Unset
+    GIT_COMMITTER_EMAIL: str | Unset
+    GIT_COMMITTER_DATE: str | datetime | int | Unset
 
 
 class GitSysEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
-    HOME: Path
+    HOME: Path | Unset
 
 
 class GitEditorEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
-    GIT_EDITOR: str
-    GIT_PAGER: str
+    GIT_EDITOR: str | Unset
+    GIT_PAGER: str | Unset
 
 
 class GitSSHEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
-    GIT_SSH: Path
-    GIT_SSH_COMMAND: str
+    GIT_SSH: Path | Unset
+    GIT_SSH_COMMAND: str | Unset
 
 
 class GitTraceEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
-    GIT_TRACE: Literal[1, 2] | bool | Path
-    GIT_TRACE_SETUP: Literal[1, 2] | bool | Path
-    GIT_TRACE_PERFORMANCE: Literal[1, 2] | bool | Path
-    GIT_TRACE_PACKET: Literal[1, 2] | bool | Path
+    GIT_TRACE: Literal[1, 2] | bool | Path | Unset
+    GIT_TRACE_SETUP: Literal[1, 2] | bool | Path | Unset
+    GIT_TRACE_PERFORMANCE: Literal[1, 2] | bool | Path | Unset
+    GIT_TRACE_PACKET: Literal[1, 2] | bool | Path | Unset
 
 
 class GitConfigEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
-    GIT_CONFIG_NOSYSTEM: Literal[1] | bool
-    GIT_CONFIG_GLOBAL: Path
-    GIT_ADVICE: Literal[0] | bool
+    GIT_CONFIG_NOSYSTEM: Literal[1] | bool | Unset
+    GIT_CONFIG_GLOBAL: Path | Unset
+    GIT_ADVICE: Literal[0] | bool | Unset
 
 
 class GitRepoEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_the_git_repository
     """
-    GIT_DIR: Path
-    GIT_WORK_TREE: Path
-    GIT_INDEX_FILE: Path
-    GIT_OBJECT_DIRECTORY: Path
-    GIT_ALTERNATE_OBJECT_DIRECTORIES: Path
+    GIT_DIR: Path | Unset
+    GIT_WORK_TREE: Path | Unset
+    GIT_INDEX_FILE: Path | Unset
+    GIT_OBJECT_DIRECTORY: Path | Unset
+    GIT_ALTERNATE_OBJECT_DIRECTORIES: Path | Unset
 
 
 class GitNetworkEnvVars(TypedDict, total=False):
     """
     Git network related env vars.
     """
-    GIT_TERMINAL_PROMPT: Literal[0, 1] | bool
-    GIT_HTTP_USER_AGENT: str
-    GIT_HTTP_PROXY: str
-    GIT_HTTPS_PROXY: str
-    GIT_NO_REPLACE_OBJECTS: Literal[1] | bool
+    GIT_TERMINAL_PROMPT: Literal[0, 1] | bool | Unset
+    GIT_HTTP_USER_AGENT: str | Unset
+    GIT_HTTP_PROXY: str | Unset
+    GIT_HTTPS_PROXY: str | Unset
+    GIT_NO_REPLACE_OBJECTS: Literal[1] | bool | Unset
 
 
 GIT_TRACE_TYPE = Literal[0] | bool | Literal[1, 2] | Path | Literal[3, 4, 5, 6, 7, 8, 9]
@@ -305,7 +305,7 @@ class GitLogEnvVars(TypedDict, total=False):
     - `Path`: write trace to file
     """
 
-    GIT_TRACE: GIT_TRACE_TYPE
+    GIT_TRACE: GIT_TRACE_TYPE | Unset
     """
     General tracing facility.
 
@@ -313,44 +313,44 @@ class GitLogEnvVars(TypedDict, total=False):
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACEcode
     """
 
-    GIT_TRACE_SETUP: GIT_TRACE_TYPE
+    GIT_TRACE_SETUP: GIT_TRACE_TYPE | Unset
     """
     Traces repository, environment, and config discovery setup.
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACESETUPcode
     """
 
-    GIT_TRACE_PACKET: GIT_TRACE_TYPE
+    GIT_TRACE_PACKET: GIT_TRACE_TYPE | Unset
     """
     Traces Git protocol packet communication (push, fetch, etc.).
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACEPACKETcode
     """
 
-    GIT_TRACE_PERFORMANCE: GIT_TRACE_TYPE
+    GIT_TRACE_PERFORMANCE: GIT_TRACE_TYPE | Unset
     """
     Logs performance data including timing metrics for Git operations.
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACEPERFORMANCEcode
     """
 
-    GIT_TRACE_PACK_ACCESS: GIT_TRACE_TYPE
+    GIT_TRACE_PACK_ACCESS: GIT_TRACE_TYPE | Unset
     """
     Traces accesses to objects inside packfiles.
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACEPACKACCESScode
     """
 
-    GIT_TRACE_SHALLOW: GIT_TRACE_TYPE
+    GIT_TRACE_SHALLOW: GIT_TRACE_TYPE | Unset
     """
     Traces shallow clone logic and interaction with shallow files.
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACESHALLOWcode
     """
 
-    GIT_TRACE_CURL: GIT_TRACE_TYPE
+    GIT_TRACE_CURL: GIT_TRACE_TYPE | Unset
     """
     Traces all libcurl activity used for HTTP/HTTPS communication.
     Useful for diagnosing HTTPS issues.
     Docs: https://git-scm.com/docs/git#Documentation/git.txt-codeGITTRACECURLcode
     """
 
-    GIT_REDACT_COOKIES: str
+    GIT_REDACT_COOKIES: str | Unset
     """
     Comma-separated list of cookie names to redact in curl trace logs.
 
