@@ -183,6 +183,181 @@ class TestMainCmdOverrides:
                 git = SimpleGitCommand().git_opts_override(c=input_dict)
                 assert git._main_cmd_small_c_args() == expected
 
+class TestEnvOverrides:
+    class TestSupplied:
+        class TestSameCall:
+            def test_one_supplied(self):
+                git = SimpleGitCommand()
+                assert  git.git_envs_override(GIT_TRACE=True).build_git_envs() == {'GIT_TRACE': 'True'}
+
+            def test_one_supplied_main_opts_mixed(self):
+                git = SimpleGitCommand()
+                assert  git.git_envs_override(GIT_TRACE=True).git_opts_override(no_pager=True).build_git_envs() == {'GIT_TRACE': 'True'}
+
+            def test_multiple_supplied(self):
+                git = SimpleGitCommand()
+                assert git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'),
+                               GIT_EDITOR='vim').build_git_envs() == {'GIT_TRACE': '1',
+                                                                      'GIT_DIR': str(Path('/tmp/git-dir')),
+                                                                      'GIT_EDITOR': 'vim'}
+
+            def test_multiple_supplied_main_opts_mixed(self):
+                git = SimpleGitCommand()
+                assert git.git_opts_override(no_advice=True).git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'),
+                               GIT_EDITOR='vim').build_git_envs() == {'GIT_TRACE': '1',
+                                                                      'GIT_DIR': str(Path('/tmp/git-dir')),
+                                                                      'GIT_EDITOR': 'vim'}
+
+    class TestMultipleCalls:
+        def test_one_supplied(self):
+            git = SimpleGitCommand()
+            assert git.git_envs_override().git_envs_override(
+                GIT_TRACE_SETUP=2).git_envs_override().build_git_envs() == {'GIT_TRACE_SETUP': '2'}
+
+        def test_one_supplied_more_calls(self):
+            git = SimpleGitCommand()
+            assert git.git_envs_override().git_envs_override(GIT_TRACE_SETUP=2).git_envs_override(
+                GIT_ADVICE=False).build_git_envs() == {'GIT_TRACE_SETUP': '2', 'GIT_ADVICE': 'False'}
+
+        def test_multiple_supplied(self):
+            git = SimpleGitCommand()
+            assert git.git_envs_override(GIT_SSH=Path('/tmp/SSH')).git_envs_override(GIT_TERMINAL_PROMPT=1,
+                                                                                    GIT_NO_REPLACE_OBJECTS=True).git_envs_override(
+                GIT_ALTERNATE_OBJECT_DIRECTORIES=Path('/tmp/alter')).build_git_envs() == {
+                'GIT_SSH': str(Path('/tmp/SSH')), 'GIT_TERMINAL_PROMPT': '1', 'GIT_NO_REPLACE_OBJECTS': 'True',
+                'GIT_ALTERNATE_OBJECT_DIRECTORIES': str(Path('/tmp/alter'))
+            }
+
+    class TestOverrideValues:
+        def test_unset_value_alone(self):
+            """
+            only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
+            """
+            git = SimpleGitCommand()
+            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(exec_path=UNSET).build_main_cmd_args() == []
+
+        def test_unset_value_defined_with_others(self):
+            """
+            -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
+            """
+            git = SimpleGitCommand()
+            assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(exec_path=UNSET).build_main_cmd_args() == ['-C',
+                                                                                                                '.']
+
+        class TestMultipleCalls:
+            def test_unset_value_on_last_call(self):
+                """
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in last ``git_opts_override()`` call.
+                """
+                git = SimpleGitCommand()
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas',
+                                                                                  'comm': 'suyog'}).git_opts_override(
+                    exec_path=UNSET).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
+                                                                 '--config-env', 'comm=suyog']
+
+            def test_unset_value_on_non_last_call(self):
+                """
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * --no-replace-objects is set in last ``git_opts_override()`` call.
+                """
+                git = SimpleGitCommand()
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
+                    no_replace_objects=True).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
+                                                                         '--config-env', 'comm=suyog',
+                                                                         '--no-replace-objects']
+
+            def test_no_value_on_non_last_call(self):
+                """
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * no value given to last ``git_opts_override()`` call.
+                """
+                git = SimpleGitCommand()
+                assert git.git_opts_override(
+                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
+                    exec_path=UNSET).git_opts_override().build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
+                                                                       '--config-env', 'comm=suyog']
+
+            def test_re_set_value_on_non_last_call(self):
+                """
+                * -C and --exec-path is set in first ``git_opts_override()`` call.
+                * --config-env is set in the next ``git_opts_override()`` call.
+                * --exec-path is unset in next ``git_opts_override()`` call.
+                * --no-replace-objects is set in last ``git_opts_override()`` call.
+                """
+                git = SimpleGitCommand()
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
+                    exec_path=Path()).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
+                                                                  '--config-env', 'comm=suyog', '--exec-path', '.']
+    class TestIndividualMethods:
+        class TestSmallC:
+            @pytest.mark.parametrize("input_dict,expected", [
+                # Simple key-value
+                ({"foo.bar": "baz"}, ["-c", "foo.bar=baz"]),
+
+                # Empty string value
+                ({"foo.bar": ""}, ["-c", "foo.bar="]),
+
+                # Boolean True (no equals sign)
+                ({"foo.bar": True}, ["-c", "foo.bar"]),
+
+                # Boolean False (explicit empty string)
+                ({"foo.bar": False}, ["-c", "foo.bar="]),
+
+                # None (treated as True)
+                ({"foo.bar": None}, ["-c", "foo.bar"]),
+
+                # Mixed values
+                ({
+                    "a.b": "x",
+                    "c.d": "",
+                    "e.f": True,
+                    "g.h": False,
+                    "i.j": None
+                }, [
+                     "-c", "a.b=x",
+                     "-c", "c.d=",
+                     "-c", "e.f",
+                     "-c", "g.h=",
+                     "-c", "i.j"
+                 ]),
+
+                # Empty config (no args)
+                ({}, []),
+
+                # c is None
+                (None, []),
+
+                # c is UNSET
+                (UNSET, []),
+
+                # Missing key
+                ({}, []),
+
+                # UNSET should remove the key
+                ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+
+                # All keys are unset
+                ({"foo.bar": UNSET}, []),
+
+                # Mixed unset, true, false
+                ({
+                    "a.b": UNSET,
+                    "b.c": True,
+                    "c.d": False
+                }, ["-c", "b.c", "-c", "c.d="])
+            ])
+            def test_main_cmd_c_args(self, input_dict, expected):
+                git = SimpleGitCommand().git_opts_override(c=input_dict)
+                assert git._main_cmd_small_c_args() == expected
+
 
 class TestLsTreeSubcmd:
 
