@@ -69,14 +69,14 @@ def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
     Empty example:
 
     >>> merge_git_opts({}, {})
-    {'C': None, 'c': None, 'config_env': None, 'exec_path': None, 'paginate': None, 'no_pager': None, 'git_dir': None, 'work_tree': None, 'namespace': None, 'bare': None, 'no_replace_objects': None, 'no_lazy_fetch': None, 'no_optional_locks': None, 'no_advice': None, 'literal_pathspecs': None, 'glob_pathspecs': None, 'noglob_pathspecs': None, 'icase_pathspecs': None, 'list_cmds': None, 'attr_source': None}
+    {}
 
     Partial fallback behavior:
 
     >>> merge_git_opts({"paginate": None}, {"paginate": True})["paginate"]
     True
-    >>> merge_git_opts({"paginate": None}, {"paginate": None})["paginate"] is None
-    True
+    >>> 'paginate' in merge_git_opts({"paginate": None}, {"paginate": None})
+    False
     >>> merge_git_opts({"paginate": False}, {"paginate": True})["paginate"]
     False
 
@@ -149,8 +149,8 @@ def merge_git_envs(primary: GitEnvVars, fallback: GitEnvVars) -> GitEnvVars:
 
     >>> merge_git_envs({"GIT_EDITOR": None}, {"GIT_EDITOR": "nano"})["GIT_EDITOR"]
     'nano'
-    >>> merge_git_envs({"GIT_EDITOR": None}, {"GIT_EDITOR": None})["GIT_EDITOR"] is None
-    True
+    >>> 'GIT_EDITOR' in merge_git_envs({"GIT_EDITOR": None}, {"GIT_EDITOR": None})
+    False
     >>> merge_git_envs({"GIT_EDITOR": "code"}, {"GIT_EDITOR": "nano"})["GIT_EDITOR"]
     'code'
 
@@ -174,5 +174,6 @@ def merge_typed_dicts(primary, fallback, the_typed_dict):
         val = primary.get(k)  # type: ignore # required as mypy thinks k is not str
         if val is None:
             val = fallback.get(k)  # type: ignore # required as mypy thinks k is not str
-        merged[k] = val  # type: ignore # required as mypy thinks k is not str
+        if val is not None:
+            merged[k] = val  # type: ignore # required as mypy thinks k is not str
     return merged
