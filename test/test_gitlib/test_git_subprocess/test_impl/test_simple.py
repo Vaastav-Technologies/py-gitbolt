@@ -19,9 +19,11 @@ def test_exec_path():
     git = SimpleGitCommand()
     assert isinstance(git.exec_path, Path)
 
+
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
     assert git.git_opts_override(exec_path=None).exec_path is not None
+
 
 class TestMainCmdOverrides:
     class TestSupplied:
@@ -33,8 +35,8 @@ class TestMainCmdOverrides:
             def test_multiple_supplied(self):
                 git = SimpleGitCommand()
                 assert git.git_opts_override(no_replace_objects=True, git_dir=Path(),
-                               paginate=True).build_main_cmd_args() == ['--paginate', '--git-dir', '.',
-                                                                          '--no-replace-objects']
+                                             paginate=True).build_main_cmd_args() == ['--paginate', '--git-dir', '.',
+                                                                                      '--no-replace-objects']
 
     class TestMultipleCalls:
         def test_one_supplied(self):
@@ -44,14 +46,15 @@ class TestMainCmdOverrides:
 
         def test_multiple_supplied(self):
             git = SimpleGitCommand()
-            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(noglob_pathspecs=True, no_advice=True).git_opts_override(
+            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(noglob_pathspecs=True,
+                                                                                  no_advice=True).git_opts_override(
                 config_env={'auth': 'suhas', 'comm': 'suyog'}).build_main_cmd_args() == ['--config-env',
-                                                                                           'auth=suhas',
-                                                                                           '--config-env',
-                                                                                           'comm=suyog',
-                                                                                           '--exec-path',
-                                                                                           'tmp', '--no-advice',
-                                                                                           '--noglob-pathspecs']
+                                                                                         'auth=suhas',
+                                                                                         '--config-env',
+                                                                                         'comm=suyog',
+                                                                                         '--exec-path',
+                                                                                         'tmp', '--no-advice',
+                                                                                         '--noglob-pathspecs']
 
     class TestOverrideValues:
         def test_unset_value_alone(self):
@@ -59,15 +62,17 @@ class TestMainCmdOverrides:
             only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
             """
             git = SimpleGitCommand()
-            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(exec_path=UNSET).build_main_cmd_args() == []
+            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(
+                exec_path=UNSET).build_main_cmd_args() == []
 
         def test_unset_value_defined_with_others(self):
             """
             -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
             """
             git = SimpleGitCommand()
-            assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(exec_path=UNSET).build_main_cmd_args() == ['-C',
-                                                                                                                '.']
+            assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                exec_path=UNSET).build_main_cmd_args() == ['-C',
+                                                           '.']
 
         class TestMultipleCalls:
             def test_unset_value_on_last_call(self):
@@ -77,10 +82,11 @@ class TestMainCmdOverrides:
                 * --exec-path is unset in last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas',
-                                                                                  'comm': 'suyog'}).git_opts_override(
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas',
+                                'comm': 'suyog'}).git_opts_override(
                     exec_path=UNSET).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                 '--config-env', 'comm=suyog']
+                                                               '--config-env', 'comm=suyog']
 
             def test_unset_value_on_non_last_call(self):
                 """
@@ -93,8 +99,8 @@ class TestMainCmdOverrides:
                 assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
                     config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     no_replace_objects=True).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                         '--config-env', 'comm=suyog',
-                                                                         '--no-replace-objects']
+                                                                       '--config-env', 'comm=suyog',
+                                                                       '--no-replace-objects']
 
             def test_no_value_on_non_last_call(self):
                 """
@@ -105,9 +111,11 @@ class TestMainCmdOverrides:
                 """
                 git = SimpleGitCommand()
                 assert git.git_opts_override(
-                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
-                    exec_path=UNSET).git_opts_override().build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                       '--config-env', 'comm=suyog']
+                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
+                    exec_path=UNSET).git_opts_override().build_main_cmd_args() == ['-C', '.', '--config-env',
+                                                                                   'auth=suhas',
+                                                                                   '--config-env', 'comm=suyog']
 
             def test_re_set_value_on_non_last_call(self):
                 """
@@ -120,7 +128,8 @@ class TestMainCmdOverrides:
                 assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
                     config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     exec_path=Path()).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                  '--config-env', 'comm=suyog', '--exec-path', '.']
+                                                                '--config-env', 'comm=suyog', '--exec-path', '.']
+
     class TestIndividualMethods:
         class TestSmallC:
             @pytest.mark.parametrize("input_dict,expected", [
@@ -141,12 +150,12 @@ class TestMainCmdOverrides:
 
                 # Mixed values
                 ({
-                    "a.b": "x",
-                    "c.d": "",
-                    "e.f": True,
-                    "g.h": False,
-                    "i.j": None
-                }, [
+                     "a.b": "x",
+                     "c.d": "",
+                     "e.f": True,
+                     "g.h": False,
+                     "i.j": None
+                 }, [
                      "-c", "a.b=x",
                      "-c", "c.d=",
                      "-c", "e.f",
@@ -174,39 +183,58 @@ class TestMainCmdOverrides:
 
                 # Mixed unset, true, false
                 ({
-                    "a.b": UNSET,
-                    "b.c": True,
-                    "c.d": False
-                }, ["-c", "b.c", "-c", "c.d="])
+                     "a.b": UNSET,
+                     "b.c": True,
+                     "c.d": False
+                 }, ["-c", "b.c", "-c", "c.d="])
             ])
             def test_main_cmd_c_args(self, input_dict, expected):
                 git = SimpleGitCommand().git_opts_override(c=input_dict)
                 assert git._main_cmd_small_c_args() == expected
+
 
 class TestEnvOverrides:
     class TestSupplied:
         class TestSameCall:
             def test_one_supplied(self):
                 git = SimpleGitCommand()
-                assert  git.git_envs_override(GIT_TRACE=True).build_git_envs() == {'GIT_TRACE': 'True'}
-
-            def test_one_supplied_main_opts_mixed(self):
-                git = SimpleGitCommand()
-                assert  git.git_envs_override(GIT_TRACE=True).git_opts_override(no_pager=True).build_git_envs() == {'GIT_TRACE': 'True'}
+                assert git.git_envs_override(GIT_TRACE=True).build_git_envs() == {'GIT_TRACE': 'True'}
 
             def test_multiple_supplied(self):
                 git = SimpleGitCommand()
                 assert git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'),
-                               GIT_EDITOR='vim').build_git_envs() == {'GIT_TRACE': '1',
-                                                                      'GIT_DIR': str(Path('/tmp/git-dir')),
-                                                                      'GIT_EDITOR': 'vim'}
+                                             GIT_EDITOR='vim').build_git_envs() == {'GIT_TRACE': '1',
+                                                                                    'GIT_DIR': str(
+                                                                                        Path('/tmp/git-dir')),
+                                                                                    'GIT_EDITOR': 'vim'}
 
-            def test_multiple_supplied_main_opts_mixed(self):
-                git = SimpleGitCommand()
-                assert git.git_opts_override(no_advice=True).git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'),
-                               GIT_EDITOR='vim').build_git_envs() == {'GIT_TRACE': '1',
-                                                                      'GIT_DIR': str(Path('/tmp/git-dir')),
-                                                                      'GIT_EDITOR': 'vim'}
+            class TestMainOptMixed:
+                def test_one_supplied_main_opts_last_call(self):
+                    git = SimpleGitCommand()
+                    assert git.git_envs_override(GIT_TRACE=True).git_opts_override(no_pager=True).build_git_envs() == {
+                        'GIT_TRACE': 'True'}
+
+                def test_one_supplied_main_opts_non_last_call(self):
+                    git = SimpleGitCommand()
+                    assert git.git_opts_override(no_pager=True).git_envs_override(GIT_TRACE=True).build_git_envs() == {
+                        'GIT_TRACE': 'True'}
+
+                def test_multiple_supplied_main_opts_first(self):
+                    git = SimpleGitCommand()
+                    assert git.git_opts_override(no_advice=True).git_envs_override(GIT_TRACE=1,
+                                                                                   GIT_DIR=Path('/tmp/git-dir/'),
+                                                                                   GIT_EDITOR='vim').build_git_envs() == {
+                               'GIT_TRACE': '1',
+                               'GIT_DIR': str(Path('/tmp/git-dir')),
+                               'GIT_EDITOR': 'vim'}
+
+                def test_multiple_supplied_main_opts_last(self):
+                    git = SimpleGitCommand()
+                    assert git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'),
+                                                 GIT_EDITOR='vim').git_opts_override(
+                        no_advice=True).build_git_envs() == {'GIT_TRACE': '1',
+                                                             'GIT_DIR': str(Path('/tmp/git-dir')),
+                                                             'GIT_EDITOR': 'vim'}
 
     class TestMultipleCalls:
         def test_one_supplied(self):
@@ -222,27 +250,55 @@ class TestEnvOverrides:
         def test_multiple_supplied(self):
             git = SimpleGitCommand()
             assert git.git_envs_override(GIT_SSH=Path('/tmp/SSH')).git_envs_override(GIT_TERMINAL_PROMPT=1,
-                                                                                    GIT_NO_REPLACE_OBJECTS=True).git_envs_override(
+                                                                                     GIT_NO_REPLACE_OBJECTS=True).git_envs_override(
                 GIT_ALTERNATE_OBJECT_DIRECTORIES=Path('/tmp/alter')).build_git_envs() == {
-                'GIT_SSH': str(Path('/tmp/SSH')), 'GIT_TERMINAL_PROMPT': '1', 'GIT_NO_REPLACE_OBJECTS': 'True',
-                'GIT_ALTERNATE_OBJECT_DIRECTORIES': str(Path('/tmp/alter'))
-            }
+                       'GIT_SSH': str(Path('/tmp/SSH')), 'GIT_TERMINAL_PROMPT': '1', 'GIT_NO_REPLACE_OBJECTS': 'True',
+                       'GIT_ALTERNATE_OBJECT_DIRECTORIES': str(Path('/tmp/alter'))
+                   }
+
+        class TestMainOptsMixed:
+            def test_one_supplied(self):
+                git = SimpleGitCommand()
+                assert git.git_envs_override().git_opts_override().git_envs_override(
+                    GIT_TRACE_SETUP=2).git_envs_override().git_opts_override(noglob_pathspecs=True,
+                                                                             icase_pathspecs=False).build_git_envs() == {
+                           'GIT_TRACE_SETUP': '2'}
+
+            def test_one_supplied_more_calls(self):
+                git = SimpleGitCommand()
+                assert git.git_envs_override().git_opts_override(exec_path=Path('/tmp/git-dir')).git_envs_override(
+                    GIT_TRACE_SETUP=2).git_envs_override(
+                    GIT_ADVICE=False).git_opts_override(
+                    noglob_pathspecs=True, icase_pathspecs=False).build_git_envs() == {'GIT_TRACE_SETUP': '2',
+                                                                                       'GIT_ADVICE': 'False'}
+
+            def test_multiple_supplied(self):
+                git = SimpleGitCommand()
+                assert git.git_envs_override(GIT_SSH=Path('/tmp/SSH')).git_opts_override(
+                    exec_path=Path('/tmp/git-dir')).git_envs_override(GIT_TERMINAL_PROMPT=1,
+                                                                      GIT_NO_REPLACE_OBJECTS=True).git_envs_override(
+                    GIT_ALTERNATE_OBJECT_DIRECTORIES=Path('/tmp/alter')).build_git_envs() == {
+                           'GIT_SSH': str(Path('/tmp/SSH')), 'GIT_TERMINAL_PROMPT': '1',
+                           'GIT_NO_REPLACE_OBJECTS': 'True',
+                           'GIT_ALTERNATE_OBJECT_DIRECTORIES': str(Path('/tmp/alter'))
+                       }
 
     class TestOverrideValues:
         def test_unset_value_alone(self):
             """
-            only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
+            only GIT_DIR is set in first ``git_envs_override()`` call and is unset in next ``git_envs_override()`` call.
             """
             git = SimpleGitCommand()
-            assert git.git_opts_override(exec_path=Path('tmp')).git_opts_override(exec_path=UNSET).build_main_cmd_args() == []
+            assert git.git_envs_override(GIT_DIR=Path('tmp')).git_envs_override(GIT_DIR=UNSET).build_git_envs() == {}
 
         def test_unset_value_defined_with_others(self):
             """
-            -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
+            GIT_DIR and GIT_ADVICE is set in first ``git_envs_override()`` call and is unset in next ``git_envs_override()`` call.
             """
             git = SimpleGitCommand()
-            assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(exec_path=UNSET).build_main_cmd_args() == ['-C',
-                                                                                                                '.']
+            assert git.git_envs_override(GIT_DIR=Path('tmp'), GIT_TRACE=2,
+                                         GIT_ADVICE=0).git_envs_override(
+                GIT_DIR=UNSET).build_git_envs() == {'GIT_TRACE': '2', 'GIT_ADVICE': '0'}
 
         class TestMultipleCalls:
             def test_unset_value_on_last_call(self):
@@ -252,10 +308,11 @@ class TestEnvOverrides:
                 * --exec-path is unset in last ``git_opts_override()`` call.
                 """
                 git = SimpleGitCommand()
-                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas',
-                                                                                  'comm': 'suyog'}).git_opts_override(
+                assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas',
+                                'comm': 'suyog'}).git_opts_override(
                     exec_path=UNSET).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                 '--config-env', 'comm=suyog']
+                                                               '--config-env', 'comm=suyog']
 
             def test_unset_value_on_non_last_call(self):
                 """
@@ -268,8 +325,8 @@ class TestEnvOverrides:
                 assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
                     config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     no_replace_objects=True).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                         '--config-env', 'comm=suyog',
-                                                                         '--no-replace-objects']
+                                                                       '--config-env', 'comm=suyog',
+                                                                       '--no-replace-objects']
 
             def test_no_value_on_non_last_call(self):
                 """
@@ -280,9 +337,11 @@ class TestEnvOverrides:
                 """
                 git = SimpleGitCommand()
                 assert git.git_opts_override(
-                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
-                    exec_path=UNSET).git_opts_override().build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                       '--config-env', 'comm=suyog']
+                    exec_path=Path('tmp'), C=[Path()]).git_opts_override(
+                    config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(
+                    exec_path=UNSET).git_opts_override().build_main_cmd_args() == ['-C', '.', '--config-env',
+                                                                                   'auth=suhas',
+                                                                                   '--config-env', 'comm=suyog']
 
             def test_re_set_value_on_non_last_call(self):
                 """
@@ -295,7 +354,8 @@ class TestEnvOverrides:
                 assert git.git_opts_override(exec_path=Path('tmp'), C=[Path()]).git_opts_override(
                     config_env={'auth': 'suhas', 'comm': 'suyog'}).git_opts_override(exec_path=UNSET).git_opts_override(
                     exec_path=Path()).build_main_cmd_args() == ['-C', '.', '--config-env', 'auth=suhas',
-                                                                  '--config-env', 'comm=suyog', '--exec-path', '.']
+                                                                '--config-env', 'comm=suyog', '--exec-path', '.']
+
     class TestIndividualMethods:
         class TestSmallC:
             @pytest.mark.parametrize("input_dict,expected", [
@@ -316,12 +376,12 @@ class TestEnvOverrides:
 
                 # Mixed values
                 ({
-                    "a.b": "x",
-                    "c.d": "",
-                    "e.f": True,
-                    "g.h": False,
-                    "i.j": None
-                }, [
+                     "a.b": "x",
+                     "c.d": "",
+                     "e.f": True,
+                     "g.h": False,
+                     "i.j": None
+                 }, [
                      "-c", "a.b=x",
                      "-c", "c.d=",
                      "-c", "e.f",
@@ -349,10 +409,10 @@ class TestEnvOverrides:
 
                 # Mixed unset, true, false
                 ({
-                    "a.b": UNSET,
-                    "b.c": True,
-                    "c.d": False
-                }, ["-c", "b.c", "-c", "c.d="])
+                     "a.b": UNSET,
+                     "b.c": True,
+                     "c.d": False
+                 }, ["-c", "b.c", "-c", "c.d="])
             ])
             def test_main_cmd_c_args(self, input_dict, expected):
                 git = SimpleGitCommand().git_opts_override(c=input_dict)
@@ -375,14 +435,14 @@ class TestLsTreeSubcmd:
         def test_tree_ish_must_be_str(self, tree_ish):
             with pytest.raises(GitExitingException) as e:
                 SimpleGitCommand().ls_tree_subcmd.ls_tree(
-                    tree_ish) # type: ignore[arg-type] # expects str and provided Any
+                    tree_ish)  # type: ignore[arg-type] # expects str and provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize('abbrev', ["abc", True, 5.5, [5], None])
         def test_abbrev_must_be_int(self, abbrev):
             with pytest.raises(GitExitingException) as e:
                 SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
-                    abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
+                                                          abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize('abbrev', [-1, 41, 100])
@@ -395,7 +455,7 @@ class TestLsTreeSubcmd:
         def test_format_must_be_str(self, format_):
             with pytest.raises(GitExitingException) as e:
                 SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
-                    format_=format_)  # type: ignore[arg-type] # expects str, provided Any
+                                                          format_=format_)  # type: ignore[arg-type] # expects str, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize('path', ["src/", 123, None, [1, 2, 3], [None, "file"], [b"bytes"], (["tuple"],),
@@ -403,12 +463,14 @@ class TestLsTreeSubcmd:
         def test_path_must_be_list_of_strings(self, path):
             with pytest.raises(GitExitingException) as e:
                 SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD",
-                    path=path)  # type: ignore[arg-type] # expects list[str], provided Any
+                                                          path=path)  # type: ignore[arg-type] # expects list[str], provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
 
 def test_version():
     git = SimpleGitCommand()
     assert 'git version 2' in git.version
+
 
 def test_version_build_options():
     git = SimpleGitCommand()
@@ -421,6 +483,7 @@ def test_version_build_options():
     assert 'git version 2' in ano_build_info
     assert 'cpu: ' in ano_build_info
     assert 'built from commit: ' in ano_build_info
+
 
 class TestAddSubcmd:
     def test_add(self, enc_local):
@@ -436,7 +499,7 @@ class TestAddSubcmd:
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add('*-file')
         indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
-                                          stdout=subprocess.PIPE, text=True).stdout
+                                       stdout=subprocess.PIPE, text=True).stdout
         assert 'a-file' in indexed_files
         assert 'b-file' in indexed_files
 
@@ -446,7 +509,7 @@ class TestAddSubcmd:
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add('a-file', 'b-file')
         indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
-                                          stdout=subprocess.PIPE, text=True).stdout
+                                       stdout=subprocess.PIPE, text=True).stdout
         assert 'a-file' in indexed_files
         assert 'b-file' in indexed_files
 
@@ -458,6 +521,6 @@ class TestAddSubcmd:
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add(pathspec_from_file=pathspec_file)
         indexed_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], cwd=enc_local,
-                                          stdout=subprocess.PIPE, text=True).stdout
+                                       stdout=subprocess.PIPE, text=True).stdout
         assert 'a-file' in indexed_files
         assert 'b-file' in indexed_files

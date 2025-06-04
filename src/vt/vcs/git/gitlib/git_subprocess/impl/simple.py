@@ -146,10 +146,17 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     @override
     def clone(self) -> 'SimpleGitCommand':
-        return SimpleGitCommand(self.root_dir, self.runner,
+        # region obtain class instance
+        cloned = SimpleGitCommand(self.root_dir, self.runner,
                                 version_subcmd=self.version_subcmd,
                                 ls_tree_subcmd=self.ls_tree_subcmd,
                                 add_subcmd=self.add_subcmd)
+        # endregion
+        # region clone protected members
+        cloned._main_cmd_opts = self._main_cmd_opts
+        cloned._env_vars = self._env_vars
+        # endregion
+        return cloned
 
     @override
     @property
