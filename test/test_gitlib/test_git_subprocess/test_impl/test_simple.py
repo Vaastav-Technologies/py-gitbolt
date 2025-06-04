@@ -419,6 +419,74 @@ class TestEnvOverrides:
                 assert git._main_cmd_small_c_args() == expected
 
 
+class TestOptsEnvMixedOverrides:
+    class TestNoOverrides:
+        def test_leaves_envs_empty(self):
+            git = SimpleGitCommand()
+            assert git._env_vars == {}
+
+        def test_leaves_opts_empty(self):
+            git = SimpleGitCommand()
+            assert git._main_cmd_opts == {}
+
+    class TestOverridingPropDoesNotAffectParentProps:
+        """
+        Overriding properties using *_override() methods do not change the properties of the objects which they've
+        overridden, instead a new object with the overridden properties is returned.
+        """
+
+        class TestEnvs:
+            def test_once(self):
+                git = SimpleGitCommand()
+                envs_o_git = git.git_envs_override(GIT_AUTHOR_NAME='ss', GIT_OBJECT_DIRECTORY=Path('/tmp/obj-dir/'))
+                assert git._env_vars == {}  # parent ``git`` object protected properties still empty.
+                assert envs_o_git._env_vars == {'GIT_AUTHOR_NAME': 'ss',
+                                                'GIT_OBJECT_DIRECTORY': Path('/tmp/obj-dir/')}
+
+            def test_twice(self):
+                git = SimpleGitCommand()
+                envs_o_git = git.git_envs_override(GIT_AUTHOR_NAME='ss', GIT_OBJECT_DIRECTORY=Path('/tmp/obj-dir/'))
+                envs_o_o_git = envs_o_git.git_envs_override(GIT_SSH_COMMAND='gpg')
+                assert git._env_vars == {}  # ancestor ``git`` object protected properties still empty.
+                assert envs_o_git._env_vars == {'GIT_AUTHOR_NAME': 'ss', 'GIT_OBJECT_DIRECTORY': Path(
+                    '/tmp/obj-dir/')}  # parent git protected properties still not overridden
+                assert envs_o_o_git._env_vars == {'GIT_AUTHOR_NAME': 'ss',
+                                                  'GIT_OBJECT_DIRECTORY': Path('/tmp/obj-dir/'),
+                                                  'GIT_SSH_COMMAND': 'gpg'}  # new property added in child object
+
+        class TestOpts:
+            def test_once(self):
+                git = SimpleGitCommand()
+                main_o_git = git.git_opts_override(namespace='ss', git_dir=Path('/tmp/git-dir/.git'))
+                assert git._main_cmd_opts == {}  # parent ``git`` object protected properties still empty.
+                assert main_o_git._main_cmd_opts == {'namespace': 'ss',
+                                                     'git_dir': Path('/tmp/git-dir/.git')}
+
+            def test_twice(self):
+                git = SimpleGitCommand()
+                main_o_git = git.git_opts_override(namespace='ss', git_dir=Path('/tmp/git-dir/.git'))
+                main_o_o_git = main_o_git.git_opts_override(paginate=True)
+                assert git._main_cmd_opts == {}  # ancestor ``git`` object protected properties still empty.
+                assert main_o_git._main_cmd_opts == {'namespace': 'ss',
+                                                     'git_dir': Path(
+                                                         '/tmp/git-dir/.git')}  # parent git protected properties still not overridden
+                assert main_o_o_git._main_cmd_opts == {'namespace': 'ss',
+                                                       'git_dir': Path('/tmp/git-dir/.git'),
+                                                       'paginate': True}  # new property added in child object
+
+    class TestOverridingOneDoesNotAffectOther:
+        def test_override_envs(self):
+            git = SimpleGitCommand()
+            envs_o_git = git.git_envs_override(GIT_AUTHOR_NAME='ss', GIT_OBJECT_DIRECTORY=Path('/tmp/obj-dir/'))
+            assert git._main_cmd_opts == {} # overriding envs didn't override main-opts in parent
+            assert envs_o_git._main_cmd_opts == {} # overriding envs didn't override main-opts
+
+        def test_override_opts(self):
+            git = SimpleGitCommand()
+            main_o_git = git.git_opts_override(namespace='ss', git_dir=Path('/tmp/git-dir/.git'))
+            assert git._env_vars == {} # overriding opts didn't override envs in parent
+            assert main_o_git._env_vars == {} # overriding opts didn't override envs
+
 class TestLsTreeSubcmd:
 
     # TODO: refactor when commit_subcmd is implemented.
