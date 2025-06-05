@@ -10,6 +10,9 @@ authors = [
 maintainers = [
     {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}
 ]
+keywords = [
+  'git', 'vcs', 'library', 'version control'
+]
 classifiers = [
   "Development Status :: 1 - Planning",
 
