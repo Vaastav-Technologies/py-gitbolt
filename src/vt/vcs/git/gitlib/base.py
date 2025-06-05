@@ -256,6 +256,104 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
+class HashObject(GitSubCommand, Protocol):
+    """
+    Interface for ``git hash-object`` subcommand. Can only calculate hashes and does not write objects to git.
+    """
+
+    # region hash_object and overloads
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False, stdin: bytes | None = None) -> list[str]:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False, stdin: bytes | None = None) -> list[str]:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, *, stdin_paths: list[Path],
+                    t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False) -> list[str]:
+        ...
+
+    # endregion
+
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> HashObject:
+        return git.hash_object_subcmd
+
+    @property
+    @abstractmethod
+    def writing(self) -> WritingHashObject:
+        """
+        :return: ``git hash-object`` subcommand which can write objects to git.
+        """
+        ...
+
+
+class WritingHashObject(HashObject, RootDirOp, Protocol):
+    """
+    Interface for ``git hash-object`` subcommand which can write objects to git.
+    """
+
+    # region hash_object and overloads
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False, w: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False, w: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False, stdin: bytes | None = None,
+                    w: bool = False) -> list[str]:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False, stdin: bytes | None = None,
+                    w: bool = False) -> list[str]:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, *, stdin_paths: list[Path],
+                    t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
+        ...
+
+    # endregion
+
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> WritingHashObject:
+        return git.writing_hash_object_subcmd
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -321,6 +419,22 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def add_subcmd(self) -> Add:
         """
         :return: ``git add`` subcommand.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def hash_object_subcmd(self) -> HashObject:
+        """
+        :return: ``git hash-object`` subcommand. Can calculate hashes but cannot write objects to the git database.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def writing_hash_object_subcmd(self) -> WritingHashObject:
+        """
+        :return: ``git hash-object`` subcommand. Can write objects to the git database.
         """
         ...
 
