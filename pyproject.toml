@@ -40,6 +40,9 @@ dependencies = [
   "vt-err-hndlr @ git+https://github.com/Vaastav-Technologies/py-err-hndlr.git"
 ]
 
+[project.optional-dependencies]
+pygit2 = ['pygit2']
+
 [dependency-groups]
 dev = ["mypy", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
