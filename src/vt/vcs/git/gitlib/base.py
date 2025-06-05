@@ -155,10 +155,10 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @overload
     @abstractmethod
     def add(
-        self,
-        pathspec: str,
-        *pathspecs: str,
-        **add_opts: Unpack[GitAddOpts]
+            self,
+            pathspec: str,
+            *pathspecs: str,
+            **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files specified by a list of pathspec strings.
@@ -173,11 +173,11 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @overload
     @abstractmethod
     def add(
-        self,
-        *,
-        pathspec_from_file: Path,
-        pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
+            self,
+            *,
+            pathspec_from_file: Path,
+            pathspec_file_nul: bool = False,
+            **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed in a file (`pathspec_from_file`) to the index.
@@ -193,12 +193,12 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @overload
     @abstractmethod
     def add(
-        self,
-        *,
-        pathspec_from_file: Literal["-"],
-        pathspec_stdin: str,
-        pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
+            self,
+            *,
+            pathspec_from_file: Literal["-"],
+            pathspec_stdin: str,
+            pathspec_file_nul: bool = False,
+            **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files listed from stdin (when `pathspec_from_file` is '-').
