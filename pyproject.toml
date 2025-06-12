@@ -1,13 +1,17 @@
 [project]
-name = "py-git"
+name = "gitlib"
 version = "0.0.0"
-description = "Git command interfaces with default implementation using subprocess calls."
+description = "Git command interfaces for python."
 requires-python = ">=3.12"
+readme = "README.md"
 authors = [
     {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}
 ]
 maintainers = [
     {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}
+]
+keywords = [
+  'git', 'vcs', 'library', 'version control'
 ]
 classifiers = [
   "Development Status :: 1 - Planning",
@@ -16,22 +20,28 @@ classifiers = [
   "Intended Audience :: Education",
 
   "Topic :: Education",
+  "Topic :: Software Development",
   "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Software Development :: Version Control",
   "Topic :: Software Development :: Version Control :: Git",
 
   "License :: License :: Free For Educational Use",
 
-  # Specify the Python versions you support here. In particular, ensure
-  # that you indicate you support Python 3. These classifiers are *not*
-  # checked by "pip install". See instead "requires-python" key in this file.
+  "Operating System :: OS Independent",
+
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
+
+  "Typing :: Typed"
 ]
 dependencies = [
   "vt-commons @ git+https://github.com/Vaastav-Technologies/py-commons.git",
   "vt-err-hndlr @ git+https://github.com/Vaastav-Technologies/py-err-hndlr.git"
 ]
+
+[project.optional-dependencies]
+pygit2 = ['pygit2']
 
 [dependency-groups]
 dev = ["mypy", "ruff"]
