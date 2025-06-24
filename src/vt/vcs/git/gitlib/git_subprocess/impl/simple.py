@@ -148,9 +148,9 @@ class SimpleGitCommand(GitCommand, RootDirOp):
     def clone(self) -> 'SimpleGitCommand':
         # region obtain class instance
         cloned = SimpleGitCommand(self.root_dir, self.runner,
-                                version_subcmd=self.version_subcmd,
-                                ls_tree_subcmd=self.ls_tree_subcmd,
-                                add_subcmd=self.add_subcmd)
+                                  version_subcmd=self.version_subcmd,
+                                  ls_tree_subcmd=self.ls_tree_subcmd,
+                                  add_subcmd=self.add_subcmd)
         # endregion
         # region clone protected members
         cloned._main_cmd_opts = self._main_cmd_opts
