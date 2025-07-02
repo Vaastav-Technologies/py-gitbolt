@@ -58,7 +58,7 @@ version_subcmd = git.version_subcmd
 add_subcmd = git.add_subcmd
 
 
-def method_which_only_adds_a_file(add_subcmd: vt.vcs.git.gitlib.base.Add):
+def method_which_only_adds_a_file(add_subcmd: gitbolt.base.Add):
     """
     This method only requires the ``add`` subcommand.
     """
