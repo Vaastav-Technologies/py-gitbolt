@@ -13,10 +13,10 @@ from typing import Protocol, override, Unpack, Self, overload, Literal
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
-from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
-from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
-from vt.vcs.git.gitlib.add import AddArgsValidator, UtilAddArgsValidator
+from vt.vcs.git.gitbolt.exceptions import GitExitingException
+from vt.vcs.git.gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
+from vt.vcs.git.gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
+from vt.vcs.git.gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 
 
 class ForGit(Protocol):

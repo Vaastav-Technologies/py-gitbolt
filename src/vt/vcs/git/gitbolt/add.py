@@ -8,9 +8,9 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, Unpack, override, Literal
 
-from vt.vcs.git.gitlib._internal_init import errmsg_creator
-from vt.vcs.git.gitlib.exceptions import GitExitingException
-from vt.vcs.git.gitlib.models import GitAddOpts
+from vt.vcs.git.gitbolt._internal_init import errmsg_creator
+from vt.vcs.git.gitbolt.exceptions import GitExitingException
+from vt.vcs.git.gitbolt.models import GitAddOpts
 from vt.utils.commons.commons.core_py import has_atleast_one_arg, ensure_atleast_one_arg
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 from vt.utils.errors.error_specs.utils import require_type
@@ -97,58 +97,58 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate("file.txt", pathspec_file_nul=True)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_file_nul and pathspec are not allowed together
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_file_nul and pathspec are not allowed together
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file='-', pathspec_stdin=None)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file=Path("x.txt"), pathspec_stdin="foo")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
 
             >>> UtilAddArgsValidator().validate(123)  # type: ignore[arg-type]
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: pathspec must be a string.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: pathspec must be a string.
 
             >>> UtilAddArgsValidator().validate("README.md", pathspec_from_file=Path("foo"))
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec and pathspec_from_file are not allowed together
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec and pathspec_from_file are not allowed together
 
             >>> UtilAddArgsValidator().validate("README.md", chmod="bad")  # type: ignore[arg-type]
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
 
             >>> UtilAddArgsValidator().validate("README.md", verbose="true")  # type: ignore[arg-type]
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file="file.txt")  # type: ignore[arg-type]
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
 
             >>> UtilAddArgsValidator().validate(pathspec_stdin="README.md")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
 
             >>> UtilAddArgsValidator().validate(pathspec="a.py",
             ...     chmod="777")  # type: ignore[arg-type] # expected +x, -x or None # provided int
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
 
             >>> UtilAddArgsValidator().validate(pathspec="a.py",
             ...     no_all="yes")  # type: ignore[arg-type] # expected bool # provided int
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
 
             >>> UtilAddArgsValidator().validate(pathspec="a.py",
             ...     renormalize="sometimes")  # type: ignore[arg-type] # expected bool # provided str
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
 
             >>> UtilAddArgsValidator().validate(verbose=True)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
         """
         self.mandate_required_arguments(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
                                         pathspec_stdin=pathspec_stdin)
@@ -194,13 +194,13 @@ class UtilAddArgsValidator(AddArgsValidator):
 
         >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file=None, pathspec_stdin=None)
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
 
         * ``pathspec_stdin`` not provided when ``pathspec_from_file=-``:
 
         >>> UtilAddArgsValidator().mandate_required_arguments(None, pathspec_from_file='-', pathspec_stdin=None)
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
         :raises GitExitingException: if no mandatory args are provided.
         """
@@ -223,31 +223,31 @@ class UtilAddArgsValidator(AddArgsValidator):
 
             >>> UtilAddArgsValidator().validate("file.txt", pathspec_file_nul=True)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_file_nul and pathspec are not allowed together
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_file_nul and pathspec are not allowed together
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file='-', pathspec_stdin=None)
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file='-')
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin must be provided when pathspec_form_file is -
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file=Path("x.txt"), pathspec_stdin="foo")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec_stdin is not allowed unless pathspec_from_file is '-'.
 
             >>> UtilAddArgsValidator().validate("README.md", pathspec_from_file=Path("foo"))
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: pathspec and pathspec_from_file are not allowed together
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: pathspec and pathspec_from_file are not allowed together
 
             >>> UtilAddArgsValidator().validate(pathspec_from_file="file.txt")  # type: ignore[arg-type]
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
 
             >>> UtilAddArgsValidator().validate(pathspec_stdin="README.md")
             Traceback (most recent call last):
-            vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
+            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
 
         :raises GitExitingException: if exclusive args are provided together.
         """
@@ -283,7 +283,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_git_add_opts(verbose=True, chmod='+x', no_all=False)
         >>> UtilAddArgsValidator().validate_git_add_opts(verbose='yes') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
         """
         self.validate_bool_args(**add_opts)
         self.validate_tri_state_args(**add_opts)
@@ -297,7 +297,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_bool_args(verbose=True)
         >>> UtilAddArgsValidator().validate_bool_args(verbose='true') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
         """
         if 'verbose' in bool_add_opts:
             self.validate_verbose_bool_arg(bool_add_opts['verbose'])
@@ -330,7 +330,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_verbose_bool_arg(True)
         >>> UtilAddArgsValidator().validate_verbose_bool_arg('yes') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
         """
         require_type(verbose, 'verbose', bool, GitExitingException)
 
@@ -340,7 +340,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_dry_run_bool_arg(False)
         >>> UtilAddArgsValidator().validate_dry_run_bool_arg(1) # type: ignore[arg-type] # expected bool provided int
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'dry_run' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'dry_run' must be a boolean
         """
         require_type(dry_run, 'dry_run', bool, GitExitingException)
 
@@ -350,7 +350,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_force_bool_arg(True)
         >>> UtilAddArgsValidator().validate_force_bool_arg('true') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'force' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'force' must be a boolean
         """
         require_type(force, 'force', bool, GitExitingException)
 
@@ -360,7 +360,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_interactive_bool_arg(False)
         >>> UtilAddArgsValidator().validate_interactive_bool_arg('false') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'interactive' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'interactive' must be a boolean
         """
         require_type(interactive, 'interactive', bool, GitExitingException)
 
@@ -370,7 +370,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_patch_bool_arg(True)
         >>> UtilAddArgsValidator().validate_patch_bool_arg(0.1) # type: ignore[arg-type] # expected bool provided float
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'patch' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'patch' must be a boolean
         """
         require_type(patch, 'patch', bool, GitExitingException)
 
@@ -380,7 +380,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_edit_bool_arg(True)
         >>> UtilAddArgsValidator().validate_edit_bool_arg('no') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'edit' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'edit' must be a boolean
         """
         require_type(edit, 'edit', bool, GitExitingException)
 
@@ -390,7 +390,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_sparse_bool_arg(True)
         >>> UtilAddArgsValidator().validate_sparse_bool_arg(None) # type: ignore[arg-type] # expected bool provided None
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'sparse' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'sparse' must be a boolean
         """
         require_type(sparse, 'sparse', bool, GitExitingException)
 
@@ -400,7 +400,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_intent_to_add_bool_arg(False)
         >>> UtilAddArgsValidator().validate_intent_to_add_bool_arg('maybe') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'intent_to_add' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'intent_to_add' must be a boolean
         """
         require_type(intent_to_add, 'intent_to_add', bool, GitExitingException)
 
@@ -410,7 +410,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_refresh_bool_arg(True)
         >>> UtilAddArgsValidator().validate_refresh_bool_arg([]) # type: ignore[arg-type] # expected bool provided list
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'refresh' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'refresh' must be a boolean
         """
         require_type(refresh, 'refresh', bool, GitExitingException)
 
@@ -420,7 +420,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_ignore_errors_bool_arg(True)
         >>> UtilAddArgsValidator().validate_ignore_errors_bool_arg('error') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'ignore_errors' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'ignore_errors' must be a boolean
         """
         require_type(ignore_errors, 'ignore_errors', bool, GitExitingException)
 
@@ -430,7 +430,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_ignore_missing_bool_arg(False)
         >>> UtilAddArgsValidator().validate_ignore_missing_bool_arg('none') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'ignore_missing' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'ignore_missing' must be a boolean
         """
         require_type(ignore_missing, 'ignore_missing', bool, GitExitingException)
 
@@ -441,7 +441,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_renormalize_bool_arg(True)
         >>> UtilAddArgsValidator().validate_renormalize_bool_arg('false') # type: ignore[arg-type] # expected bool provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
         """
         require_type(renormalize, 'renormalize', bool, GitExitingException)
     # endregion
@@ -455,7 +455,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_tri_state_args(no_all='yes') # type: ignore[arg-type] # expected [bool | None] provided str
         Traceback (most recent call last):
         ...
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
         """
         if 'no_all' in tri_state_add_opts:
             self.validate_no_all_tri_state_arg(tri_state_add_opts['no_all'])
@@ -470,7 +470,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_no_all_tri_state_arg(None)
         >>> UtilAddArgsValidator().validate_no_all_tri_state_arg('bad') # type: ignore[arg-type] # expected [bool | None] provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
         """
         if no_all not in (True, False, None):
             errmsg = "'no_all' must be either True, False, or None"
@@ -486,7 +486,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_no_ignore_removal_tri_state_arg(False)
         >>> UtilAddArgsValidator().validate_no_ignore_removal_tri_state_arg('nope') # type: ignore[arg-type] # expected [bool | None] provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'no_ignore_removal' must be either True, False, or None
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'no_ignore_removal' must be either True, False, or None
         """
         if no_ignore_removal not in (True, False, None):
             errmsg = "'no_ignore_removal' must be either True, False, or None"
@@ -504,7 +504,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_chmod_arg(None)
         >>> UtilAddArgsValidator().validate_chmod_arg('bad') # type: ignore[arg-type] # expected Literal[+x, -x] provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
         """
         if chmod:
             if chmod not in ('+x', '-x'):
@@ -528,7 +528,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> validator.validate_non_git_add_opts(True, '-', 'abc')
         >>> validator.validate_non_git_add_opts(True, '-', 123) # type: ignore[arg-type] # expected str # provided int
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
         """
         self.validate_pathspec_file_nul(pathspec_file_nul)
         self.validate_pathspec_from_file(pathspec_from_file)
@@ -541,7 +541,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_pathspec_file_nul(True)
         >>> UtilAddArgsValidator().validate_pathspec_file_nul('yes') # type: ignore[arg-type] # expected bool # provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_file_nul' must be a boolean
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_file_nul' must be a boolean
         """
         require_type(pathspec_file_nul, 'pathspec_file_nul', bool, GitExitingException)
 
@@ -553,10 +553,10 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_pathspec_from_file('-')
         >>> UtilAddArgsValidator().validate_pathspec_from_file(123) # type: ignore[arg-type] # expected Path | Literal['-'] # provided int
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
         >>> UtilAddArgsValidator().validate_pathspec_from_file('file.txt') # type: ignore[arg-type] # expected Path | Literal['-'] # provided str
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
         """
         if pathspec_from_file is not None:
             if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
@@ -576,7 +576,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         >>> UtilAddArgsValidator().validate_pathspec_stdin('some stdin')
         >>> UtilAddArgsValidator().validate_pathspec_stdin(123) # type: ignore[arg-type] # expected str # provided int
         Traceback (most recent call last):
-        vt.vcs.git.gitlib.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
+        vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
         """
         if pathspec_stdin is not None:
             require_type(pathspec_stdin, 'pathspec_stdin', str, GitExitingException)

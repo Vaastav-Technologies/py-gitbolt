@@ -5,4 +5,4 @@
 Git command runners to run subprocess calls.
 """
 
-from vt.vcs.git.gitlib.git_subprocess.runner.base import GitCommandRunner
+from vt.vcs.git.gitbolt.git_subprocess.runner.base import GitCommandRunner

@@ -12,15 +12,15 @@ from typing import override
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from vt.vcs.git.gitlib.add import AddArgsValidator
-from vt.vcs.git.gitlib.git_subprocess import GitCommand, VersionCommand, \
+from vt.vcs.git.gitbolt.add import AddArgsValidator
+from vt.vcs.git.gitbolt.git_subprocess import GitCommand, VersionCommand, \
     LsTreeCommand, GitSubcmdCommand, AddCommand
-from vt.vcs.git.gitlib.git_subprocess.add import AddCLIArgsBuilder
-from vt.vcs.git.gitlib.git_subprocess.constants import VERSION_CMD
-from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
-from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
-from vt.vcs.git.gitlib.git_subprocess.runner.simple_impl import SimpleGitCR
-from vt.vcs.git.gitlib.ls_tree import LsTreeArgsValidator
+from vt.vcs.git.gitbolt.git_subprocess.add import AddCLIArgsBuilder
+from vt.vcs.git.gitbolt.git_subprocess.constants import VERSION_CMD
+from vt.vcs.git.gitbolt.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
+from vt.vcs.git.gitbolt.git_subprocess.runner import GitCommandRunner
+from vt.vcs.git.gitbolt.git_subprocess.runner.simple_impl import SimpleGitCR
+from vt.vcs.git.gitbolt.ls_tree import LsTreeArgsValidator
 
 
 class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):

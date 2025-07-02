@@ -10,9 +10,9 @@ import subprocess
 from subprocess import CompletedProcess
 from typing import overload, override, Any, Literal
 
-from vt.vcs.git.gitlib.git_subprocess.constants import GIT_CMD
-from vt.vcs.git.gitlib.git_subprocess.exceptions import GitCmdException
-from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
+from vt.vcs.git.gitbolt.git_subprocess.constants import GIT_CMD
+from vt.vcs.git.gitbolt.git_subprocess.exceptions import GitCmdException
+from vt.vcs.git.gitbolt.git_subprocess.runner import GitCommandRunner
 
 
 class SimpleGitCR(GitCommandRunner):

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vt.vcs.git.gitlib.models import GitOpts, GitEnvVars
+from vt.vcs.git.gitbolt.models import GitOpts, GitEnvVars
 
 
 def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:

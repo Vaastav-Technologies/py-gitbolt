@@ -18,19 +18,19 @@ class GitException(VTException):
 
         >>> raise GitException()
         Traceback (most recent call last):
-        gitlib.exceptions.GitException
+        gitbolt.exceptions.GitException
 
       * raise exception with a message:
 
         >>> raise GitException('unexpected.')
         Traceback (most recent call last):
-        gitlib.exceptions.GitException: unexpected.
+        gitbolt.exceptions.GitException: unexpected.
 
       * raise exception from another exception:
 
         >>> raise GitException() from ValueError
         Traceback (most recent call last):
-        gitlib.exceptions.GitException: ValueError
+        gitbolt.exceptions.GitException: ValueError
 
     ... rest examples mimic ``VTException`` examples.
     """

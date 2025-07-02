@@ -12,12 +12,12 @@ from typing import override, Protocol, Unpack, Self, overload, Literal
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
-from vt.vcs.git.gitlib import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from vt.vcs.git.gitlib.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
-from vt.vcs.git.gitlib.git_subprocess.ls_tree import LsTreeCLIArgsBuilder, IndividuallyOverridableLTCAB
-from vt.vcs.git.gitlib.git_subprocess.runner import GitCommandRunner
-from vt.vcs.git.gitlib.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
-from vt.vcs.git.gitlib.utils import merge_git_opts, merge_git_envs
+from vt.vcs.git.gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from vt.vcs.git.gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
+from vt.vcs.git.gitbolt.git_subprocess.ls_tree import LsTreeCLIArgsBuilder, IndividuallyOverridableLTCAB
+from vt.vcs.git.gitbolt.git_subprocess.runner import GitCommandRunner
+from vt.vcs.git.gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
+from vt.vcs.git.gitbolt.utils import merge_git_opts, merge_git_envs
 
 
 class GitCommand(Git, ABC):
