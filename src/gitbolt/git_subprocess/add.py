@@ -8,8 +8,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, Unpack, override, Literal
 
-from vt.vcs.git.gitbolt.git_subprocess.constants import ADD_CMD
-from vt.vcs.git.gitbolt.models import GitAddOpts
+from gitbolt.git_subprocess.constants import ADD_CMD
+from gitbolt.models import GitAddOpts
 
 
 class AddCLIArgsBuilder(Protocol):

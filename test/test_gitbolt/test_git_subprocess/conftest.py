@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from test_gitlib.test_git_subprocess import REMOTE_DIR_NAME, LOCAL_DIR_NAME
+from test_gitbolt.test_git_subprocess import REMOTE_DIR_NAME, LOCAL_DIR_NAME
 
 
 @pytest.fixture

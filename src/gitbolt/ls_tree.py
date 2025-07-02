@@ -10,8 +10,8 @@ from typing import Protocol, Unpack, override, Literal
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 from vt.utils.errors.error_specs.utils import require_type, require_iterable
 
-from vt.vcs.git.gitbolt.exceptions import GitExitingException
-from vt.vcs.git.gitbolt.models import GitLsTreeOpts
+from gitbolt.exceptions import GitExitingException
+from gitbolt.models import GitLsTreeOpts
 
 
 class LsTreeArgsValidator(Protocol):
@@ -73,34 +73,34 @@ class UtilLsTreeArgsValidator(LsTreeArgsValidator):
 
             >>> UtilLsTreeArgsValidator().validate(42) # type: ignore[arg-type] # tree_ish expects str and int is provided
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'tree_ish' must be a string
+            gitbolt.exceptions.GitExitingException: TypeError: 'tree_ish' must be a string
 
             >>> UtilLsTreeArgsValidator().validate("HEAD", abbrev="abc") # type: ignore[arg-type] # abbrev expects int and str is provided
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
+            gitbolt.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
 
             >>> UtilLsTreeArgsValidator().validate("HEAD", abbrev=True) # type: ignore[arg-type] # abbrev expects int and bool is provided
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
+            gitbolt.exceptions.GitExitingException: TypeError: 'abbrev' must be an int
 
             >>> UtilLsTreeArgsValidator().validate("HEAD", abbrev=100)
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: ValueError: abbrev must be between 0 and 40.
+            gitbolt.exceptions.GitExitingException: ValueError: abbrev must be between 0 and 40.
 
             >>> UtilLsTreeArgsValidator().validate("HEAD",
             ...                       path="src/")  # type: ignore[arg-type] as path expects list[str] and str is provided.
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
+            gitbolt.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
 
             >>> UtilLsTreeArgsValidator().validate("HEAD",
             ...                       path=1)  # type: ignore[arg-type] as path expects list[str] and str is provided.
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
+            gitbolt.exceptions.GitExitingException: TypeError: 'path' must be a non-str iterable
 
             >>> UtilLsTreeArgsValidator().validate("HEAD",
             ...                         z="yes")  # type: ignore[arg-type] as z expects bool and str is provided.
             Traceback (most recent call last):
-            vt.vcs.git.gitbolt.exceptions.GitExitingException: TypeError: 'z' must be a boolean
+            gitbolt.exceptions.GitExitingException: TypeError: 'z' must be a boolean
         """
         require_type(tree_ish, 'tree_ish', str, GitExitingException)
 

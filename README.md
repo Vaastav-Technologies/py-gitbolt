@@ -49,8 +49,9 @@ This can enable the user to write with parameter that only takes a required subs
 life easier as they'd be able to write logic which is more focussed on one thing and can do one thing pretty good.
 
 ```python
-import vt.vcs.git.gitbolt.base
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+
+import gitbolt
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 version_subcmd = git.version_subcmd
@@ -74,7 +75,7 @@ method_which_only_adds_a_file(add_subcmd)
 These methods are terminal operations and return the called subcommand's stdout.
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 status_out = git.status_subcmd.status()
@@ -104,7 +105,7 @@ subcommand run to provide maximal flexibility.</summary>
 ##### Just override one git env (as `GIT_TRACE`) and return a git command
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_envs_override(GIT_TRACE=True)
@@ -114,7 +115,7 @@ git = git.git_envs_override(GIT_TRACE=True)
 
 ```python
 from pathlib import Path
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'), GIT_EDITOR='vim')
@@ -124,7 +125,7 @@ git = git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'), GIT_EDIT
 
 ```python
 from pathlib import Path
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_envs_override(GIT_SSH=Path('/tmp/SSH')).git_envs_override(GIT_TERMINAL_PROMPT=1,
@@ -135,7 +136,7 @@ re_overridden_git = overridden_git.git_envs_override(GIT_TRACE=True)
 ##### Allow users to pass git commands around and unset git envs in their own overrides
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 from vt.utils.commons.commons.core_py import UNSET
 
 git = SimpleGitCommand()
@@ -149,7 +150,7 @@ no_advice_unset_git = overridden_git.git_envs_override(GIT_TRACE=UNSET)
 ##### Allow users to pass git commands around and reset git opts in their own overrides
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 # set GIT_TRACE to True
@@ -170,7 +171,7 @@ run to provide maximal flexibility.</summary>
 ##### Just override one git opt (as `--no-replace-objects`) and return a git command
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_opts_override(no_replace_objects=True)
@@ -180,7 +181,7 @@ git = git.git_opts_override(no_replace_objects=True)
 
 ```python
 from pathlib import Path
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_opts_override(no_replace_objects=True, git_dir=Path(), paginate=True)
@@ -190,7 +191,7 @@ git = git.git_opts_override(no_replace_objects=True, git_dir=Path(), paginate=Tr
 
 ```python
 from pathlib import Path
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_opts_override(exec_path=Path('tmp')).git_opts_override(noglob_pathspecs=True,
@@ -203,7 +204,7 @@ re_overridden_git = overridden_git.git_opts_override(glob_pathspecs=True)
 
 ```python
 from pathlib import Path
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 from vt.utils.commons.commons.core_py import UNSET
 
 git = SimpleGitCommand()
@@ -217,7 +218,7 @@ no_advice_unset_git = overridden_git.git_opts_override(no_advice=UNSET)
 ##### Allow users to pass git commands around and reset git opts in their own overrides
 
 ```python
-from vt.vcs.git.gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 # set --no-advice to True

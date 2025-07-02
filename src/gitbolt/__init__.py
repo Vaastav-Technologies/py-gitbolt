@@ -7,6 +7,6 @@ Git command interfaces with default implementation using subprocess calls.
 
 # region imports
 # region base related imports
-from vt.vcs.git.gitbolt.base import Git, CanOverrideGitOpts, HasGitUnderneath, GitSubCommand, LsTree, Version, Add
+from gitbolt.base import Git, CanOverrideGitOpts, HasGitUnderneath, GitSubCommand, LsTree, Version, Add
 # endregion
 # endregion

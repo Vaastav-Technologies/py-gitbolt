@@ -7,8 +7,8 @@ Helper interfaces for ``git ls-tree`` subcommand with default implementation for
 from abc import abstractmethod
 from typing import Protocol, Unpack, override
 
-from vt.vcs.git.gitbolt.git_subprocess.constants import LS_TREE_CMD
-from vt.vcs.git.gitbolt.models import GitLsTreeOpts
+from gitbolt.git_subprocess.constants import LS_TREE_CMD
+from gitbolt.models import GitLsTreeOpts
 
 
 class LsTreeCLIArgsBuilder(Protocol):

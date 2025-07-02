@@ -7,7 +7,7 @@ Exceptions specific to git using subprocess.
 
 from vt.utils.errors.error_specs.exceptions import VTCmdException
 
-from vt.vcs.git.gitbolt.exceptions import GitException
+from gitbolt.exceptions import GitException
 
 
 class GitCmdException(GitException, VTCmdException):
