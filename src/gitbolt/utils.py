@@ -6,7 +6,6 @@ Utility functions related to processors specific to git commands.
 """
 from __future__ import annotations
 
-from pathlib import Path
 
 from gitbolt.models import GitOpts, GitEnvVars
 
