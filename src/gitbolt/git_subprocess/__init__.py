@@ -5,5 +5,10 @@
 Git command interfaces with implementation using subprocess calls.
 """
 
-from gitbolt.git_subprocess.base import GitCommand, GitSubcmdCommand, AddCommand, LsTreeCommand, \
-    VersionCommand
+# region gitbolt.git_subprocess.base
+from gitbolt.git_subprocess.base import GitCommand as GitCommand
+from gitbolt.git_subprocess.base import GitSubcmdCommand as GitSubcmdCommand
+from gitbolt.git_subprocess.base import AddCommand as AddCommand
+from gitbolt.git_subprocess.base import LsTreeCommand as LsTreeCommand
+from gitbolt.git_subprocess.base import VersionCommand as VersionCommand
+# endregion

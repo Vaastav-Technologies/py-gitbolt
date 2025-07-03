@@ -5,4 +5,4 @@
 Git command runners to run subprocess calls.
 """
 
-from gitbolt.git_subprocess.runner.base import GitCommandRunner
+from gitbolt.git_subprocess.runner.base import GitCommandRunner as GitCommandRunner
