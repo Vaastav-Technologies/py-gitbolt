@@ -28,8 +28,6 @@ classifiers = [
   "Topic :: Software Development :: Version Control",
   "Topic :: Software Development :: Version Control :: Git",
 
-  "License :: License :: Free For Educational Use",
-
   "Operating System :: OS Independent",
 
   "Programming Language :: Python :: 3.12",
