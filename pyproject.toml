@@ -52,5 +52,4 @@ multitest = ['tox']
 
 [tool.setuptools.packages.find]
 where = ['src']
-exclude = ["*.py"]
 namespaces = true
