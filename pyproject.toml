@@ -1,7 +1,7 @@
 [project]
 name = "gitbolt"
 version = "0.0.0dev1"
-description = "Git command interfaces for python."
+description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
 authors = [

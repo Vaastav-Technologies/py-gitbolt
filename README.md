@@ -1,6 +1,6 @@
 # 🚀 Gitbolt
 
-**Fast and type-safe Git command execution in Python using subprocess.**
+**Fast, flexible and type-safe Git command execution in Python using subprocess.**
 
 ---
 
