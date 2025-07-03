@@ -50,5 +50,11 @@ doc = ['sphinx', 'sphinx-argparse']
 test = ['pytest', 'pytest-cov']
 multitest = ['tox']
 
+
+[project.urls]
+homepage = "https://github.com/Vaastav-Technologies/py-gitbolt"
+source = "https://github.com/Vaastav-Technologies/py-gitbolt"
+issues = "https://github.com/Vaastav-Technologies/py-gitbolt/issues"
+
 [tool.setuptools.packages.find]
 where = ['src']
