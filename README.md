@@ -253,6 +253,13 @@ Transformers for formatting/parsing can be added later.
 
 ---
 
+## 📄 More Information
+
+- 📜 [License (Apache-2.0)](./LICENSE)
+- 🤝 [Contributing Guide](./CONTRIBUTING.md)
+
+---
+
 ## 🚧 Future Goals
 
 * Support `pygit2` for direct, fast Git access.
