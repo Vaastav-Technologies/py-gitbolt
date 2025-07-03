@@ -37,7 +37,6 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "vt-commons @ git+https://github.com/Vaastav-Technologies/py-commons.git",
   "vt-err-hndlr @ git+https://github.com/Vaastav-Technologies/py-err-hndlr.git"
 ]
 
