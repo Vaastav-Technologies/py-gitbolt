@@ -642,6 +642,8 @@ class TestLsTreeSubcmd:
         git = SimpleGitCommand(enc_local)
         Path(enc_local, "a-file").write_text("a-file")
         git.add_subcmd.add(".")
+        subprocess.run(["git", "config", "--local", "user.name", "suhas"], cwd=enc_local, check=True)
+        subprocess.run(["git", "config", "--local", "user.email", "suhas@example.com"], cwd=enc_local, check=True)
         subprocess.run(
             ["git", "commit", "-m", "committed a-file"], check=True, cwd=enc_local
         )
