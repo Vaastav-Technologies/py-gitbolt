@@ -1,5 +1,14 @@
 # 🚀 Gitbolt
 
+![PyPI - Types](https://img.shields.io/pypi/types/gitbolt)
+![GitHub License](https://img.shields.io/github/license/Vaastav-Technologies/py-gitbolt)
+[![🔧 test](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/test.yml/badge.svg)](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/test.yml)
+[![💡 typecheck](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/typecheck.yml)
+[![🛠️ lint](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/lint.yml/badge.svg)](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/lint.yml)
+[![📊 coverage](https://codecov.io/gh/Vaastav-Technologies/py-gitbolt/branch/main/graph/badge.svg)](https://codecov.io/gh/Vaastav-Technologies/py-gitbolt)
+[![📤 Upload Python Package](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Vaastav-Technologies/py-gitbolt/actions/workflows/python-publish.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/gitbolt)
+
 **Fast, flexible and type-safe Git command execution in Python using subprocess.**
 
 ---
