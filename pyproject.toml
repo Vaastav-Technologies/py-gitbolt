@@ -44,7 +44,8 @@ dependencies = [
 pygit2 = ['pygit2']
 
 [dependency-groups]
-dev = ["mypy", "ruff"]
+# TODO: report the mypy recent version (1.16.0, 1.16.1 issue) RuntimeError: ('Not implemented', <class 'mypy.types.TypeGuardedType'>)
+dev = ["mypy==1.15.0", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
 test = ['pytest', 'coverage']
 multitest = ['tox']
