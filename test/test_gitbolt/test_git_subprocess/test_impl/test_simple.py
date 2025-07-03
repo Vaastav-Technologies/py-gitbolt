@@ -723,14 +723,14 @@ def test_version_build_options():
     version_build_info = git.version_subcmd.version(build_options=True)
     assert "git version 2" in version_build_info
     assert "cpu: " in version_build_info
-    assert "built from commit: " in version_build_info
+    assert "shell-path: " in version_build_info
     git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
     ano_build_info = git.version_subcmd.git_opts_override(namespace="suhas").version(
         build_options=True
     )
     assert "git version 2" in ano_build_info
     assert "cpu: " in ano_build_info
-    assert "built from commit: " in ano_build_info
+    assert "shell-path: " in ano_build_info
 
 
 class TestAddSubcmd:
