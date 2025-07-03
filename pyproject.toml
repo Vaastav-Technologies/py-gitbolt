@@ -10,7 +10,6 @@ authors = [
 maintainers = [
     {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}
 ]
-requires-python = ">=3.12"
 license = "Apache-2.0"
 keywords = [
   'git', 'vcs', 'library', 'version control'
