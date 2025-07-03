@@ -4,6 +4,7 @@
 """
 Helper interfaces specific to ``git ls-tree`` subcommand.
 """
+
 from abc import abstractmethod
 from typing import Protocol, Unpack, override, Literal
 
@@ -28,6 +29,7 @@ class LsTreeArgsValidator(Protocol):
         :param ls_tree_opts: Keyword arguments mapping to supported options for ``git ls-tree``.
         """
         ...
+
 
 class UtilLsTreeArgsValidator(LsTreeArgsValidator):
     """
@@ -102,11 +104,33 @@ class UtilLsTreeArgsValidator(LsTreeArgsValidator):
             Traceback (most recent call last):
             gitbolt.exceptions.GitExitingException: TypeError: 'z' must be a boolean
         """
-        require_type(tree_ish, 'tree_ish', str, GitExitingException)
+        require_type(tree_ish, "tree_ish", str, GitExitingException)
 
-        bool_keys: list[Literal['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
-            'name_status']] = ['d', 'r', 't', 'long', 'z', 'name_only', 'object_only', 'full_name', 'full_tree',
-                               'name_status']
+        bool_keys: list[
+            Literal[
+                "d",
+                "r",
+                "t",
+                "long",
+                "z",
+                "name_only",
+                "object_only",
+                "full_name",
+                "full_tree",
+                "name_status",
+            ]
+        ] = [
+            "d",
+            "r",
+            "t",
+            "long",
+            "z",
+            "name_only",
+            "object_only",
+            "full_name",
+            "full_tree",
+            "name_status",
+        ]
 
         for key in bool_keys:
             if key in ls_tree_opts:
@@ -115,15 +139,17 @@ class UtilLsTreeArgsValidator(LsTreeArgsValidator):
 
         if "abbrev" in ls_tree_opts:
             abbrev = ls_tree_opts["abbrev"]
-            require_type(abbrev, 'abbrev', int, GitExitingException)
+            require_type(abbrev, "abbrev", int, GitExitingException)
             if not (0 <= abbrev <= 40):
                 errmsg = "abbrev must be between 0 and 40."
-                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
 
         if "format_" in ls_tree_opts:
-            format_ = ls_tree_opts['format_']
-            require_type(format_, 'format_', str, GitExitingException)
+            format_ = ls_tree_opts["format_"]
+            require_type(format_, "format_", str, GitExitingException)
 
         if "path" in ls_tree_opts:
             path = ls_tree_opts["path"]
-            require_iterable(path, 'path', str, list, GitExitingException)
+            require_iterable(path, "path", str, list, GitExitingException)

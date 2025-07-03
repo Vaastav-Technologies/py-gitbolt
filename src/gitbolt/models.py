@@ -4,6 +4,7 @@
 """
 models and datatypes related to git and git subcommands.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -214,6 +215,7 @@ class GitCommitEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_git_commits
     """
+
     GIT_AUTHOR_NAME: str | Unset
     GIT_AUTHOR_EMAIL: str | Unset
     GIT_AUTHOR_DATE: str | datetime | int | Unset
@@ -226,6 +228,7 @@ class GitSysEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
+
     HOME: Path | Unset
 
 
@@ -233,6 +236,7 @@ class GitEditorEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
+
     GIT_EDITOR: str | Unset
     GIT_PAGER: str | Unset
 
@@ -241,6 +245,7 @@ class GitSSHEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
+
     GIT_SSH: Path | Unset
     GIT_SSH_COMMAND: str | Unset
 
@@ -249,6 +254,7 @@ class GitTraceEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
+
     GIT_TRACE: Literal[1, 2] | bool | Path | Unset
     GIT_TRACE_SETUP: Literal[1, 2] | bool | Path | Unset
     GIT_TRACE_PERFORMANCE: Literal[1, 2] | bool | Path | Unset
@@ -259,6 +265,7 @@ class GitConfigEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_system
     """
+
     GIT_CONFIG_NOSYSTEM: Literal[1] | bool | Unset
     GIT_CONFIG_GLOBAL: Path | Unset
     GIT_ADVICE: Literal[0] | bool | Unset
@@ -268,6 +275,7 @@ class GitRepoEnvVars(TypedDict, total=False):
     """
     Env vars mirroring: https://git-scm.com/docs/git#_the_git_repository
     """
+
     GIT_DIR: Path | Unset
     GIT_WORK_TREE: Path | Unset
     GIT_INDEX_FILE: Path | Unset
@@ -279,6 +287,7 @@ class GitNetworkEnvVars(TypedDict, total=False):
     """
     Git network related env vars.
     """
+
     GIT_TERMINAL_PROMPT: Literal[0, 1] | bool | Unset
     GIT_HTTP_USER_AGENT: str | Unset
     GIT_HTTP_PROXY: str | Unset
@@ -359,9 +368,16 @@ class GitLogEnvVars(TypedDict, total=False):
     """
 
 
-class GitEnvVars(GitCommitEnvVars, GitEditorEnvVars, GitSSHEnvVars, GitTraceEnvVars, GitConfigEnvVars, GitRepoEnvVars,
-                 GitNetworkEnvVars, GitSysEnvVars
-                 ):
+class GitEnvVars(
+    GitCommitEnvVars,
+    GitEditorEnvVars,
+    GitSSHEnvVars,
+    GitTraceEnvVars,
+    GitConfigEnvVars,
+    GitRepoEnvVars,
+    GitNetworkEnvVars,
+    GitSysEnvVars,
+):
     """
     Environment variables that control Git's runtime behavior.
 
@@ -378,6 +394,7 @@ class GitEnvVars(GitCommitEnvVars, GitEditorEnvVars, GitSSHEnvVars, GitTraceEnvV
     All variables are optional and can be set to control specific aspects
     of Git's behavior.
     """
+
     pass
 
 

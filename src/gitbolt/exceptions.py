@@ -34,6 +34,7 @@ class GitException(VTException):
 
     ... rest examples mimic ``VTException`` examples.
     """
+
     pass
 
 
@@ -41,4 +42,5 @@ class GitExitingException(GitException, VTExitingException):
     """
     ``GitException`` that carries an ``exit_code``.
     """
+
     pass

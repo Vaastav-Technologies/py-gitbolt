@@ -4,6 +4,7 @@
 """
 Helper interfaces specific to ``git add`` subcommand.
 """
+
 from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, Unpack, override, Literal
@@ -22,13 +23,15 @@ class AddArgsValidator(Protocol):
     """
 
     @abstractmethod
-    def validate(self,
-                 pathspec: str | None = None,
-                 *pathspecs: str,
-                 pathspec_from_file: Path | Literal["-"] | None = None,
-                 pathspec_stdin: str | None = None,
-                 pathspec_file_nul: bool = False,
-                 **add_opts: Unpack[GitAddOpts]) -> None:
+    def validate(
+        self,
+        pathspec: str | None = None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None = None,
+        pathspec_stdin: str | None = None,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
+    ) -> None:
         """
         Validate the inputs provided to the ``git add`` command.
 
@@ -76,13 +79,15 @@ class UtilAddArgsValidator(AddArgsValidator):
     """
 
     @override
-    def validate(self,
-                 pathspec: str | None = None,
-                 *pathspecs: str,
-                 pathspec_from_file: Path | Literal["-"] | None = None,
-                 pathspec_stdin: str | None = None,
-                 pathspec_file_nul: bool = False,
-                 **add_opts: Unpack[GitAddOpts]) -> None:
+    def validate(
+        self,
+        pathspec: str | None = None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None = None,
+        pathspec_stdin: str | None = None,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
+    ) -> None:
         """
         Examples::
 
@@ -150,15 +155,31 @@ class UtilAddArgsValidator(AddArgsValidator):
             Traceback (most recent call last):
             gitbolt.exceptions.GitExitingException: ValueError: Either pathspec or pathspec_from_file is required
         """
-        self.mandate_required_arguments(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
-                                        pathspec_stdin=pathspec_stdin)
-        self.validate_exclusive_args(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
-                                     pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul)
+        self.mandate_required_arguments(
+            pathspec,
+            *pathspecs,
+            pathspec_from_file=pathspec_from_file,
+            pathspec_stdin=pathspec_stdin,
+        )
+        self.validate_exclusive_args(
+            pathspec,
+            *pathspecs,
+            pathspec_from_file=pathspec_from_file,
+            pathspec_stdin=pathspec_stdin,
+            pathspec_file_nul=pathspec_file_nul,
+        )
         self.validate_git_add_opts(**add_opts)
-        self.validate_non_git_add_opts(pathspec_file_nul, pathspec_from_file, pathspec_stdin)
+        self.validate_non_git_add_opts(
+            pathspec_file_nul, pathspec_from_file, pathspec_stdin
+        )
 
-    def mandate_required_arguments(self, pathspec: str | None, *pathspecs: str,
-                                   pathspec_from_file: Path | Literal['-'] | None, pathspec_stdin: str | None):
+    def mandate_required_arguments(
+        self,
+        pathspec: str | None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None,
+        pathspec_stdin: str | None,
+    ):
         """
         One of ``pathspec``, ``pathspec_from_file`` or ``pathspec_from_file=- pathspec_stdin`` must be provided.
 
@@ -204,16 +225,30 @@ class UtilAddArgsValidator(AddArgsValidator):
 
         :raises GitExitingException: if no mandatory args are provided.
         """
-        if not has_atleast_one_arg(pathspec, *pathspecs, enforce_type=False) and pathspec_from_file is None:
-            errmsg = errmsg_creator.at_least_one_required('pathspec', 'pathspec_from_file')
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-        if pathspec_from_file=='-' and pathspec_stdin is None:
-            errmsg = 'pathspec_stdin must be provided when pathspec_form_file is -'
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+        if (
+            not has_atleast_one_arg(pathspec, *pathspecs, enforce_type=False)
+            and pathspec_from_file is None
+        ):
+            errmsg = errmsg_creator.at_least_one_required(
+                "pathspec", "pathspec_from_file"
+            )
+            raise GitExitingException(
+                errmsg, exit_code=ERR_INVALID_USAGE
+            ) from ValueError(errmsg)
+        if pathspec_from_file == "-" and pathspec_stdin is None:
+            errmsg = "pathspec_stdin must be provided when pathspec_form_file is -"
+            raise GitExitingException(
+                errmsg, exit_code=ERR_INVALID_USAGE
+            ) from ValueError(errmsg)
 
-    def validate_exclusive_args(self, pathspec: str | None, *pathspecs: str,
-                                pathspec_from_file: Path | Literal["-"] | None,
-                                pathspec_stdin: str | None, pathspec_file_nul: bool | None) -> None:
+    def validate_exclusive_args(
+        self,
+        pathspec: str | None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None,
+        pathspec_stdin: str | None,
+        pathspec_file_nul: bool | None,
+    ) -> None:
         """
         Method added so that subclasses may override as they please.
 
@@ -255,24 +290,45 @@ class UtilAddArgsValidator(AddArgsValidator):
             try:
                 ensure_atleast_one_arg(pathspec, *pathspecs, enforce_type=str)
             except TypeError as te:
-                raise GitExitingException('pathspec must be a string.', exit_code=ERR_DATA_FORMAT_ERR) from te
+                raise GitExitingException(
+                    "pathspec must be a string.", exit_code=ERR_DATA_FORMAT_ERR
+                ) from te
 
             if pathspec_from_file is not None:
-                errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_from_file')
-                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+                errmsg = errmsg_creator.not_allowed_together(
+                    "pathspec", "pathspec_from_file"
+                )
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
             if pathspec_stdin is not None:
-                errmsg = errmsg_creator.not_allowed_together('pathspec', 'pathspec_stdin')
-                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+                errmsg = errmsg_creator.not_allowed_together(
+                    "pathspec", "pathspec_stdin"
+                )
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
             if pathspec_file_nul:
-                errmsg = errmsg_creator.not_allowed_together('pathspec_file_nul', 'pathspec')
-                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+                errmsg = errmsg_creator.not_allowed_together(
+                    "pathspec_file_nul", "pathspec"
+                )
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
         if pathspec_from_file == "-" and pathspec_stdin is None:
-            errmsg = errmsg_creator.all_required('pathspec_stdin', 'pathspec_from_file',
-                                                 suffix=" when pathspec_from_file is '-'.")
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
-        if pathspec_from_file != '-' and pathspec_stdin is not None:
+            errmsg = errmsg_creator.all_required(
+                "pathspec_stdin",
+                "pathspec_from_file",
+                suffix=" when pathspec_from_file is '-'.",
+            )
+            raise GitExitingException(
+                errmsg, exit_code=ERR_INVALID_USAGE
+            ) from ValueError(errmsg)
+        if pathspec_from_file != "-" and pathspec_stdin is not None:
             errmsg = "pathspec_stdin is not allowed unless pathspec_from_file is '-'."
-            raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+            raise GitExitingException(
+                errmsg, exit_code=ERR_INVALID_USAGE
+            ) from ValueError(errmsg)
 
     # region validate_git_add_opts
     def validate_git_add_opts(self, **add_opts: Unpack[GitAddOpts]) -> None:
@@ -287,7 +343,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         """
         self.validate_bool_args(**add_opts)
         self.validate_tri_state_args(**add_opts)
-        self.validate_chmod_arg(add_opts.get('chmod'))
+        self.validate_chmod_arg(add_opts.get("chmod"))
 
     # region validate_bool_args
     def validate_bool_args(self, **bool_add_opts: Unpack[GitAddOpts]) -> None:
@@ -299,30 +355,30 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
         """
-        if 'verbose' in bool_add_opts:
-            self.validate_verbose_bool_arg(bool_add_opts['verbose'])
-        if 'dry_run' in bool_add_opts:
-            self.validate_dry_run_bool_arg(bool_add_opts['dry_run'])
-        if 'force' in bool_add_opts:
-            self.validate_force_bool_arg(bool_add_opts['force'])
-        if 'interactive' in bool_add_opts:
-            self.validate_interactive_bool_arg(bool_add_opts['interactive'])
-        if 'patch' in bool_add_opts:
-            self.validate_patch_bool_arg(bool_add_opts['patch'])
-        if 'edit' in bool_add_opts:
-            self.validate_edit_bool_arg(bool_add_opts['edit'])
-        if 'sparse' in bool_add_opts:
-            self.validate_sparse_bool_arg(bool_add_opts['sparse'])
-        if 'intent_to_add' in bool_add_opts:
-            self.validate_intent_to_add_bool_arg(bool_add_opts['intent_to_add'])
-        if 'refresh' in bool_add_opts:
-            self.validate_refresh_bool_arg(bool_add_opts['refresh'])
-        if 'ignore_errors' in bool_add_opts:
-            self.validate_ignore_errors_bool_arg(bool_add_opts['ignore_errors'])
-        if 'ignore_missing' in bool_add_opts:
-            self.validate_ignore_missing_bool_arg(bool_add_opts['ignore_missing'])
-        if 'renormalize' in bool_add_opts:
-            self.validate_renormalize_bool_arg(bool_add_opts['renormalize'])
+        if "verbose" in bool_add_opts:
+            self.validate_verbose_bool_arg(bool_add_opts["verbose"])
+        if "dry_run" in bool_add_opts:
+            self.validate_dry_run_bool_arg(bool_add_opts["dry_run"])
+        if "force" in bool_add_opts:
+            self.validate_force_bool_arg(bool_add_opts["force"])
+        if "interactive" in bool_add_opts:
+            self.validate_interactive_bool_arg(bool_add_opts["interactive"])
+        if "patch" in bool_add_opts:
+            self.validate_patch_bool_arg(bool_add_opts["patch"])
+        if "edit" in bool_add_opts:
+            self.validate_edit_bool_arg(bool_add_opts["edit"])
+        if "sparse" in bool_add_opts:
+            self.validate_sparse_bool_arg(bool_add_opts["sparse"])
+        if "intent_to_add" in bool_add_opts:
+            self.validate_intent_to_add_bool_arg(bool_add_opts["intent_to_add"])
+        if "refresh" in bool_add_opts:
+            self.validate_refresh_bool_arg(bool_add_opts["refresh"])
+        if "ignore_errors" in bool_add_opts:
+            self.validate_ignore_errors_bool_arg(bool_add_opts["ignore_errors"])
+        if "ignore_missing" in bool_add_opts:
+            self.validate_ignore_missing_bool_arg(bool_add_opts["ignore_missing"])
+        if "renormalize" in bool_add_opts:
+            self.validate_renormalize_bool_arg(bool_add_opts["renormalize"])
 
     def validate_verbose_bool_arg(self, verbose: bool) -> None:
         """Validate `verbose` argument.
@@ -332,7 +388,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'verbose' must be a boolean
         """
-        require_type(verbose, 'verbose', bool, GitExitingException)
+        require_type(verbose, "verbose", bool, GitExitingException)
 
     def validate_dry_run_bool_arg(self, dry_run: bool) -> None:
         """Validate `dry_run` argument.
@@ -342,7 +398,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'dry_run' must be a boolean
         """
-        require_type(dry_run, 'dry_run', bool, GitExitingException)
+        require_type(dry_run, "dry_run", bool, GitExitingException)
 
     def validate_force_bool_arg(self, force: bool) -> None:
         """Validate `force` argument.
@@ -352,7 +408,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'force' must be a boolean
         """
-        require_type(force, 'force', bool, GitExitingException)
+        require_type(force, "force", bool, GitExitingException)
 
     def validate_interactive_bool_arg(self, interactive: bool) -> None:
         """Validate `interactive` argument.
@@ -362,7 +418,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'interactive' must be a boolean
         """
-        require_type(interactive, 'interactive', bool, GitExitingException)
+        require_type(interactive, "interactive", bool, GitExitingException)
 
     def validate_patch_bool_arg(self, patch: bool) -> None:
         """Validate `patch` argument.
@@ -372,7 +428,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'patch' must be a boolean
         """
-        require_type(patch, 'patch', bool, GitExitingException)
+        require_type(patch, "patch", bool, GitExitingException)
 
     def validate_edit_bool_arg(self, edit: bool) -> None:
         """Validate `edit` argument.
@@ -382,7 +438,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'edit' must be a boolean
         """
-        require_type(edit, 'edit', bool, GitExitingException)
+        require_type(edit, "edit", bool, GitExitingException)
 
     def validate_sparse_bool_arg(self, sparse: bool) -> None:
         """Validate `sparse` argument.
@@ -392,7 +448,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'sparse' must be a boolean
         """
-        require_type(sparse, 'sparse', bool, GitExitingException)
+        require_type(sparse, "sparse", bool, GitExitingException)
 
     def validate_intent_to_add_bool_arg(self, intent_to_add: bool) -> None:
         """Validate `intent_to_add` argument.
@@ -402,7 +458,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'intent_to_add' must be a boolean
         """
-        require_type(intent_to_add, 'intent_to_add', bool, GitExitingException)
+        require_type(intent_to_add, "intent_to_add", bool, GitExitingException)
 
     def validate_refresh_bool_arg(self, refresh: bool) -> None:
         """Validate `refresh` argument.
@@ -412,7 +468,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'refresh' must be a boolean
         """
-        require_type(refresh, 'refresh', bool, GitExitingException)
+        require_type(refresh, "refresh", bool, GitExitingException)
 
     def validate_ignore_errors_bool_arg(self, ignore_errors: bool) -> None:
         """Validate `ignore_errors` argument.
@@ -422,7 +478,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'ignore_errors' must be a boolean
         """
-        require_type(ignore_errors, 'ignore_errors', bool, GitExitingException)
+        require_type(ignore_errors, "ignore_errors", bool, GitExitingException)
 
     def validate_ignore_missing_bool_arg(self, ignore_missing: bool) -> None:
         """Validate `ignore_missing` argument.
@@ -432,7 +488,7 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'ignore_missing' must be a boolean
         """
-        require_type(ignore_missing, 'ignore_missing', bool, GitExitingException)
+        require_type(ignore_missing, "ignore_missing", bool, GitExitingException)
 
     def validate_renormalize_bool_arg(self, renormalize: bool) -> None:
         """
@@ -443,7 +499,8 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'renormalize' must be a boolean
         """
-        require_type(renormalize, 'renormalize', bool, GitExitingException)
+        require_type(renormalize, "renormalize", bool, GitExitingException)
+
     # endregion
 
     # region validate_tri_state_args
@@ -457,10 +514,12 @@ class UtilAddArgsValidator(AddArgsValidator):
         ...
         gitbolt.exceptions.GitExitingException: TypeError: 'no_all' must be either True, False, or None
         """
-        if 'no_all' in tri_state_add_opts:
-            self.validate_no_all_tri_state_arg(tri_state_add_opts['no_all'])
-        if 'no_ignore_removal' in tri_state_add_opts:
-            self.validate_no_ignore_removal_tri_state_arg(tri_state_add_opts['no_ignore_removal'])
+        if "no_all" in tri_state_add_opts:
+            self.validate_no_all_tri_state_arg(tri_state_add_opts["no_all"])
+        if "no_ignore_removal" in tri_state_add_opts:
+            self.validate_no_ignore_removal_tri_state_arg(
+                tri_state_add_opts["no_ignore_removal"]
+            )
 
     def validate_no_all_tri_state_arg(self, no_all: bool | None) -> None:
         """
@@ -475,11 +534,12 @@ class UtilAddArgsValidator(AddArgsValidator):
         if no_all not in (True, False, None):
             errmsg = "'no_all' must be either True, False, or None"
             raise GitExitingException(
-                errmsg,
-                exit_code=ERR_DATA_FORMAT_ERR
+                errmsg, exit_code=ERR_DATA_FORMAT_ERR
             ) from TypeError(errmsg)
 
-    def validate_no_ignore_removal_tri_state_arg(self, no_ignore_removal: bool | None) -> None:
+    def validate_no_ignore_removal_tri_state_arg(
+        self, no_ignore_removal: bool | None
+    ) -> None:
         """
         Validate `no_ignore_removal` tri-state argument.
 
@@ -491,12 +551,12 @@ class UtilAddArgsValidator(AddArgsValidator):
         if no_ignore_removal not in (True, False, None):
             errmsg = "'no_ignore_removal' must be either True, False, or None"
             raise GitExitingException(
-                errmsg,
-                exit_code=ERR_DATA_FORMAT_ERR
+                errmsg, exit_code=ERR_DATA_FORMAT_ERR
             ) from TypeError(errmsg)
+
     # endregion
 
-    def validate_chmod_arg(self, chmod: Literal['+x', '-x'] | None) -> None:
+    def validate_chmod_arg(self, chmod: Literal["+x", "-x"] | None) -> None:
         """
         Validate `chmod` argument.
 
@@ -507,19 +567,23 @@ class UtilAddArgsValidator(AddArgsValidator):
         gitbolt.exceptions.GitExitingException: ValueError: Unexpected chmod value. Choose from '+x' and '-x'.
         """
         if chmod:
-            if chmod not in ('+x', '-x'):
-                errmsg = errmsg_creator.errmsg_for_choices(emphasis='chmod', choices=['+x', '-x'])
+            if chmod not in ("+x", "-x"):
+                errmsg = errmsg_creator.errmsg_for_choices(
+                    emphasis="chmod", choices=["+x", "-x"]
+                )
                 raise GitExitingException(
-                    errmsg,
-                    exit_code=ERR_INVALID_USAGE
+                    errmsg, exit_code=ERR_INVALID_USAGE
                 ) from ValueError(errmsg)
+
     # endregion
 
     # region validate_non_git_add_opts
-    def validate_non_git_add_opts(self,
-                                  pathspec_file_nul: bool,
-                                  pathspec_from_file: Path | Literal["-"] | None,
-                                  pathspec_stdin: str | None) -> None:
+    def validate_non_git_add_opts(
+        self,
+        pathspec_file_nul: bool,
+        pathspec_from_file: Path | Literal["-"] | None,
+        pathspec_stdin: str | None,
+    ) -> None:
         """
         Validate non-GitAddOpts arguments like pathspec_from_file and pathspec_stdin.
 
@@ -543,9 +607,11 @@ class UtilAddArgsValidator(AddArgsValidator):
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_file_nul' must be a boolean
         """
-        require_type(pathspec_file_nul, 'pathspec_file_nul', bool, GitExitingException)
+        require_type(pathspec_file_nul, "pathspec_file_nul", bool, GitExitingException)
 
-    def validate_pathspec_from_file(self, pathspec_from_file: Path | Literal['-'] | None) -> None:
+    def validate_pathspec_from_file(
+        self, pathspec_from_file: Path | Literal["-"] | None
+    ) -> None:
         """
         Validate `pathspec_from_file` argument.
 
@@ -559,12 +625,14 @@ class UtilAddArgsValidator(AddArgsValidator):
         gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_from_file' must be a pathlib.Path or the string literal '-'.
         """
         if pathspec_from_file is not None:
-            if not isinstance(pathspec_from_file, (Path, str)) or pathspec_from_file != '-' and not isinstance(
-                    pathspec_from_file, Path):
+            if (
+                not isinstance(pathspec_from_file, (Path, str))
+                or pathspec_from_file != "-"
+                and not isinstance(pathspec_from_file, Path)
+            ):
                 errmsg = "'pathspec_from_file' must be a pathlib.Path or the string literal '-'."
                 raise GitExitingException(
-                    errmsg,
-                    exit_code=ERR_DATA_FORMAT_ERR
+                    errmsg, exit_code=ERR_DATA_FORMAT_ERR
                 ) from TypeError(errmsg)
 
     def validate_pathspec_stdin(self, pathspec_stdin: str | None):
@@ -579,5 +647,6 @@ class UtilAddArgsValidator(AddArgsValidator):
         gitbolt.exceptions.GitExitingException: TypeError: 'pathspec_stdin' must be a string
         """
         if pathspec_stdin is not None:
-            require_type(pathspec_stdin, 'pathspec_stdin', str, GitExitingException)
+            require_type(pathspec_stdin, "pathspec_stdin", str, GitExitingException)
+
     # endregion

@@ -4,6 +4,7 @@
 """
 Helper interfaces for ``git add`` subcommand with default implementation for subprocess calls.
 """
+
 from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, Unpack, override, Literal
@@ -18,13 +19,14 @@ class AddCLIArgsBuilder(Protocol):
     """
 
     @abstractmethod
-    def build(self,
-              pathspec: str | None = None,
-              *pathspecs: str,
-              pathspec_from_file: Path | Literal["-"] | None = None,
-              pathspec_file_nul: bool = False,
-              **add_opts: Unpack[GitAddOpts]
-              ) -> list[str]:
+    def build(
+        self,
+        pathspec: str | None = None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None = None,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
+    ) -> list[str]:
         """
         Build the complete list of subcommand arguments to be passed to ``git add``.
 
@@ -71,13 +73,14 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
     """
 
     @override
-    def build(self,
-              pathspec: str | None = None,
-              *pathspecs: str,
-              pathspec_from_file: Path | Literal["-"] | None = None,
-              pathspec_file_nul: bool = False,
-              **add_opts: Unpack[GitAddOpts]
-              ) -> list[str]:
+    def build(
+        self,
+        pathspec: str | None = None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None = None,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
+    ) -> list[str]:
         """
         Build the full list of arguments to be passed to ``git add``.
 
@@ -150,7 +153,9 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
 
         # region tri-state flags
         sub_cmd_args.extend(self.no_all(add_opts.get("no_all")))
-        sub_cmd_args.extend(self.no_ignore_removal_arg(add_opts.get("no_ignore_removal")))
+        sub_cmd_args.extend(
+            self.no_ignore_removal_arg(add_opts.get("no_ignore_removal"))
+        )
         # endregion
 
         sub_cmd_args.extend(self.sparse_arg(add_opts.get("sparse")))
@@ -162,7 +167,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         sub_cmd_args.extend(self.renormalize_arg(add_opts.get("renormalize")))
         # endregion
 
-        sub_cmd_args.extend(self.chmod_arg(add_opts.get('chmod')))
+        sub_cmd_args.extend(self.chmod_arg(add_opts.get("chmod")))
         # endregion
 
         # region non GitOpts members
@@ -187,7 +192,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().verbose_arg(None)
         []
         """
-        return ['--verbose'] if verbose else []
+        return ["--verbose"] if verbose else []
 
     def dry_run_arg(self, dry_run: bool | None) -> list[str]:
         """
@@ -203,7 +208,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().dry_run_arg(None)
         []
         """
-        return ['--dry-run'] if dry_run else []
+        return ["--dry-run"] if dry_run else []
 
     def force_arg(self, force: bool | None) -> list[str]:
         """
@@ -219,7 +224,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().force_arg(None)
         []
         """
-        return ['--force'] if force else []
+        return ["--force"] if force else []
 
     def interactive_arg(self, interactive: bool | None) -> list[str]:
         """
@@ -235,7 +240,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().interactive_arg(None)
         []
         """
-        return ['--interactive'] if interactive else []
+        return ["--interactive"] if interactive else []
 
     def patch_arg(self, patch: bool | None) -> list[str]:
         """
@@ -251,7 +256,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().patch_arg(None)
         []
         """
-        return ['--patch'] if patch else []
+        return ["--patch"] if patch else []
 
     def edit_arg(self, edit: bool | None) -> list[str]:
         """
@@ -264,7 +269,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().edit_arg(None)
         []
         """
-        return ['--edit'] if edit else []
+        return ["--edit"] if edit else []
 
     def no_all(self, no_all: bool | None) -> list[str]:
         """
@@ -279,7 +284,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         """
         if no_all is None:
             return []
-        return ['--no-all'] if no_all else ['--all']
+        return ["--no-all"] if no_all else ["--all"]
 
     def no_ignore_removal_arg(self, no_ignore_removal: bool | None) -> list[str]:
         """
@@ -294,7 +299,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         """
         if no_ignore_removal is None:
             return []
-        return ['--no-ignore-removal'] if no_ignore_removal else ['--ignore-removal']
+        return ["--no-ignore-removal"] if no_ignore_removal else ["--ignore-removal"]
 
     def sparse_arg(self, sparse: bool | None) -> list[str]:
         """
@@ -307,7 +312,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().sparse_arg(None)
         []
         """
-        return ['--sparse'] if sparse else []
+        return ["--sparse"] if sparse else []
 
     def intent_to_add_arg(self, intent_to_add: bool | None) -> list[str]:
         """
@@ -320,7 +325,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().intent_to_add_arg(None)
         []
         """
-        return ['--intent-to-add'] if intent_to_add else []
+        return ["--intent-to-add"] if intent_to_add else []
 
     def refresh_arg(self, refresh: bool | None) -> list[str]:
         """
@@ -333,7 +338,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().refresh_arg(False)
         []
         """
-        return ['--refresh'] if refresh else []
+        return ["--refresh"] if refresh else []
 
     def ignore_errors_arg(self, ignore_errors: bool | None) -> list[str]:
         """
@@ -346,7 +351,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().ignore_errors_arg(False)
         []
         """
-        return ['--ignore-errors'] if ignore_errors else []
+        return ["--ignore-errors"] if ignore_errors else []
 
     def ignore_missing_arg(self, ignore_missing: bool | None) -> list[str]:
         """
@@ -359,7 +364,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().ignore_missing_arg(False)
         []
         """
-        return ['--ignore-missing'] if ignore_missing else []
+        return ["--ignore-missing"] if ignore_missing else []
 
     def renormalize_arg(self, renormalize: bool | None) -> list[str]:
         """
@@ -372,9 +377,9 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().renormalize_arg(False)
         []
         """
-        return ['--renormalize'] if renormalize else []
+        return ["--renormalize"] if renormalize else []
 
-    def chmod_arg(self, chmod: Literal['+x', '-x'] | None):
+    def chmod_arg(self, chmod: Literal["+x", "-x"] | None):
         """
         Return ``--chmod=+x`` or ``--chmod=-x`` if applicable.
 
@@ -387,7 +392,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         """
         if chmod is None:
             return []
-        return [f'--chmod={chmod}']
+        return [f"--chmod={chmod}"]
 
     def tree_ish_arg(self, tree_ish: str) -> list[str]:
         """
@@ -433,9 +438,11 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         >>> IndividuallyOverridableACAB().pathspec_file_nul_arg(False)
         []
         """
-        return ['--pathspec-file-nul'] if pathspec_file_nul else []
+        return ["--pathspec-file-nul"] if pathspec_file_nul else []
 
-    def pathspec_from_file_arg(self, pathspec_from_file: Path | Literal['-'] | None) -> list[str]:
+    def pathspec_from_file_arg(
+        self, pathspec_from_file: Path | Literal["-"] | None
+    ) -> list[str]:
         """
         Returns --pathspec-from-file=<pathspec-file> if applicable.
 
@@ -448,7 +455,7 @@ class IndividuallyOverridableACAB(AddCLIArgsBuilder):
         """
         if pathspec_from_file is None:
             return []
-        return [f'--pathspec-from-file={str(pathspec_from_file)}']
+        return [f"--pathspec-from-file={str(pathspec_from_file)}"]
 
     def pathspec_arg(self, *pathspecs: str | None) -> list[str]:
         """

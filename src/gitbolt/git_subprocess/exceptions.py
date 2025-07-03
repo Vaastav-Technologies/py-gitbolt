@@ -106,4 +106,5 @@ class GitCmdException(GitException, VTCmdException):
 
     ... rest examples mimic ``VTCmdException``.
     """
+
     pass

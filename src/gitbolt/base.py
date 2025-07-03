@@ -4,6 +4,7 @@
 """
 interfaces related to processors specific to git commands.
 """
+
 from __future__ import annotations
 
 from abc import abstractmethod
@@ -23,10 +24,11 @@ class ForGit(Protocol):
     """
     Marker interface to mark an operation for git.
     """
+
     pass
 
 
-class HasGitUnderneath[G: 'Git'](ForGit, Protocol):
+class HasGitUnderneath[G: "Git"](ForGit, Protocol):
     """
     Stores a reference to main git instance.
     """
@@ -107,7 +109,7 @@ class GitSubCommand(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         ...
 
     @abstractmethod
-    def _subcmd_from_git(self, git: 'Git') -> Self:
+    def _subcmd_from_git(self, git: "Git") -> Self:
         """
         Protected. Intended for inheritance only.
 
@@ -134,7 +136,7 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
         ...
 
     @override
-    def _subcmd_from_git(self, git: 'Git') -> 'LsTree':
+    def _subcmd_from_git(self, git: "Git") -> "LsTree":
         return git.ls_tree_subcmd
 
     @property
@@ -155,10 +157,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     @overload
     @abstractmethod
     def add(
-        self,
-        pathspec: str,
-        *pathspecs: str,
-        **add_opts: Unpack[GitAddOpts]
+        self, pathspec: str, *pathspecs: str, **add_opts: Unpack[GitAddOpts]
     ) -> str:
         """
         Add files specified by a list of pathspec strings.
@@ -177,7 +176,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         *,
         pathspec_from_file: Path,
         pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
+        **add_opts: Unpack[GitAddOpts],
     ) -> str:
         """
         Add files listed in a file (`pathspec_from_file`) to the index.
@@ -198,7 +197,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         pathspec_from_file: Literal["-"],
         pathspec_stdin: str,
         pathspec_file_nul: bool = False,
-        **add_opts: Unpack[GitAddOpts]
+        **add_opts: Unpack[GitAddOpts],
     ) -> str:
         """
         Add files listed from stdin (when `pathspec_from_file` is '-').
@@ -220,7 +219,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
         return UtilAddArgsValidator()
 
     @override
-    def _subcmd_from_git(self, git: 'Git') -> 'Add':
+    def _subcmd_from_git(self, git: "Git") -> "Add":
         return git.add_subcmd
 
 
@@ -248,11 +247,13 @@ class Version(GitSubCommand, Protocol):
         :raise GitExitingException: if supplied ``build_options`` is invalid.
         """
         if not isinstance(build_options, bool):
-            errmsg = 'build_options should be bool.'
-            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from TypeError(errmsg)
+            errmsg = "build_options should be bool."
+            raise GitExitingException(
+                errmsg, exit_code=ERR_DATA_FORMAT_ERR
+            ) from TypeError(errmsg)
 
     @override
-    def _subcmd_from_git(self, git: 'Git') -> 'Version':
+    def _subcmd_from_git(self, git: "Git") -> "Version":
         return git.version_subcmd
 
 

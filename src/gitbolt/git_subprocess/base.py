@@ -4,6 +4,7 @@
 """
 Git command interfaces with default implementation using subprocess calls.
 """
+
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
@@ -14,7 +15,10 @@ from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
-from gitbolt.git_subprocess.ls_tree import LsTreeCLIArgsBuilder, IndividuallyOverridableLTCAB
+from gitbolt.git_subprocess.ls_tree import (
+    LsTreeCLIArgsBuilder,
+    IndividuallyOverridableLTCAB,
+)
 from gitbolt.git_subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.utils import merge_git_opts, merge_git_envs
@@ -43,26 +47,26 @@ class GitCommand(Git, ABC):
         :return: CLI args for git main cli command.
         """
         return (
-                self._main_cmd_cap_c_args() +
-                self._main_cmd_small_c_args() +
-                self._main_cmd_config_env_args() +
-                self._main_cmd_exec_path_args() +
-                self._main_cmd_paginate_args() +
-                self._main_cmd_no_pager_args() +
-                self._main_cmd_git_dir_args() +
-                self._main_cmd_work_tree_args() +
-                self._main_cmd_namespace_args() +
-                self._main_cmd_bare_args() +
-                self._main_cmd_no_replace_objects_args() +
-                self._main_cmd_no_lazy_fetch_args() +
-                self._main_cmd_no_optional_locks_args() +
-                self._main_cmd_no_advice_args() +
-                self._main_cmd_literal_pathspecs_args() +
-                self._main_cmd_glob_pathspecs_args() +
-                self._main_cmd_noglob_pathspecs_args() +
-                self._main_cmd_icase_pathspecs_args() +
-                self._main_cmd_list_cmds_args() +
-                self._main_cmd_attr_source_args()
+            self._main_cmd_cap_c_args()
+            + self._main_cmd_small_c_args()
+            + self._main_cmd_config_env_args()
+            + self._main_cmd_exec_path_args()
+            + self._main_cmd_paginate_args()
+            + self._main_cmd_no_pager_args()
+            + self._main_cmd_git_dir_args()
+            + self._main_cmd_work_tree_args()
+            + self._main_cmd_namespace_args()
+            + self._main_cmd_bare_args()
+            + self._main_cmd_no_replace_objects_args()
+            + self._main_cmd_no_lazy_fetch_args()
+            + self._main_cmd_no_optional_locks_args()
+            + self._main_cmd_no_advice_args()
+            + self._main_cmd_literal_pathspecs_args()
+            + self._main_cmd_glob_pathspecs_args()
+            + self._main_cmd_noglob_pathspecs_args()
+            + self._main_cmd_icase_pathspecs_args()
+            + self._main_cmd_list_cmds_args()
+            + self._main_cmd_attr_source_args()
         )
 
     @override
@@ -97,7 +101,9 @@ class GitCommand(Git, ABC):
     def _main_cmd_config_env_args(self) -> list[str]:
         val = self._main_cmd_opts.get("config_env")
         if not_none_not_unset(val):
-            return [item for k, v in val.items() for item in ["--config-env", f"{k}={v}"]]
+            return [
+                item for k, v in val.items() for item in ["--config-env", f"{k}={v}"]
+            ]
         return []
 
     def _main_cmd_exec_path_args(self) -> list[str]:
@@ -201,6 +207,7 @@ class GitCommand(Git, ABC):
         if not_none_not_unset(val):
             return ["--attr-source", val]
         return []
+
     # endregion
 
     # region build_git_envs
@@ -226,59 +233,58 @@ class GitCommand(Git, ABC):
         _env_vars = merge_git_envs(overrides, self._env_vars)
         _git_cmd._env_vars = _env_vars
         return _git_cmd
+
     # endregion
 
     @override
     @property
     def html_path(self) -> Path:
-        html_path_str = '--html-path'
+        html_path_str = "--html-path"
         return self._get_path(html_path_str)
 
     @override
     @property
     def info_path(self) -> Path:
-        info_path_str = '--info-path'
+        info_path_str = "--info-path"
         return self._get_path(info_path_str)
 
     @override
     @property
     def man_path(self) -> Path:
-        man_path_str = '--man-path'
+        man_path_str = "--man-path"
         return self._get_path(man_path_str)
 
     @override
     @property
     def exec_path(self) -> Path:
-        exec_path_str = '--exec-path'
+        exec_path_str = "--exec-path"
         return self._get_path(exec_path_str)
 
     def _get_path(self, path_opt_str: str) -> Path:
         main_opts = self.build_main_cmd_args()
         main_opts.append(path_opt_str)
-        _path_str = self.runner.run_git_command(main_opts, [], check=True, text=True,
-                                                capture_output=True).stdout.strip()
+        _path_str = self.runner.run_git_command(
+            main_opts, [], check=True, text=True, capture_output=True
+        ).stdout.strip()
         return Path(_path_str)
 
     @override
     @property
     @abstractmethod
-    def version_subcmd(self) -> VersionCommand:
-        ...
+    def version_subcmd(self) -> VersionCommand: ...
 
     @override
     @property
     @abstractmethod
-    def ls_tree_subcmd(self) -> LsTreeCommand:
-        ...
+    def ls_tree_subcmd(self) -> LsTreeCommand: ...
 
     @override
     @property
     @abstractmethod
-    def add_subcmd(self) -> AddCommand:
-        ...
+    def add_subcmd(self) -> AddCommand: ...
 
 
-class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
+class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
     """
     A ``GitSubCommand`` that holds a reference to ``git`` and provides ``git_opts_override`` by default.
     """
@@ -296,7 +302,7 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath['GitCommand'], Protocol):
         return self
 
     @abstractmethod
-    def _set_underlying_git(self, git: 'GitCommand') -> None:
+    def _set_underlying_git(self, git: "GitCommand") -> None:
         """
         Protected. Designed to be overridden not called publicly.
 
@@ -332,7 +338,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
             check=True,
             text=True,
             capture_output=True,
-            cwd=self.root_dir
+            cwd=self.root_dir,
         )
 
         return result.stdout.strip()
@@ -349,54 +355,60 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
-
     # TODO: check why PyCharm says that add() signature is incompatible with base class but mypy says okay.
 
     @override
     @overload
     def add(
-            self,
-            pathspec: str,
-            *pathspecs: str,
-            **add_opts: Unpack[GitAddOpts]
+        self, pathspec: str, *pathspecs: str, **add_opts: Unpack[GitAddOpts]
     ) -> str: ...
 
     @override
     @overload
     def add(
-            self,
-            *,
-            pathspec_from_file: Path,
-            pathspec_file_nul: bool = False,
-            **add_opts: Unpack[GitAddOpts]
+        self,
+        *,
+        pathspec_from_file: Path,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
     ) -> str: ...
 
     @override
     @overload
     def add(
-            self,
-            *,
-            pathspec_from_file: Literal["-"],
-            pathspec_stdin: str,
-            pathspec_file_nul: bool = False,
-            **add_opts: Unpack[GitAddOpts]
+        self,
+        *,
+        pathspec_from_file: Literal["-"],
+        pathspec_stdin: str,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
     ) -> str: ...
 
     @override
     def add(
-            self,
-            pathspec: str | None = None,
-            *pathspecs: str,
-            pathspec_from_file: Path | Literal["-"] | None = None,
-            pathspec_stdin: str | None = None,
-            pathspec_file_nul: bool = False,
-            **add_opts: Unpack[GitAddOpts]
+        self,
+        pathspec: str | None = None,
+        *pathspecs: str,
+        pathspec_from_file: Path | Literal["-"] | None = None,
+        pathspec_stdin: str | None = None,
+        pathspec_file_nul: bool = False,
+        **add_opts: Unpack[GitAddOpts],
     ) -> str:
-        self.args_validator.validate(pathspec, *pathspecs, pathspec_from_file=pathspec_from_file,
-                                     pathspec_stdin=pathspec_stdin, pathspec_file_nul=pathspec_file_nul, **add_opts)
-        sub_cmd_args = self.cli_args_builder.build(pathspec, *pathspecs,
-                                                   pathspec_from_file=pathspec_from_file,
-                                                   pathspec_file_nul=pathspec_file_nul, **add_opts)
+        self.args_validator.validate(
+            pathspec,
+            *pathspecs,
+            pathspec_from_file=pathspec_from_file,
+            pathspec_stdin=pathspec_stdin,
+            pathspec_file_nul=pathspec_file_nul,
+            **add_opts,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            pathspec,
+            *pathspecs,
+            pathspec_from_file=pathspec_from_file,
+            pathspec_file_nul=pathspec_file_nul,
+            **add_opts,
+        )
         main_cmd_args = self.underlying_git.build_main_cmd_args()
 
         # Run the git command

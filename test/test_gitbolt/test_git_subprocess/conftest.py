@@ -21,11 +21,15 @@ def enc_test_root(tmpdir):
 
 @pytest.fixture
 def enc_remote(enc_test_root) -> Path:
-    subprocess.run(['git', "init", "--bare", REMOTE_DIR_NAME], cwd=enc_test_root, check=True)
+    subprocess.run(
+        ["git", "init", "--bare", REMOTE_DIR_NAME], cwd=enc_test_root, check=True
+    )
     return enc_test_root / REMOTE_DIR_NAME
 
 
 @pytest.fixture
 def enc_local(enc_test_root, enc_remote) -> Path:
-    subprocess.run(['git', "clone", REMOTE_DIR_NAME, LOCAL_DIR_NAME], cwd=enc_test_root, check=True)
+    subprocess.run(
+        ["git", "clone", REMOTE_DIR_NAME, LOCAL_DIR_NAME], cwd=enc_test_root, check=True
+    )
     return enc_test_root / LOCAL_DIR_NAME

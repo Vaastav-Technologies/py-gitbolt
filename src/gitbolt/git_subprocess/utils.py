@@ -4,6 +4,7 @@
 """
 Utility functions related to processors specific to git commands using subprocess.
 """
+
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,9 @@ from typing import Any
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset, Unset
 
 
-def git_main_cmd_repeating_flag_args(val: Sequence[Path] | Unset | None, cmd_flag: str) -> list[str]:
+def git_main_cmd_repeating_flag_args(
+    val: Sequence[Path] | Unset | None, cmd_flag: str
+) -> list[str]:
     """
     Returns a flattened list of repeating flags and values.
 
@@ -42,11 +45,18 @@ def git_main_cmd_repeating_flag_args(val: Sequence[Path] | Unset | None, cmd_fla
         []
     """
     if not_none_not_unset(val):
-        return [item for entry in val if not is_unset(entry) for item in [cmd_flag, str(entry)]]
+        return [
+            item
+            for entry in val
+            if not is_unset(entry)
+            for item in [cmd_flag, str(entry)]
+        ]
     return []
 
 
-def git_main_cmd_dict_flag_args(val: dict[str, str | bool | None | Unset] | None | Unset, cmd_flag: str) -> list[str]:
+def git_main_cmd_dict_flag_args(
+    val: dict[str, str | bool | None | Unset] | None | Unset, cmd_flag: str
+) -> list[str]:
     """
     Converts a dictionary into flag pairs used by commands like `-c key=value`.
 

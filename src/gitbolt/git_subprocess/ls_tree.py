@@ -4,6 +4,7 @@
 """
 Helper interfaces for ``git ls-tree`` subcommand with default implementation for subprocess calls.
 """
+
 from abc import abstractmethod
 from typing import Protocol, Unpack, override
 
@@ -184,7 +185,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().d_arg(None)
         []
         """
-        return ['-d'] if d else []
+        return ["-d"] if d else []
 
     def r_arg(self, r: bool | None) -> list[str]:
         """
@@ -200,7 +201,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().r_arg(None)
         []
         """
-        return ['-r'] if r else []
+        return ["-r"] if r else []
 
     def t_arg(self, t: bool | None) -> list[str]:
         """
@@ -216,7 +217,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().t_arg(None)
         []
         """
-        return ['-t'] if t else []
+        return ["-t"] if t else []
 
     def long_arg(self, long: bool | None) -> list[str]:
         """
@@ -232,7 +233,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().long_arg(None)
         []
         """
-        return ['-l'] if long else []
+        return ["-l"] if long else []
 
     def z_arg(self, z: bool | None) -> list[str]:
         """
@@ -248,7 +249,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().z_arg(None)
         []
         """
-        return ['-z'] if z else []
+        return ["-z"] if z else []
 
     def name_only_arg(self, name_only: bool | None) -> list[str]:
         """
@@ -261,7 +262,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().name_only_arg(None)
         []
         """
-        return ['--name-only'] if name_only else []
+        return ["--name-only"] if name_only else []
 
     def name_status_arg(self, name_status: bool | None) -> list[str]:
         """
@@ -274,7 +275,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().name_status_arg(None)
         []
         """
-        return ['--name-status'] if name_status else []
+        return ["--name-status"] if name_status else []
 
     def object_only_arg(self, object_only: bool | None) -> list[str]:
         """
@@ -287,7 +288,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().object_only_arg(None)
         []
         """
-        return ['--object-only'] if object_only else []
+        return ["--object-only"] if object_only else []
 
     def full_name_arg(self, full_name: bool | None) -> list[str]:
         """
@@ -300,7 +301,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().full_name_arg(None)
         []
         """
-        return ['--full-name'] if full_name else []
+        return ["--full-name"] if full_name else []
 
     def full_tree_arg(self, full_tree: bool | None) -> list[str]:
         """
@@ -313,7 +314,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().full_tree_arg(None)
         []
         """
-        return ['--full-tree'] if full_tree else []
+        return ["--full-tree"] if full_tree else []
 
     def abbrev_arg(self, abbrev: int | None) -> list[str]:
         """
@@ -331,7 +332,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().abbrev_arg(40)
         ['--abbrev=40']
         """
-        return [f'--abbrev={abbrev}'] if abbrev is not None else []
+        return [f"--abbrev={abbrev}"] if abbrev is not None else []
 
     def format_arg(self, _format: str | None) -> list[str]:
         """
@@ -347,7 +348,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().format_arg('')
         ['--format=']
         """
-        return [f'--format={_format}'] if _format is not None else []
+        return [f"--format={_format}"] if _format is not None else []
 
     def tree_ish_arg(self, tree_ish: str) -> list[str]:
         """

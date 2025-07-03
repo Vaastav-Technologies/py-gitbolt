@@ -4,6 +4,7 @@
 """
 Simple and direct implementations of git commands using subprocess calls.
 """
+
 from __future__ import annotations
 
 from abc import ABC
@@ -13,8 +14,13 @@ from typing import override
 from vt.utils.commons.commons.op import RootDirOp
 
 from gitbolt.add import AddArgsValidator
-from gitbolt.git_subprocess import GitCommand, VersionCommand, \
-    LsTreeCommand, GitSubcmdCommand, AddCommand
+from gitbolt.git_subprocess import (
+    GitCommand,
+    VersionCommand,
+    LsTreeCommand,
+    GitSubcmdCommand,
+    AddCommand,
+)
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder
 from gitbolt.git_subprocess.constants import VERSION_CMD
 from gitbolt.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
@@ -31,31 +37,35 @@ class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
     def underlying_git(self) -> GitCommand:
         return self._underlying_git
 
-    def _set_underlying_git(self, git: 'GitCommand') -> None:
+    def _set_underlying_git(self, git: "GitCommand") -> None:
         self._underlying_git = git
 
 
 class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
-
     @override
     def version(self, build_options: bool = False) -> str:
         self._require_valid_args(build_options)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
         if build_options:
-            sub_cmd_args.append('--build-options')
-        return self.underlying_git.runner.run_git_command(main_cmd_args, sub_cmd_args, check=True, text=True,
-                                                          capture_output=True).stdout.strip()
+            sub_cmd_args.append("--build-options")
+        return self.underlying_git.runner.run_git_command(
+            main_cmd_args, sub_cmd_args, check=True, text=True, capture_output=True
+        ).stdout.strip()
 
-    def clone(self) -> 'VersionCommandImpl':
+    def clone(self) -> "VersionCommandImpl":
         return VersionCommandImpl(self.underlying_git)
 
 
 class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
-
-    def __init__(self, git_root_dir: Path, git: GitCommand, *,
-                 args_validator: LsTreeArgsValidator | None = None,
-                 cli_args_builder: LsTreeCLIArgsBuilder | None = None):
+    def __init__(
+        self,
+        git_root_dir: Path,
+        git: GitCommand,
+        *,
+        args_validator: LsTreeArgsValidator | None = None,
+        cli_args_builder: LsTreeCLIArgsBuilder | None = None,
+    ):
         """
         ``ls-tree`` cli command implementation using subprocess.
 
@@ -84,15 +94,19 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
     def cli_args_builder(self) -> LsTreeCLIArgsBuilder:
         return self._cli_args_builder
 
-    def clone(self) -> 'LsTreeCommandImpl':
+    def clone(self) -> "LsTreeCommandImpl":
         return LsTreeCommandImpl(self.root_dir, self.underlying_git)
 
 
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
-
-    def __init__(self, root_dir: Path, git: GitCommand, *,
-                 args_validator: AddArgsValidator | None = None,
-                 cli_args_builder: AddCLIArgsBuilder | None = None):
+    def __init__(
+        self,
+        root_dir: Path,
+        git: GitCommand,
+        *,
+        args_validator: AddArgsValidator | None = None,
+        cli_args_builder: AddCLIArgsBuilder | None = None,
+    ):
         super().__init__(git)
         self._root_dir = root_dir
         self._args_validator = args_validator or super().args_validator
@@ -113,16 +127,20 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
     def cli_args_builder(self) -> AddCLIArgsBuilder:
         return self._cli_args_builder
 
-    def clone(self) -> 'AddCommandImpl':
+    def clone(self) -> "AddCommandImpl":
         return AddCommandImpl(self.root_dir, self.underlying_git)
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
-
-    def __init__(self, git_root_dir: Path = Path.cwd(), runner: GitCommandRunner = SimpleGitCR(), *,
-                 version_subcmd: VersionCommand | None = None,
-                 ls_tree_subcmd: LsTreeCommand | None = None,
-                 add_subcmd: AddCommand | None = None):
+    def __init__(
+        self,
+        git_root_dir: Path = Path.cwd(),
+        runner: GitCommandRunner = SimpleGitCR(),
+        *,
+        version_subcmd: VersionCommand | None = None,
+        ls_tree_subcmd: LsTreeCommand | None = None,
+        add_subcmd: AddCommand | None = None,
+    ):
         super().__init__(runner)
         self.git_root_dir = git_root_dir
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
@@ -145,12 +163,15 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return self._add_subcmd
 
     @override
-    def clone(self) -> 'SimpleGitCommand':
+    def clone(self) -> "SimpleGitCommand":
         # region obtain class instance
-        cloned = SimpleGitCommand(self.root_dir, self.runner,
-                                  version_subcmd=self.version_subcmd,
-                                  ls_tree_subcmd=self.ls_tree_subcmd,
-                                  add_subcmd=self.add_subcmd)
+        cloned = SimpleGitCommand(
+            self.root_dir,
+            self.runner,
+            version_subcmd=self.version_subcmd,
+            ls_tree_subcmd=self.ls_tree_subcmd,
+            add_subcmd=self.add_subcmd,
+        )
         # endregion
         # region clone protected members
         cloned._main_cmd_opts = self._main_cmd_opts
