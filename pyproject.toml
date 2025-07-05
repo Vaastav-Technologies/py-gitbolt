@@ -44,6 +44,7 @@ pygit2 = ['pygit2']
 
 [dependency-groups]
 # TODO: report the mypy recent version (1.16.0, 1.16.1 issue) RuntimeError: ('Not implemented', <class 'mypy.types.TypeGuardedType'>)
+#   btw, this error doesn't show in the latest developer version. So, this error will go away with 1.17.0 relase
 dev = ["mypy==1.15.0", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
 test = ['pytest', 'pytest-cov']
