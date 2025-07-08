@@ -16,6 +16,9 @@ from gitbolt.base import LsTree as LsTree
 from gitbolt.base import Version as Version
 from gitbolt.base import Add as Add
 # endregion
+
+
+from gitbolt.constants import GIT_DIR as GIT_DIR
 # endregion
 
 
