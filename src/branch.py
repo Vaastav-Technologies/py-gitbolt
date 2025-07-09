@@ -1,5 +1,6 @@
 from typing import Literal, overload
 
+
 def create_branch(branch_name: str,
                   start_point: str | None = None,
                   *,
@@ -11,16 +12,36 @@ def create_branch(branch_name: str,
 
     Equivalent to ``git branch <branch_name> [<start_point>]`` with additional options.
 
-    :param branch_name: Name of the new branch to create.
-    :param start_point: Optional starting point (commit, branch, etc.). Defaults to HEAD.
-    :param force: If True, forces creation (-f/-F), allowing overwrite of existing branch.
-    :param track: If True, sets up tracking of a remote branch.
-    :param recurse_submodules: If True, recurse into submodules for the new branch.
+    :param branch_name:
+        Name of the new branch to create.
+
+    :param start_point:
+        Optional starting point (commit, tag, branch, etc.). Defaults to HEAD.
+
+    :param force:
+        **Tri-state.**
+        - If True, emits ``--force`` or ``-f`` to allow overwriting an existing branch.
+        - If False, emits ``--no-force`` to explicitly avoid forced creation.
+        - If None, the option is not passed.
+
+    :param track:
+        **Tri-state.**
+        - If True, sets up the new branch to track a remote branch.
+        - If False, emits ``--no-track`` to disable tracking explicitly.
+        - If None, leaves tracking behavior to Git defaults.
+
+    :param recurse_submodules:
+        **Tri-state.**
+        - If True, emits ``--recurse-submodules`` to apply the branch operation recursively into submodules.
+        - If False, emits ``--no-recurse-submodules``.
+        - If None, submodule behavior is not specified.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt---create
     """
     ...
+
 
 def set_upstream(branch_name: str | None = None, *, set_upstream_to: str | Literal[False]) -> str:
     """
@@ -28,13 +49,22 @@ def set_upstream(branch_name: str | None = None, *, set_upstream_to: str | Liter
 
     Equivalent to ``git branch --set-upstream-to=<branch> [<branch_name>]``.
 
-    :param branch_name: Local branch to configure. Defaults to current branch if omitted.
-    :param set_upstream_to: Remote branch to set as upstream. Use ``False`` to emit ``--no-set-upstream``.
+    :param branch_name:
+        Local branch to configure. Defaults to the current branch if not specified.
+
+    :param set_upstream_to:
+        Target upstream branch.
+        Use a remote-tracking branch name (e.g. origin/main).
+
+        - If given a string, sets the upstream to that branch (emits ``--set-upstream-to=<branch>``).
+        - If set to ``False``, emits ``--no-set-upstream``.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt---set-upstream-to
     """
     ...
+
 
 def unset_upstream(branch_name: str | None = None, *, unset_upstream_: bool = True) -> str:
     """
@@ -42,13 +72,20 @@ def unset_upstream(branch_name: str | None = None, *, unset_upstream_: bool = Tr
 
     Equivalent to ``git branch --unset-upstream [<branch_name>]``.
 
-    :param branch_name: Local branch to modify. Defaults to current branch.
-    :param unset_upstream_: If False, emit ``--no-unset-upstream``.
+    :param branch_name:
+        Local branch whose upstream configuration should be removed. Defaults to the current branch.
+
+    :param unset_upstream_:
+        **Bi-state.**
+        - If True (default), emits ``--unset-upstream``.
+        - If False, emits ``--no-unset-upstream``.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt---unset-upstream
     """
     ...
+
 
 def rename_branch(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
     """
@@ -56,29 +93,49 @@ def rename_branch(new_branch: str, old_branch: str | None = None, *, force: bool
 
     Equivalent to ``git branch -m|-M [<old_branch>] <new_branch>``.
 
-    :param new_branch: The new name for the branch.
-    :param old_branch: The current branch name. Defaults to current branch if omitted.
-    :param force: True to force rename (-M), False for safe rename (-m), or None for default behavior.
+    :param new_branch:
+        The new name for the branch.
+
+    :param old_branch:
+        The current name of the branch to rename. If None, renames the current branch.
+
+    :param force:
+        **Tri-state.**
+        - If True, performs forced rename using ``-M``.
+        - If False, uses ``-m`` for safe rename.
+        - If None, defers to Git’s default behavior.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt--m
     """
     ...
 
-def copy_branch(new_branch: str, old_branch: str | None = None, *, force: bool | None= None) -> str:
+
+def copy_branch(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
     """
     Create a copy of an existing branch.
 
     Equivalent to ``git branch -c|-C [<old_branch>] <new_branch>``.
 
-    :param new_branch: Name for the new (copied) branch.
-    :param old_branch: Source branch to copy. Defaults to current branch if omitted.
-    :param force: True to force copy (-C), False for safe copy (-c), or None.
+    :param new_branch:
+        Name for the new (copied) branch.
+
+    :param old_branch:
+        Source branch to copy. If None, uses the current branch as the source.
+
+    :param force:
+        **Tri-state.**
+        - If True, performs forced copy using ``-C``.
+        - If False, uses ``-c`` for safe copy.
+        - If None, leaves behavior to Git default.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt--c
     """
     ...
+
 
 def delete_branch(branch_name: str, *branch_names: str, force: bool | None = None, remote: bool | None = None) -> str:
     """
@@ -86,15 +143,30 @@ def delete_branch(branch_name: str, *branch_names: str, force: bool | None = Non
 
     Equivalent to ``git branch -d|-D [-r] <branch-name>...``
 
-    :param branch_name: First branch to delete.
-    :param branch_names: Additional branches to delete.
-    :param force: True to force delete (-D), False for safe delete (-d), or None.
-    :param remote: If True, deletes remote-tracking branches.
+    :param branch_name:
+        First branch to delete.
+
+    :param branch_names:
+        Additional branches to delete.
+
+    :param force:
+        **Tri-state.**
+        - If True, forces delete using ``-D``.
+        - If False, deletes safely using ``-d``.
+        - If None, leaves deletion behavior to Git default.
+
+    :param remote:
+        **Tri-state.**
+        - If True, deletes remote-tracking branches (``-r``).
+        - If False, emits ``--no-remote`` (though Git has no exact flag, useful for internal logic).
+        - If None, omits remote flag entirely.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt--d
     """
     ...
+
 
 def edit_description(branch_name: str | None = None) -> str:
     """
@@ -102,12 +174,15 @@ def edit_description(branch_name: str | None = None) -> str:
 
     Equivalent to ``git branch --edit-description [<branch-name>]``.
 
-    :param branch_name: Branch to edit. Defaults to current branch.
+    :param branch_name:
+        Branch whose description you want to edit. Defaults to current branch if omitted.
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt---edit-description
     """
     ...
+
 
 @overload
 def list_branches(*patterns: str,
@@ -128,6 +203,7 @@ def list_branches(*patterns: str,
                   ignore_case: bool = ...,
                   omit_empty: bool = ...) -> str: ...
 
+
 @overload
 def list_branches(*patterns: str,
                   color: Literal["always", "never", "auto"] | bool = ...,
@@ -147,6 +223,7 @@ def list_branches(*patterns: str,
                   ignore_case: bool = ...,
                   omit_empty: bool = ...) -> str: ...
 
+
 def list_branches(*patterns: str,
                   color: Literal["always", "never", "auto"] | bool | None = None,
                   show_current: bool | None = None,
@@ -160,34 +237,84 @@ def list_branches(*patterns: str,
                   no_contains: str | None = None,
                   points_at: str | Literal[False] | None = None,
                   format_: str | Literal[False] | None = None,
-                  remotes: Literal[True]  | None = None,
+                  remotes: Literal[True] | None = None,
                   all_: bool | None = None,
                   list_only: bool | None = None,
                   ignore_case: bool | None = None,
                   omit_empty: bool | None = None) -> str:
     """
-    List branches with filters, verbosity, and formatting options.
+    List branches with advanced filtering, formatting, and display options.
 
-    Equivalent to ``git branch`` with extended support for listing and customization.
+    This is equivalent to the ``git branch`` command with various modifiers for sorting,
+    verbosity, formatting, filtering by commit or pattern, and output customization.
 
-    :param patterns: Patterns to match branch names.
-    :param color: Colorize output ('always', 'never', 'auto', or bool).
-    :param show_current: Highlight the current branch.
-    :param verbose: Verbosity level. 1 = -v, 2 = -vv, True = --verbose, False = --no-verbose.
-    :param column: Output column layout. True/False or layout string.
-    :param abbrev: Length of SHA abbreviations. Use False to disable.
-    :param sort: Sort key for ordering branches. Use False to disable.
-    :param merged: List branches merged into this commit.
-    :param no_merged: List branches not merged into this commit.
-    :param contains: Show branches containing the commit.
-    :param no_contains: Show branches not containing the commit.
-    :param points_at: Show branches pointing at an object.
-    :param format_: Custom formatting. False disables format.
-    :param remotes: Show remote-tracking branches.
-    :param all_: Show both local and remote branches.
-    :param list_only: Suppress headings/details.
-    :param ignore_case: Ignore case in name patterns.
-    :param omit_empty: Suppress output when no match.
+    :param patterns: Shell-style glob patterns used to filter branch names.
+
+    :param color: **Tri-state.**
+        Controls coloring of the output.
+        - If one of "always", "never", or "auto", passes ``--color=<value>``.
+        - If True, emits ``--color``.
+        - If False, emits ``--no-color``.
+        - If None, does not pass any color option.
+
+    :param show_current: If True, emits ``--show-current`` to print the current branch only.
+
+    :param verbose: **Tri-state (with levels).**
+        Controls the verbosity level.
+        - 1: Emits ``-v`` for one-line verbose display.
+        - 2: Emits ``-vv`` to show upstream info.
+        - True: Emits ``--verbose``.
+        - False: Emits ``--no-verbose``.
+        - None: No verbosity flag passed.
+        Note: Cannot be used with ``--column``.
+
+    :param column: **Tri-state.**
+        Controls multi-column layout.
+        - If a string, uses ``--column=<layout>``.
+        - If True, emits ``--column``.
+        - If False, emits ``--no-column``.
+        - If None, no column flag is passed.
+        Note: Cannot be used with ``--verbose``.
+
+    :param abbrev: Length of abbreviated commit hashes.
+        - If an integer, emits ``--abbrev=<n>``.
+        - If False, disables abbreviation using ``--no-abbrev``.
+        - If None, abbreviation is not affected.
+
+    :param sort: Sort branches using the given key.
+        - If str, emits ``--sort=<key>``.
+        - If False, disables sorting with ``--no-sort``.
+        - If None, does not emit any sorting option.
+
+    :param merged: Show branches merged into the specified commit.
+
+    :param no_merged: Show branches not merged into the specified commit.
+
+    :param contains: Show branches that contain the specified commit.
+
+    :param no_contains: Show branches that do not contain the specified commit.
+
+    :param points_at: **Tri-state.**
+        - If a string, emits ``--points-at=<object>``.
+        - If False, emits ``--no-points-at``.
+        - If None, does not emit any points-at flag.
+
+    :param format_: **Tri-state.**
+        Customizes output formatting.
+        - If str, emits ``--format=<fmt>``.
+        - If False, emits ``--no-format``.
+        - If None, uses default Git formatting.
+
+    :param remotes: If True, shows only remote-tracking branches (``--remotes``).
+
+    :param all_: If True, shows both local and remote branches (``--all``).
+
+    :param list_only: If True, restricts the output to branch names only (``--list``).
+
+    :param ignore_case: If True, pattern matching is case-insensitive (``--ignore-case``).
+
+    :param omit_empty: If True, suppresses empty sections (``--omit-empty``).
+
     :return: Output of ``git branch``.
 
     See also: https://git-scm.com/docs/git-branch#_listing_branches
