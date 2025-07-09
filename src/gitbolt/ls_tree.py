@@ -15,6 +15,7 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.models import GitLsTreeOpts
 
 
+# region validators
 class LsTreeArgsValidator(Protocol):
     """
     The argument validator for ``git ls-tree`` subcommand.
@@ -153,3 +154,4 @@ class UtilLsTreeArgsValidator(LsTreeArgsValidator):
         if "path" in ls_tree_opts:
             path = ls_tree_opts["path"]
             require_iterable(path, "path", str, list, GitExitingException)
+# endregion
