@@ -17,6 +17,7 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 from vt.utils.errors.error_specs.utils import require_type
 
 
+# region validators
 class AddArgsValidator(Protocol):
     """
     The argument validator for ``git add`` subcommand.
@@ -650,3 +651,4 @@ class UtilAddArgsValidator(AddArgsValidator):
             require_type(pathspec_stdin, "pathspec_stdin", str, GitExitingException)
 
     # endregion
+# endregion
