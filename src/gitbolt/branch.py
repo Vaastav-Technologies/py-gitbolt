@@ -1,12 +1,12 @@
-from typing import Literal, overload
+from typing import Literal
 
 
-def create_branch(branch_name: str,
-                  start_point: str | None = None,
-                  *,
-                  force: bool | None = None,
-                  track: bool | None = None,
-                  recurse_submodules: bool | None = None) -> str:
+def validate_create_args(branch_name: str,
+                         start_point: str | None = None,
+                         *,
+                         force: bool | None = None,
+                         track: bool | None = None,
+                         recurse_submodules: bool | None = None) -> None:
     """
     Create a new Git branch.
 
@@ -43,7 +43,7 @@ def create_branch(branch_name: str,
     ...
 
 
-def set_upstream(branch_name: str | None = None, *, set_upstream_to: str | Literal[False]) -> str:
+def validate_set_upstream_args(branch_name: str | None = None, *, set_upstream_to: str | Literal[False]) -> None:
     """
     Set the upstream branch for a local branch.
 
@@ -66,7 +66,7 @@ def set_upstream(branch_name: str | None = None, *, set_upstream_to: str | Liter
     ...
 
 
-def unset_upstream(branch_name: str | None = None, *, unset_upstream_: bool = True) -> str:
+def validate_unset_upstream_args(branch_name: str | None = None, *, unset_upstream_: bool = True) -> None:
     """
     Unset the upstream branch for a local branch.
 
@@ -87,7 +87,7 @@ def unset_upstream(branch_name: str | None = None, *, unset_upstream_: bool = Tr
     ...
 
 
-def rename_branch(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
+def validate_rename_args(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> None:
     """
     Rename an existing branch.
 
@@ -112,7 +112,7 @@ def rename_branch(new_branch: str, old_branch: str | None = None, *, force: bool
     ...
 
 
-def copy_branch(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
+def validate_copy_branch_args(new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> None:
     """
     Create a copy of an existing branch.
 
@@ -137,7 +137,8 @@ def copy_branch(new_branch: str, old_branch: str | None = None, *, force: bool |
     ...
 
 
-def delete_branch(branch_name: str, *branch_names: str, force: bool | None = None, remote: bool | None = None) -> str:
+def validate_delete_branch_args(branch_name: str, *branch_names: str, force: bool | None = None,
+                                remote: bool | None = None) -> None:
     """
     Delete one or more branches.
 
@@ -168,7 +169,7 @@ def delete_branch(branch_name: str, *branch_names: str, force: bool | None = Non
     ...
 
 
-def edit_description(branch_name: str | None = None) -> str:
+def validate_edit_description_args(branch_name: str | None = None) -> None:
     """
     Edit a branch's description.
 
@@ -184,64 +185,24 @@ def edit_description(branch_name: str | None = None) -> str:
     ...
 
 
-@overload
-def list_branches(*patterns: str,
-                  color: Literal["always", "never", "auto"] | bool = ...,
-                  show_current: bool = ...,
-                  verbose: Literal[1, 2] | bool = ...,
-                  abbrev: int | Literal[False] = ...,
-                  sort: str | Literal[False] = ...,
-                  merged: str | None = ...,
-                  no_merged: str | None = ...,
-                  contains: str | None = ...,
-                  no_contains: str | None = ...,
-                  remotes: Literal[True] = ...,
-                  all_: bool = ...,
-                  points_at: str | Literal[False] = ...,
-                  format_: str | Literal[False] = ...,
-                  list_only: bool = ...,
-                  ignore_case: bool = ...,
-                  omit_empty: bool = ...) -> str: ...
-
-
-@overload
-def list_branches(*patterns: str,
-                  color: Literal["always", "never", "auto"] | bool = ...,
-                  show_current: bool = ...,
-                  column: str | bool = ...,
-                  abbrev: int | Literal[False] = ...,
-                  sort: str | Literal[False] = ...,
-                  merged: str | None = ...,
-                  no_merged: str | None = ...,
-                  contains: str | None = ...,
-                  no_contains: str | None = ...,
-                  remotes: Literal[True] = ...,
-                  all_: bool = ...,
-                  points_at: str | Literal[False] = ...,
-                  format_: str | Literal[False] = ...,
-                  list_only: bool = ...,
-                  ignore_case: bool = ...,
-                  omit_empty: bool = ...) -> str: ...
-
-
-def list_branches(*patterns: str,
-                  color: Literal["always", "never", "auto"] | bool | None = None,
-                  show_current: bool | None = None,
-                  verbose: Literal[1, 2] | bool | None = None,
-                  column: str | bool | None = None,
-                  abbrev: int | Literal[False] | None = None,
-                  sort: str | Literal[False] | None = None,
-                  merged: str | None = None,
-                  no_merged: str | None = None,
-                  contains: str | None = None,
-                  no_contains: str | None = None,
-                  points_at: str | Literal[False] | None = None,
-                  format_: str | Literal[False] | None = None,
-                  remotes: Literal[True] | None = None,
-                  all_: bool | None = None,
-                  list_only: bool | None = None,
-                  ignore_case: bool | None = None,
-                  omit_empty: bool | None = None) -> str:
+def validate_list_branches_args(*patterns: str,
+                                color: Literal["always", "never", "auto"] | bool | None = None,
+                                show_current: bool | None = None,
+                                verbose: Literal[1, 2] | bool | None = None,
+                                column: str | bool | None = None,
+                                abbrev: int | Literal[False] | None = None,
+                                sort: str | Literal[False] | None = None,
+                                merged: str | None = None,
+                                no_merged: str | None = None,
+                                contains: str | None = None,
+                                no_contains: str | None = None,
+                                points_at: str | Literal[False] | None = None,
+                                format_: str | Literal[False] | None = None,
+                                remotes: Literal[True] | None = None,
+                                all_: bool | None = None,
+                                list_only: bool | None = None,
+                                ignore_case: bool | None = None,
+                                omit_empty: bool | None = None) -> None:
     """
     List branches with advanced filtering, formatting, and display options.
 
