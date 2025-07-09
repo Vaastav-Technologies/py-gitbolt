@@ -257,6 +257,16 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
+class Branch(GitSubCommand, Protocol):
+    """
+    Interface for ``git branch`` subcommand.
+    """
+
+    @abstractmethod
+    def branch(self) -> str:
+        ...
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -322,6 +332,14 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def add_subcmd(self) -> Add:
         """
         :return: ``git add`` subcommand.
+        """
+        ...
+    
+    @property
+    @abstractmethod
+    def branch_subcmd(self) -> Branch:
+        """
+        :return: ``git branch`` subcommand.
         """
         ...
 

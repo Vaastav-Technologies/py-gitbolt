@@ -684,3 +684,296 @@ class GitLsTreeOpts(TypedDict, total=False):
 
     Works similarly to pathspec in other Git commands.
     """
+
+
+# region git branch models
+class BranchListOpts(TypedDict, total=False):
+    """
+    Options for listing and querying branches using ``git branch``.
+
+    Covers flags that affect output format, filtering, and sorting.
+
+    Note: the following non-named option is excluded:
+    - ``pattern``: glob-like-pattern useful to search branches.
+    """
+
+    color: Literal["always", "auto", "never"] | bool
+    """
+    Mirror of ``--color[=<when>]``, ``--color`` and ``--no-color``.
+
+    Color the output of ``git branch``.
+    Accepts "always", "auto", "never" to pass as ``--color=<when>``.
+    Use ``False`` to emit ``--no-color``.
+    Use ``True`` to emit just ``--color`` without a <when> value.
+    """
+
+    column: Literal["always", "never", "auto"] | bool
+    """
+    Mirror of ``--column[=<style>]``, ``--column`` and ``--no-column``.
+
+    Control columnar output.
+    Accepts "always", "auto", "never" to pass as ``--column=<style>``.
+    Use ``True`` to emit ``--column`` without a value.
+    Use ``False`` to emit ``--no-column``.
+    """
+
+    list_: bool
+    """
+    Mirror of ``--list`` and ``--no-list``.
+
+    Restrict the command to listing branches.
+    """
+
+    show_current: bool
+    """
+    Mirror of ``--show-current`` and ``--no-show-current``.
+
+    Show the name of the current branch.
+    """
+
+    verbose: Literal[1, 2] | bool
+    """
+    Mirror of ``--verbose``, ``-v``, and ``-vv``. Also allows ``--no-verbose``.
+
+    Control verbosity level of branch listings.
+    - Use 1 to emit ``-v``.
+    - Use 2 to emit ``-vv``.
+    - Use ``True`` to emit ``--verbose``.
+    - Use ``False`` to emit ``--no-verbose``.
+    """
+
+    abbrev: int | bool
+    """
+    Mirror of ``--abbrev[=<n>]`` and ``--no-abbrev``.
+
+    Provide abbreviation length for object names.
+    Use an ``int`` to emit ``--abbrev=<n>``.
+    Use ``True`` to emit ``--abbrev`` without a value.
+    Use ``False`` to emit ``--no-abbrev``.
+    """
+
+    sort: str | Literal[False]
+    """
+    Mirror of ``--sort=<key>`` and ``--no-sort``.
+
+    Sort the branches based on specified key.
+    Use a string to emit ``--sort=<key>``.
+    Use ``False`` to emit ``--no-sort``.
+    """
+
+    merged: str
+    """
+    Mirror of ``--merged=<commit>``.
+
+    Show only branches merged into the given commit.
+    """
+
+    no_merged: str
+    """
+    Mirror of ``--no-merged=<commit>``.
+
+    Show only branches not merged into the given commit.
+    """
+
+    contains: str
+    """
+    Mirror of ``--contains=<commit>``.
+
+    Show only branches which contain the specified commit.
+    """
+
+    no_contains: str
+    """
+    Mirror of ``--no-contains=<commit>``.
+
+    Show only branches which do not contain the specified commit.
+    """
+
+    points_at: str | Literal[False]
+    """
+    Mirror of ``--points-at=<object>`` and ``--no-points-at``.
+
+    Show only branches pointing at the given object.
+    Use ``False`` to emit ``--no-points-at``.
+    """
+
+    format_: str | Literal[False]
+    """
+    Mirror of ``--format=<format>`` and ``--no-format``.
+
+    Pretty print the branches with a given format.
+    Use ``False`` to emit ``--no-format``.
+    """
+
+    remotes: Literal[True]
+    """
+    Mirror of ``--remotes``.
+
+    List or act on remote-tracking branches.
+    """
+
+    all_: Literal[True]
+    """
+    Mirror of ``--all``.
+
+    List or act on all branches.
+    """
+
+    ignore_case: bool
+    """
+    Mirror of ``--ignore-case`` and ``--no-ignore-case``.
+
+    Sorting and filtering should be case insensitive.
+    """
+
+    omit_empty: bool
+    """
+    Mirror of ``--omit-empty`` and ``--no-omit-empty``.
+
+    Do not output empty groups or columns.
+    """
+
+class BranchCreateOpts(TypedDict, total=False):
+    """
+    Options for creating a new branch using ``git branch``.
+
+    Note: the following non-named options are excluded:
+    - ``name``: Name of the new branch to create.
+    - ``start_point``: Starting point for the new branch.
+    """
+
+    track: Literal["direct", "inherit"] | bool
+    """
+    Mirror of ``--track[=(direct|inherit)]``, ``--track``, and ``--no-track``.
+
+    Controls branch tracking behavior.
+    Accepts "direct" or "inherit" to pass as ``--track=<mode>``.
+    Use ``True`` to emit ``--track`` without a mode.
+    Use ``False`` to emit ``--no-track``.
+    """
+
+    force: bool
+    """
+    Mirror of ``--force`` and ``--no-force``.
+
+    Force creation of a branch even if it exists.
+    """
+
+    recurse_submodules: bool
+    """
+    Mirror of ``--recurse-submodules`` and ``--no-recurse-submodules``.
+
+    Update the branch in submodules as well.
+    """
+
+class BranchRenameOpts(TypedDict, total=False):
+    """
+    Options for renaming an existing branch using ``git branch``.
+
+    Note: the following non-named options are excluded:
+    - ``old_name``: The current name of the branch to rename.
+    - ``new_name``: The new name for the branch.
+    """
+
+    force: bool
+    """
+    Mirror of ``--force`` and ``--no-force``.
+
+    Allow renaming even if the new name exists.
+    """
+
+    move_: bool
+    """
+    Mirror of ``-m`` and ``--no-move``.
+
+    Rename the branch.
+    """
+
+class BranchCopyOpts(TypedDict, total=False):
+    """
+    Options for copying a branch to a new branch using ``git branch``.
+
+    Note: the following non-named options are excluded:
+    - ``old_name``: The name of the branch to copy.
+    - ``new_name``: The name for the new branch copy.
+    """
+
+    force: bool
+    """
+    Mirror of ``--force`` and ``--no-force``.
+
+    Allow copying even if the new branch name already exists.
+    """
+
+    copy_: bool
+    """
+    Mirror of ``--copy`` and ``--no-copy``.
+
+    Explicitly copy a branch.
+    """
+
+class BranchDeleteOpts(TypedDict, total=False):
+    """
+    Options for deleting one or more branches using ``git branch``.
+
+    Note: the following non-named option is excluded:
+    - ``branch_names``: One or more branch names to delete.
+    """
+
+    force: bool
+    """
+    Mirror of ``--force`` and ``--no-force``.
+
+    Force deletion even if the branch is not fully merged.
+    """
+
+    delete_: bool
+    """
+    Mirror of ``--delete`` and ``--no-delete``.
+
+    Request deletion of a branch.
+    """
+
+    remotes: Literal[True]
+    """
+    Mirror of ``--remotes`` or ``-r`` for deleting remote branches.
+    """
+
+class BranchEditDescriptionOpts(TypedDict, total=False):
+    """
+    Options for editing a branch's description using ``git branch``.
+
+    Note: the following non-named option is excluded:
+    - ``branch_name``: The name of the branch whose description to edit.
+    """
+
+    edit_description: bool
+    """
+    Mirror of ``--edit-description`` and ``--no-edit-description``.
+
+    Edit the description of the branch.
+    """
+
+class GitBranchOpts(
+    BranchListOpts,
+    BranchCreateOpts,
+    BranchRenameOpts,
+    BranchCopyOpts,
+    BranchDeleteOpts,
+    BranchEditDescriptionOpts,
+    total=False
+):
+    """
+    Master options dictionary encompassing all subcommands of ``git branch``.
+
+    Inherits from all specific option sets:
+    - Branch listing and filtering (``BranchListOpts``)
+    - Branch creation (``BranchCreateOpts``)
+    - Branch renaming (``BranchRenameOpts``)
+    - Branch copying (``BranchCopyOpts``)
+    - Branch deletion (``BranchDeleteOpts``)
+    - Branch description editing (``BranchEditDescriptionOpts``)
+    """
+
+    pass
+# endregion
