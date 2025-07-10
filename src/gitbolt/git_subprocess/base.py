@@ -450,6 +450,10 @@ class UncheckedSubcmd(GitSubcmdCommand, Protocol):
     Unchecked git subcommand. Runs subcommands directly in subprocess.
     """
 
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Self:
+        return self
+
     @overload
     def run(
         self,
