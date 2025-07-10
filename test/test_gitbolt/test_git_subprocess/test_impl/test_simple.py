@@ -5,7 +5,6 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -642,11 +641,9 @@ class TestLsTreeSubcmd:
         git = SimpleGitCommand(enc_local)
         Path(enc_local, "a-file").write_text("a-file")
         git.add_subcmd.add(".")
-        subprocess.run(["git", "config", "--local", "user.name", "suhas"], cwd=enc_local, check=True)
-        subprocess.run(["git", "config", "--local", "user.email", "suhas@example.com"], cwd=enc_local, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "committed a-file"], check=True, cwd=enc_local
-        )
+        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked.run(["config", "--local", "user.email", "suhas@example.com"])
+        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
         assert (
             git.ls_tree_subcmd.ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
@@ -742,10 +739,9 @@ class TestAddSubcmd:
         git.add_subcmd.add(".")
         assert (
             "a-file"
-            in subprocess.run(
-                ["git", "diff", "--cached", "--name-only"],
+            in git.subcmd_unchecked.run(
+                ["diff", "--cached", "--name-only"],
                 cwd=enc_local,
-                stdout=subprocess.PIPE,
                 text=True,
             ).stdout
         )
@@ -755,10 +751,8 @@ class TestAddSubcmd:
         Path(enc_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add("*-file")
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
@@ -769,10 +763,8 @@ class TestAddSubcmd:
         Path(enc_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add("a-file", "b-file")
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
@@ -785,11 +777,12 @@ class TestAddSubcmd:
         pathspec_file.write_text("*-file")
         git = SimpleGitCommand(enc_local)
         git.add_subcmd.add(pathspec_from_file=pathspec_file)
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
+
+
+# TODO: write exhaustive tests for unchecked subcmd
