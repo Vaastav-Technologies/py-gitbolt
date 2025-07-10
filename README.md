@@ -239,6 +239,23 @@ no_advice_reset_git = overridden_git.git_opts_override(no_advice=False)
 
 </details>
 
+### 🔄 Run unchecked commands
+
+At last, run unchecked commands in git.
+
+Introduced in `0.0.0dev4` to 
+- experiment.
+- have consistent interfaced commands run until all subcommands are provided by the library.
+
+```python
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+
+git = SimpleGitCommand()
+git = git.git_opts_override(no_advice=True)
+git.subcmd_unchecked.run(['--version']) # run the version option for git.
+git.subcmd_unchecked.run(['version']) # run the version subcommand.
+```
+
 
 ---
 
