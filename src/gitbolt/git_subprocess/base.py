@@ -13,6 +13,7 @@ from subprocess import CompletedProcess
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
+from vt.utils.commons.commons.op import RootDirOp
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
@@ -445,7 +446,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         return IndividuallyOverridableACAB()
 
 
-class UncheckedSubcmd(GitSubcmdCommand, Protocol):
+class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
     """
     Unchecked git subcommand. Runs subcommands directly in subprocess.
     """
