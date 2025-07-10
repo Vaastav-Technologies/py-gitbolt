@@ -132,7 +132,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         return AddCommandImpl(self.root_dir, self.underlying_git)
 
 
-class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl, RootDirOp):
+class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
     def __init__(
         self,
         root_dir: Path,
