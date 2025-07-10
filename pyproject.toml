@@ -61,3 +61,9 @@ where = ['src']
 
 [project.entry-points.pytest11]
 gitbolt_fixtures = "gitbolt.pytest_plugin"
+
+[[tool.mypy.overrides]]
+# pytest currently has no py.typed or stubs installed
+# so let mypy try to best make sense of the data-types for pytest package
+module = ["pytest.*"]
+follow_untyped_imports = true
