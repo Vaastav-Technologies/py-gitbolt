@@ -1,6 +1,6 @@
 [project]
 name = "gitbolt"
-version = "0.0.0dev4"
+version = "0.0.0dev5"
 description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
@@ -36,7 +36,8 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "vt-err-hndlr == 0.0.0dev1"
+  "vt-err-hndlr == 0.0.0dev1",
+  "pytest"
 ]
 
 [project.optional-dependencies]
@@ -47,7 +48,7 @@ pygit2 = ['pygit2']
 #   btw, this error doesn't show in the latest developer version. So, this error will go away with 1.17.0 relase
 dev = ["mypy==1.15.0", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
-test = ['pytest', 'pytest-cov']
+test = ['pytest-cov']
 multitest = ['tox']
 
 
