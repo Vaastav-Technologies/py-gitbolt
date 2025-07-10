@@ -154,4 +154,6 @@ class UtilLsTreeArgsValidator(LsTreeArgsValidator):
         if "path" in ls_tree_opts:
             path = ls_tree_opts["path"]
             require_iterable(path, "path", str, list, GitExitingException)
+
+
 # endregion

@@ -263,12 +263,15 @@ class Branch(GitSubCommand, Protocol):
     """
 
     @abstractmethod
-    def create_branch(self, branch_name: str,
-                      start_point: str | None = None,
-                      *,
-                      force: bool | None = None,
-                      track: bool | None = None,
-                      recurse_submodules: bool | None = None) -> str:
+    def create_branch(
+        self,
+        branch_name: str,
+        start_point: str | None = None,
+        *,
+        force: bool | None = None,
+        track: bool | None = None,
+        recurse_submodules: bool | None = None,
+    ) -> str:
         """
         Create a new Git branch.
 
@@ -305,7 +308,9 @@ class Branch(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def set_upstream(self, branch_name: str | None = None, *, set_upstream_to: str | Literal[False]) -> str:
+    def set_upstream(
+        self, branch_name: str | None = None, *, set_upstream_to: str | Literal[False]
+    ) -> str:
         """
         Set the upstream branch for a local branch.
 
@@ -328,7 +333,9 @@ class Branch(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def unset_upstream(self, branch_name: str | None = None, *, unset_upstream_: bool = True) -> str:
+    def unset_upstream(
+        self, branch_name: str | None = None, *, unset_upstream_: bool = True
+    ) -> str:
         """
         Unset the upstream branch for a local branch.
 
@@ -349,7 +356,13 @@ class Branch(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def rename_branch(self, new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
+    def rename_branch(
+        self,
+        new_branch: str,
+        old_branch: str | None = None,
+        *,
+        force: bool | None = None,
+    ) -> str:
         """
         Rename an existing branch.
 
@@ -374,7 +387,13 @@ class Branch(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def copy_branch(self, new_branch: str, old_branch: str | None = None, *, force: bool | None = None) -> str:
+    def copy_branch(
+        self,
+        new_branch: str,
+        old_branch: str | None = None,
+        *,
+        force: bool | None = None,
+    ) -> str:
         """
         Create a copy of an existing branch.
 
@@ -399,8 +418,13 @@ class Branch(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def delete_branch(self, branch_name: str, *branch_names: str, force: bool | None = None,
-                      remote: bool | None = None) -> str:
+    def delete_branch(
+        self,
+        branch_name: str,
+        *branch_names: str,
+        force: bool | None = None,
+        remote: bool | None = None,
+    ) -> str:
         """
         Delete one or more branches.
 
@@ -448,63 +472,72 @@ class Branch(GitSubCommand, Protocol):
 
     @overload
     @abstractmethod
-    def list_branches(self, *patterns: str,
-                      color: Literal["always", "never", "auto"] | bool = ...,
-                      show_current: bool = ...,
-                      verbose: Literal[1, 2] | bool = ...,
-                      abbrev: int | Literal[False] = ...,
-                      sort: str | Literal[False] = ...,
-                      merged: str | None = ...,
-                      no_merged: str | None = ...,
-                      contains: str | None = ...,
-                      no_contains: str | None = ...,
-                      remotes: Literal[True] = ...,
-                      all_: bool = ...,
-                      points_at: str | Literal[False] = ...,
-                      format_: str | Literal[False] = ...,
-                      list_only: bool = ...,
-                      ignore_case: bool = ...,
-                      omit_empty: bool = ...) -> str: ...
+    def list_branches(
+        self,
+        *patterns: str,
+        color: Literal["always", "never", "auto"] | bool = ...,
+        show_current: bool = ...,
+        verbose: Literal[1, 2] | bool = ...,
+        abbrev: int | Literal[False] = ...,
+        sort: str | Literal[False] = ...,
+        merged: str | None = ...,
+        no_merged: str | None = ...,
+        contains: str | None = ...,
+        no_contains: str | None = ...,
+        remotes: Literal[True] = ...,
+        all_: bool = ...,
+        points_at: str | Literal[False] = ...,
+        format_: str | Literal[False] = ...,
+        list_only: bool = ...,
+        ignore_case: bool = ...,
+        omit_empty: bool = ...,
+    ) -> str: ...
 
     @overload
     @abstractmethod
-    def list_branches(self, *patterns: str,
-                      color: Literal["always", "never", "auto"] | bool = ...,
-                      show_current: bool = ...,
-                      column: str | bool = ...,
-                      abbrev: int | Literal[False] = ...,
-                      sort: str | Literal[False] = ...,
-                      merged: str | None = ...,
-                      no_merged: str | None = ...,
-                      contains: str | None = ...,
-                      no_contains: str | None = ...,
-                      remotes: Literal[True] = ...,
-                      all_: bool = ...,
-                      points_at: str | Literal[False] = ...,
-                      format_: str | Literal[False] = ...,
-                      list_only: bool = ...,
-                      ignore_case: bool = ...,
-                      omit_empty: bool = ...) -> str: ...
+    def list_branches(
+        self,
+        *patterns: str,
+        color: Literal["always", "never", "auto"] | bool = ...,
+        show_current: bool = ...,
+        column: str | bool = ...,
+        abbrev: int | Literal[False] = ...,
+        sort: str | Literal[False] = ...,
+        merged: str | None = ...,
+        no_merged: str | None = ...,
+        contains: str | None = ...,
+        no_contains: str | None = ...,
+        remotes: Literal[True] = ...,
+        all_: bool = ...,
+        points_at: str | Literal[False] = ...,
+        format_: str | Literal[False] = ...,
+        list_only: bool = ...,
+        ignore_case: bool = ...,
+        omit_empty: bool = ...,
+    ) -> str: ...
 
     @abstractmethod
-    def list_branches(self, *patterns: str,
-                      color: Literal["always", "never", "auto"] | bool | None = None,
-                      show_current: bool | None = None,
-                      verbose: Literal[1, 2] | bool | None = None,
-                      column: str | bool | None = None,
-                      abbrev: int | Literal[False] | None = None,
-                      sort: str | Literal[False] | None = None,
-                      merged: str | None = None,
-                      no_merged: str | None = None,
-                      contains: str | None = None,
-                      no_contains: str | None = None,
-                      points_at: str | Literal[False] | None = None,
-                      format_: str | Literal[False] | None = None,
-                      remotes: Literal[True] | None = None,
-                      all_: bool | None = None,
-                      list_only: bool | None = None,
-                      ignore_case: bool | None = None,
-                      omit_empty: bool | None = None) -> str:
+    def list_branches(
+        self,
+        *patterns: str,
+        color: Literal["always", "never", "auto"] | bool | None = None,
+        show_current: bool | None = None,
+        verbose: Literal[1, 2] | bool | None = None,
+        column: str | bool | None = None,
+        abbrev: int | Literal[False] | None = None,
+        sort: str | Literal[False] | None = None,
+        merged: str | None = None,
+        no_merged: str | None = None,
+        contains: str | None = None,
+        no_contains: str | None = None,
+        points_at: str | Literal[False] | None = None,
+        format_: str | Literal[False] | None = None,
+        remotes: Literal[True] | None = None,
+        all_: bool | None = None,
+        list_only: bool | None = None,
+        ignore_case: bool | None = None,
+        omit_empty: bool | None = None,
+    ) -> str:
         """
         List branches with advanced filtering, formatting, and display options.
 
@@ -652,7 +685,7 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         :return: ``git add`` subcommand.
         """
         ...
-    
+
     @property
     @abstractmethod
     def branch_subcmd(self) -> Branch:

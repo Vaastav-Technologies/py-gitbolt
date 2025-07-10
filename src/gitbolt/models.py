@@ -833,6 +833,7 @@ class BranchListOpts(TypedDict, total=False):
     Do not output empty groups or columns.
     """
 
+
 class BranchCreateOpts(TypedDict, total=False):
     """
     Options for creating a new branch using ``git branch``.
@@ -866,6 +867,7 @@ class BranchCreateOpts(TypedDict, total=False):
     Update the branch in submodules as well.
     """
 
+
 class BranchRenameOpts(TypedDict, total=False):
     """
     Options for renaming an existing branch using ``git branch``.
@@ -889,6 +891,7 @@ class BranchRenameOpts(TypedDict, total=False):
     Rename the branch.
     """
 
+
 class BranchCopyOpts(TypedDict, total=False):
     """
     Options for copying a branch to a new branch using ``git branch``.
@@ -911,6 +914,7 @@ class BranchCopyOpts(TypedDict, total=False):
 
     Explicitly copy a branch.
     """
+
 
 class BranchDeleteOpts(TypedDict, total=False):
     """
@@ -939,6 +943,7 @@ class BranchDeleteOpts(TypedDict, total=False):
     Mirror of ``--remotes`` or ``-r`` for deleting remote branches.
     """
 
+
 class BranchEditDescriptionOpts(TypedDict, total=False):
     """
     Options for editing a branch's description using ``git branch``.
@@ -954,6 +959,7 @@ class BranchEditDescriptionOpts(TypedDict, total=False):
     Edit the description of the branch.
     """
 
+
 class GitBranchOpts(
     BranchListOpts,
     BranchCreateOpts,
@@ -961,7 +967,7 @@ class GitBranchOpts(
     BranchCopyOpts,
     BranchDeleteOpts,
     BranchEditDescriptionOpts,
-    total=False
+    total=False,
 ):
     """
     Master options dictionary encompassing all subcommands of ``git branch``.
@@ -976,4 +982,6 @@ class GitBranchOpts(
     """
 
     pass
+
+
 # endregion
