@@ -15,22 +15,16 @@ class BranchArgsValidator(Protocol):
         Validate git branch creation args.
 
         :param branch_name:
-            Name of the new branch to create.
+            Name of the new branch to create. Must be non-empty ``str``.
 
         :param start_point:
-            Optional starting point (commit, tag, branch, etc.). Defaults to HEAD.
+            Optional starting point (commit, tag, branch, etc.). Must be non-empty ``str``.
 
         :param force:
-            **Tri-state.**
-            - If True, emits ``--force`` or ``-f`` to allow overwriting an existing branch.
-            - If False, emits ``--no-force`` to explicitly avoid forced creation.
-            - If None, the option is not passed.
+            must be ``bool`` or ``None``.
 
         :param track:
-            **Tri-state.**
-            - If True, sets up the new branch to track a remote branch.
-            - If False, emits ``--no-track`` to disable tracking explicitly.
-            - If None, leaves tracking behavior to Git defaults.
+            must be ``bool`` or ``None``.
 
         :param recurse_submodules:
             **Tri-state.**
