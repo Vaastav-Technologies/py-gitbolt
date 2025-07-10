@@ -637,9 +637,9 @@ class TestOptsEnvMixedOverrides:
 
 class TestLsTreeSubcmd:
     # TODO: refactor when commit_subcmd is implemented.
-    def test_ls_tree(self, enc_local):
-        git = SimpleGitCommand(enc_local)
-        Path(enc_local, "a-file").write_text("a-file")
+    def test_ls_tree(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        Path(repo_local, "a-file").write_text("a-file")
         git.add_subcmd.add(".")
         git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
         git.subcmd_unchecked.run(["config", "--local", "user.email", "suhas@example.com"])
@@ -733,23 +733,23 @@ def test_version_build_options():
 
 
 class TestAddSubcmd:
-    def test_add(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        git = SimpleGitCommand(enc_local)
+    def test_add(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add(".")
         assert (
             "a-file"
             in git.subcmd_unchecked.run(
                 ["diff", "--cached", "--name-only"],
-                cwd=enc_local,
+                cwd=repo_local,
                 text=True,
             ).stdout
         )
 
-    def test_with_pathspec(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
-        git = SimpleGitCommand(enc_local)
+    def test_with_pathspec(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add("*-file")
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],
@@ -758,10 +758,10 @@ class TestAddSubcmd:
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
 
-    def test_with_pathspecs(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
-        git = SimpleGitCommand(enc_local)
+    def test_with_pathspecs(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add("a-file", "b-file")
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],
@@ -770,12 +770,12 @@ class TestAddSubcmd:
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
 
-    def test_with_pathspec_from_file(self, enc_local, tmp_path):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
+    def test_with_pathspec_from_file(self, repo_local, tmp_path):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
         pathspec_file = Path(tmp_path, "pathspec-file.txt")
         pathspec_file.write_text("*-file")
-        git = SimpleGitCommand(enc_local)
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add(pathspec_from_file=pathspec_file)
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],

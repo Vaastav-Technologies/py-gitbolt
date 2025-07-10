@@ -58,3 +58,6 @@ issues = "https://github.com/Vaastav-Technologies/py-gitbolt/issues"
 
 [tool.setuptools.packages.find]
 where = ['src']
+
+[project.entry-points.pytest11]
+gitbolt_fixtures = "gitbolt.pytest_plugin"
