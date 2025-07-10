@@ -86,4 +86,4 @@ class SimpleGitCR(GitCommandRunner):
                 **subprocess_run_kwargs,
             )
         except subprocess.CalledProcessError as e:
-            raise GitCmdException(called_process_error=e, exit_code=e.returncode) from e
+            raise GitCmdException(e.stderr, called_process_error=e, exit_code=e.returncode) from e
