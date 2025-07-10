@@ -783,3 +783,6 @@ class TestAddSubcmd:
         ).stdout
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
+
+
+# TODO: write exhaustive tests for unchecked subcmd
