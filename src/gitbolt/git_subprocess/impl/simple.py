@@ -173,6 +173,8 @@ class SimpleGitCommand(GitCommand, RootDirOp):
     @override
     @property
     def version_subcmd(self) -> VersionCommand:
+        # TODO: in all subcommand methods, find a better way to retain envs and opts rather than cloning each time
+        #   and setting the underlying git.
         version_subcmd = self._version_subcmd.clone()
         version_subcmd._set_underlying_git(self)
         return version_subcmd
