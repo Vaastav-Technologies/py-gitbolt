@@ -4,6 +4,7 @@
 """
 Third-party importable pytest plugins for ``gitbolt``.
 """
+
 import subprocess
 from pathlib import Path
 

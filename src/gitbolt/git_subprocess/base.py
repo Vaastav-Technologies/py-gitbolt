@@ -514,12 +514,12 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         """
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         envs_vars = self.underlying_git.build_git_envs()
-        another_supplied_env = subprocess_run_kwargs.pop('env', None)
+        another_supplied_env = subprocess_run_kwargs.pop("env", None)
         if another_supplied_env:
             envs_vars.update(another_supplied_env)
-        cwd = subprocess_run_kwargs.pop('cwd', None) or self.root_dir
-        capture_output = subprocess_run_kwargs.pop('capture_output', None) or True
-        check = subprocess_run_kwargs.pop('check', None) or True
+        cwd = subprocess_run_kwargs.pop("cwd", None) or self.root_dir
+        capture_output = subprocess_run_kwargs.pop("capture_output", None) or True
+        check = subprocess_run_kwargs.pop("check", None) or True
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
             main_cmd_args,
@@ -531,6 +531,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             cwd=cwd,
             capture_output=capture_output,
             check=check,
-            **subprocess_run_kwargs
+            **subprocess_run_kwargs,
         )
         return result

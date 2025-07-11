@@ -20,7 +20,7 @@ from gitbolt.git_subprocess import (
     LsTreeCommand,
     GitSubcmdCommand,
     AddCommand,
-    UncheckedSubcmd
+    UncheckedSubcmd,
 )
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder
 from gitbolt.git_subprocess.constants import VERSION_CMD
@@ -133,11 +133,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
 
 class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
-    def __init__(
-        self,
-        root_dir: Path,
-        git: GitCommand
-    ):
+    def __init__(self, root_dir: Path, git: GitCommand):
         super().__init__(git)
         self._root_dir = root_dir
 
@@ -151,7 +147,6 @@ class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
-
     def __init__(
         self,
         git_root_dir: Path = Path.cwd(),
@@ -160,7 +155,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         version_subcmd: VersionCommand | None = None,
         ls_tree_subcmd: LsTreeCommand | None = None,
         add_subcmd: AddCommand | None = None,
-        subcmd_unchecked: UncheckedSubcmd | None = None
+        subcmd_unchecked: UncheckedSubcmd | None = None,
     ):
         super().__init__(runner)
         self.git_root_dir = git_root_dir
@@ -193,7 +188,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             version_subcmd=self.version_subcmd,
             ls_tree_subcmd=self.ls_tree_subcmd,
             add_subcmd=self.add_subcmd,
-            subcmd_unchecked=self.subcmd_unchecked
+            subcmd_unchecked=self.subcmd_unchecked,
         )
         # endregion
         # region clone protected members

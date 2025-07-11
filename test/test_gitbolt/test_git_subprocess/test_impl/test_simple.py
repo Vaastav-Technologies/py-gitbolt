@@ -642,7 +642,9 @@ class TestLsTreeSubcmd:
         Path(repo_local, "a-file").write_text("a-file")
         git.add_subcmd.add(".")
         git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
-        git.subcmd_unchecked.run(["config", "--local", "user.email", "suhas@example.com"])
+        git.subcmd_unchecked.run(
+            ["config", "--local", "user.email", "suhas@example.com"]
+        )
         git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
         assert (
             git.ls_tree_subcmd.ls_tree("HEAD")
