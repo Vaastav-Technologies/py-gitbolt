@@ -340,6 +340,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         self.args_validator.validate(tree_ish, **ls_tree_opts)
         sub_cmd_args = self.cli_args_builder.build(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
+        env_vars = self.underlying_git.build_git_envs()
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
@@ -349,6 +350,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
             text=True,
             capture_output=True,
             cwd=self.root_dir,
+            env=env_vars,
         )
 
         return result.stdout.strip()
@@ -420,6 +422,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             **add_opts,
         )
         main_cmd_args = self.underlying_git.build_main_cmd_args()
+        env_vars = self.underlying_git.build_git_envs()
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
@@ -430,6 +433,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             text=True,
             capture_output=True,
             cwd=self.root_dir,
+            env=env_vars,
         )
 
         return result.stdout.strip()

@@ -48,10 +48,16 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         self._require_valid_args(build_options)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
+        env_vars = self.underlying_git.build_git_envs()
         if build_options:
             sub_cmd_args.append("--build-options")
         return self.underlying_git.runner.run_git_command(
-            main_cmd_args, sub_cmd_args, check=True, text=True, capture_output=True
+            main_cmd_args,
+            sub_cmd_args,
+            check=True,
+            text=True,
+            capture_output=True,
+            env=env_vars,
         ).stdout.strip()
 
     def clone(self) -> "VersionCommandImpl":
@@ -167,17 +173,23 @@ class SimpleGitCommand(GitCommand, RootDirOp):
     @override
     @property
     def version_subcmd(self) -> VersionCommand:
-        return self._version_subcmd
+        version_subcmd = self._version_subcmd.clone()
+        version_subcmd._set_underlying_git(self)
+        return version_subcmd
 
     @override
     @property
     def ls_tree_subcmd(self) -> LsTreeCommand:
-        return self._ls_tree
+        ls_tree_subcmd = self._ls_tree.clone()
+        ls_tree_subcmd._set_underlying_git(self)
+        return ls_tree_subcmd
 
     @override
     @property
     def add_subcmd(self) -> AddCommand:
-        return self._add_subcmd
+        add_subcmd = self._add_subcmd.clone()
+        add_subcmd._set_underlying_git(self)
+        return add_subcmd
 
     @override
     def clone(self) -> "SimpleGitCommand":
@@ -204,4 +216,6 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     @property
     def subcmd_unchecked(self) -> UncheckedSubcmd:
-        return self._subcmd_unchecked
+        subcmd_unchecked = self._subcmd_unchecked.clone()
+        subcmd_unchecked._set_underlying_git(self)
+        return subcmd_unchecked
