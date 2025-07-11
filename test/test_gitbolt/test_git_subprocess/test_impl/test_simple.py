@@ -786,7 +786,10 @@ class TestAddSubcmd:
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
 
-@pytest.mark.parametrize('subcmd', ['add_subcmd', 'version_subcmd', 'ls_tree_subcmd', 'subcmd_unchecked'])
+
+@pytest.mark.parametrize(
+    "subcmd", ["add_subcmd", "version_subcmd", "ls_tree_subcmd", "subcmd_unchecked"]
+)
 class TestSubcommandsPersistence:
     def test_envs_set_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
@@ -819,15 +822,17 @@ class TestSubcommandsPersistence:
             "no_pager": True,
         } == _subcmd.underlying_git._main_cmd_opts
 
-
     def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
         git = git.git_envs_override(GIT_TRACE=True).git_envs_override(
             GIT_AUTHOR_NAME="ss", GIT_COMMITTER_NAME="sos"
         )
-        git = git.git_opts_override(git_dir=repo_local).git_opts_override(
-            no_pager=True, icase_pathspecs=True
-        ).git_envs_override(GIT_SSH_COMMAND="ssh-l").git_opts_override(c={"foo": True, "foo.bar": 10})
+        git = (
+            git.git_opts_override(git_dir=repo_local)
+            .git_opts_override(no_pager=True, icase_pathspecs=True)
+            .git_envs_override(GIT_SSH_COMMAND="ssh-l")
+            .git_opts_override(c={"foo": True, "foo.bar": 10})
+        )
         _subcmd = getattr(git, subcmd)
         assert {
             "c": {"foo": True, "foo.bar": 10},
@@ -851,5 +856,6 @@ class TestSubcommandsPersistence:
             "icase_pathspecs": True,
             "no_pager": True,
         } == _subcmd.underlying_git._main_cmd_opts
+
 
 # TODO: write exhaustive tests for unchecked subcmd
