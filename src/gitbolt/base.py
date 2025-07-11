@@ -243,6 +243,18 @@ class Version(GitSubCommand, Protocol):
         """
         Require that arguments sent to the version command is valid.
 
+        Examples:
+
+        Correct:
+
+        >>> Version._require_valid_args()
+
+        Error:
+
+        >>> Version._require_valid_args(1) # type: ignore[arg-type] # required bool, supplied int
+        Traceback (most recent call last):
+        gitbolt.exceptions.GitExitingException: TypeError: build_options should be bool.
+
         :param build_options: argument to be validated.
         :raise GitExitingException: if supplied ``build_options`` is invalid.
         """
