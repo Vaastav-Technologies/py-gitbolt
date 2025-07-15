@@ -41,6 +41,7 @@ dependencies = [
 
 [project.optional-dependencies]
 pygit2 = ['pygit2']
+test = ['pytest']
 
 [dependency-groups]
 # TODO: report the mypy recent version (1.16.0, 1.16.1 issue) RuntimeError: ('Not implemented', <class 'mypy.types.TypeGuardedType'>)
