@@ -36,8 +36,7 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "vt-err-hndlr == 0.0.0dev1",
-  "pytest"
+  "vt-err-hndlr == 0.0.0dev1"
 ]
 
 [project.optional-dependencies]
@@ -48,7 +47,7 @@ pygit2 = ['pygit2']
 #   btw, this error doesn't show in the latest developer version. So, this error will go away with 1.17.0 relase
 dev = ["mypy==1.15.0", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
-test = ['pytest-cov']
+test = ["pytest", 'pytest-cov']
 multitest = ['tox']
 
 
