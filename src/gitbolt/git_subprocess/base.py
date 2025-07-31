@@ -459,6 +459,10 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
     def _subcmd_from_git(self, git: "Git") -> Self:
         return self
 
+    # TODO: the static type-safety of `run()` is not correct.
+    #  `run([..], text=True, _input=b'<some-str>')` is incorrect
+    #  as this should raise static-type check safety issue because text=True and _input is bytes. Similarly
+    #  `run([..], text=False, _input='<some-bytes>')` does not raise issue as well.
     @overload
     def run(
         self,
