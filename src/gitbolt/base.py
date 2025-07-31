@@ -154,6 +154,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     Interface for ``git add`` command.
     """
 
+    # TODO: `pathspec: str` -> `pathspec_or_path: str | Path`.
+    #  This will make a convenience method for python use.
     @overload
     @abstractmethod
     def add(
