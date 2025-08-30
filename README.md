@@ -27,6 +27,7 @@
 * 📄 **Transparent Output:** Returns a Git command's `stdout` as-is.
 * 🧪 **Terminal Functions:** Git subcommands are terminal functions.
 * 🧼 **Idiomatic Python:** Write commands in idiomatic Python at compile-time and be confident they’ll execute smoothly at runtime.
+* 🎀 **Add-ons:** Special features provided to ease programming with git. These can be added if required.
 
 ---
 
