@@ -337,3 +337,4 @@ Transformers for formatting/parsing can be added later.
 
 * Support `pygit2` for direct, fast Git access.
 * Enable `porcelain` support using `pygit2` where required.
+  > `pygit2` usage will automatically make all commands return in porcelain mode.
