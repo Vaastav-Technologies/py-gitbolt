@@ -271,6 +271,115 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
+class Worktree(GitSubCommand, Protocol):
+    """
+    Interface for ``git worktree`` subcommand.
+    """
+
+    class WorktreeSubcmd(Protocol):
+        """
+        Interface for the worktree subcommands.
+        """
+
+        @property
+        @abstractmethod
+        def underlying_worktree(self) -> Worktree:
+            """
+            :return: underlying worktree for this subcommand.
+            """
+            ...
+
+    # region worktree list subcommands
+    class List(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree list`` subcommand.
+        """
+
+        @abstractmethod
+        @overload
+        def list(self, *, verbose: bool = False) -> str:
+            ...
+
+        @abstractmethod
+        @overload
+        def list(self, *, porcelain: Literal[False]) -> str:
+            ...
+
+        @abstractmethod
+        @overload
+        def list(self, *, z: bool = False, porcelain: Literal[True]) -> str:
+            ...
+
+        @abstractmethod
+        def list(self, *, verbose: bool = False, porcelain: Literal[True, False] = False, z: bool = False) -> str:
+            """
+            List all the worktrees.
+
+            ``git worktree list`` documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-list
+
+            :param verbose: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---verbose
+            :param porcelain: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---porcelain
+            :param z: This option can only be used if porcelain is enabled. See
+                https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt--z for more details.
+            :returns: stdout of the command run.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def list_subcmd(self) -> Worktree.List:
+        """
+        :returns: ``git worktree list`` subcommand.
+        """
+        ...
+    # endregion
+
+    # region worktree lock subcommands
+    class Lock(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree lock`` subcommand.
+        """
+
+        @abstractmethod
+        def lock(self, worktree: Path, reason: str | None = None) -> str:
+            ...
+
+    @property
+    @abstractmethod
+    def lock_subcmd(self) -> Worktree.Lock:
+        """
+        :returns: ``git worktree lock`` subcommand.
+        """
+        ...
+    # endregion
+
+    class Move(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``gt worktree move`` subcommand.
+        """
+
+        @abstractmethod
+        def move(self, worktree: Path, new_path: Path, force: bool = False, relative_paths: bool = True) -> None:
+            """
+            Move the worktree. Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-move
+
+            Also, info on ``git worktree move -h``.
+
+            :param worktree: Path to the worktree that is to be moved.
+            :param new_path: Path where the worktree is to be moved.
+            :param force: force move a worktree even when it is locked.
+            :param relative_paths: use relative paths for worktree.
+            """
+
+    @property
+    @abstractmethod
+    def move_subcmd(self) -> Worktree.Move:
+        """
+        :returns: ``git worktree move`` subcommand.
+        """
+        ...
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -336,6 +445,14 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def add_subcmd(self) -> Add:
         """
         :return: ``git add`` subcommand.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def worktree_subcmd(self) -> Worktree:
+        """
+        :return: ``git worktree`` subcommand.
         """
         ...
 
