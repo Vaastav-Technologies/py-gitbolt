@@ -8,6 +8,7 @@ interfaces related to processors specific to git commands.
 from __future__ import annotations
 
 from abc import abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol, override, Unpack, Self, overload, Literal
 
@@ -378,6 +379,40 @@ class Worktree(GitSubCommand, Protocol):
         :returns: ``git worktree move`` subcommand.
         """
         ...
+
+    # endregion
+
+    # region worktree prune subcommands
+    class Prune(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree prune`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-prune
+        """
+
+        @abstractmethod
+        def prune(self, *, dry_run: bool = False, verbose: bool = False, expire: int | datetime | None = None) -> str:
+            """
+            Prune worktrees satisfying pruning conditions.
+
+            :param dry_run: `Just dry run the operation and do not actually prune anything.
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---dry-run>`_.
+            :param verbose: `be verbose while pruning
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---verbose>`_.
+            :param expire: `prune worktrees older than this expiration time
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---expiretime>`_.
+            :returns: prune output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def prune_subcmd(self) -> Worktree.Prune:
+        """
+        :returns: ``git worktree prune`` subcommand.
+        """
+        ...
+    # endregion
 
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
