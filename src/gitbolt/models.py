@@ -368,6 +368,17 @@ class GitLogEnvVars(TypedDict, total=False):
     """
 
 
+class GitGPGEnvVars(TypedDict, total=False):
+    """
+    Environment variables related to GPG and git.
+    """
+
+    GNUPGHOME: Path
+    """
+    GPG will use this path for operations.
+    """
+
+
 class GitEnvVars(
     GitCommitEnvVars,
     GitEditorEnvVars,
@@ -377,6 +388,7 @@ class GitEnvVars(
     GitRepoEnvVars,
     GitNetworkEnvVars,
     GitSysEnvVars,
+    GitGPGEnvVars,
 ):
     """
     Environment variables that control Git's runtime behavior.

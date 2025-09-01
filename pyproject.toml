@@ -1,6 +1,6 @@
 [project]
 name = "gitbolt"
-version = "0.0.0dev3"
+version = "0.0.0dev8"
 description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
@@ -41,13 +41,14 @@ dependencies = [
 
 [project.optional-dependencies]
 pygit2 = ['pygit2']
+test = ['pytest']
 
 [dependency-groups]
 # TODO: report the mypy recent version (1.16.0, 1.16.1 issue) RuntimeError: ('Not implemented', <class 'mypy.types.TypeGuardedType'>)
 #   btw, this error doesn't show in the latest developer version. So, this error will go away with 1.17.0 relase
 dev = ["mypy==1.15.0", "ruff"]
 doc = ['sphinx', 'sphinx-argparse']
-test = ['pytest', 'pytest-cov']
+test = ["pytest", 'pytest-cov']
 multitest = ['tox']
 
 
@@ -58,3 +59,12 @@ issues = "https://github.com/Vaastav-Technologies/py-gitbolt/issues"
 
 [tool.setuptools.packages.find]
 where = ['src']
+
+[project.entry-points.pytest11]
+gitbolt_fixtures = "gitbolt.pytest_plugin"
+
+[[tool.mypy.overrides]]
+# pytest currently has no py.typed or stubs installed
+# so let mypy try to best make sense of the data-types for pytest package
+module = ["pytest.*"]
+follow_untyped_imports = true

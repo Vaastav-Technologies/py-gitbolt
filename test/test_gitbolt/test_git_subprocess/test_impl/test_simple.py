@@ -5,7 +5,6 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -638,23 +637,15 @@ class TestOptsEnvMixedOverrides:
 
 class TestLsTreeSubcmd:
     # TODO: refactor when commit_subcmd is implemented.
-    def test_ls_tree(self, enc_local):
-        git = SimpleGitCommand(enc_local)
-        Path(enc_local, "a-file").write_text("a-file")
+    def test_ls_tree(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        Path(repo_local, "a-file").write_text("a-file")
         git.add_subcmd.add(".")
-        subprocess.run(
-            ["git", "config", "--local", "user.name", "suhas"],
-            cwd=enc_local,
-            check=True,
+        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked.run(
+            ["config", "--local", "user.email", "suhas@example.com"]
         )
-        subprocess.run(
-            ["git", "config", "--local", "user.email", "suhas@example.com"],
-            cwd=enc_local,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "commit", "-m", "committed a-file"], check=True, cwd=enc_local
-        )
+        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
         assert (
             git.ls_tree_subcmd.ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
@@ -744,60 +735,127 @@ def test_version_build_options():
 
 
 class TestAddSubcmd:
-    def test_add(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        git = SimpleGitCommand(enc_local)
+    def test_add(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add(".")
         assert (
             "a-file"
-            in subprocess.run(
-                ["git", "diff", "--cached", "--name-only"],
-                cwd=enc_local,
-                stdout=subprocess.PIPE,
+            in git.subcmd_unchecked.run(
+                ["diff", "--cached", "--name-only"],
+                cwd=repo_local,
                 text=True,
             ).stdout
         )
 
-    def test_with_pathspec(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
-        git = SimpleGitCommand(enc_local)
+    def test_with_pathspec(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add("*-file")
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
 
-    def test_with_pathspecs(self, enc_local):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
-        git = SimpleGitCommand(enc_local)
+    def test_with_pathspecs(self, repo_local):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add("a-file", "b-file")
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
 
-    def test_with_pathspec_from_file(self, enc_local, tmp_path):
-        Path(enc_local, "a-file").write_text("a-file")
-        Path(enc_local, "b-file").write_text("b-file")
+    def test_with_pathspec_from_file(self, repo_local, tmp_path):
+        Path(repo_local, "a-file").write_text("a-file")
+        Path(repo_local, "b-file").write_text("b-file")
         pathspec_file = Path(tmp_path, "pathspec-file.txt")
         pathspec_file.write_text("*-file")
-        git = SimpleGitCommand(enc_local)
+        git = SimpleGitCommand(repo_local)
         git.add_subcmd.add(pathspec_from_file=pathspec_file)
-        indexed_files = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=enc_local,
-            stdout=subprocess.PIPE,
+        indexed_files = git.subcmd_unchecked.run(
+            ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
         assert "a-file" in indexed_files
         assert "b-file" in indexed_files
+
+
+@pytest.mark.parametrize(
+    "subcmd", ["add_subcmd", "version_subcmd", "ls_tree_subcmd", "subcmd_unchecked"]
+)
+class TestSubcommandsPersistence:
+    def test_envs_set_remain_set(self, repo_local, subcmd):
+        git = SimpleGitCommand(repo_local)
+        git = git.git_envs_override(GIT_TRACE=True).git_envs_override(
+            GIT_AUTHOR_NAME="ss", GIT_COMMITTER_NAME="sos"
+        )
+        git = git.git_envs_override(GIT_SSH_COMMAND="ssh-l")
+        _subcmd = getattr(git, subcmd)
+        assert (
+            dict(
+                GIT_TRACE="True",
+                GIT_AUTHOR_NAME="ss",
+                GIT_COMMITTER_NAME="sos",
+                GIT_SSH_COMMAND="ssh-l",
+            )
+            == _subcmd.underlying_git.build_git_envs()
+        )
+
+    def test_opts_set_remain_set(self, repo_local, subcmd):
+        git = SimpleGitCommand(repo_local)
+        git = git.git_opts_override(git_dir=repo_local).git_opts_override(
+            no_pager=True, icase_pathspecs=True
+        )
+        git = git.git_opts_override(c={"foo": True, "foo.bar": 10})
+        _subcmd = getattr(git, subcmd)
+        assert {
+            "c": {"foo": True, "foo.bar": 10},
+            "git_dir": repo_local,
+            "icase_pathspecs": True,
+            "no_pager": True,
+        } == _subcmd.underlying_git._main_cmd_opts
+
+    def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
+        git = SimpleGitCommand(repo_local)
+        git = git.git_envs_override(GIT_TRACE=True).git_envs_override(
+            GIT_AUTHOR_NAME="ss", GIT_COMMITTER_NAME="sos"
+        )
+        git = (
+            git.git_opts_override(git_dir=repo_local)
+            .git_opts_override(no_pager=True, icase_pathspecs=True)
+            .git_envs_override(GIT_SSH_COMMAND="ssh-l")
+            .git_opts_override(c={"foo": True, "foo.bar": 10})
+        )
+        _subcmd = getattr(git, subcmd)
+        assert {
+            "c": {"foo": True, "foo.bar": 10},
+            "git_dir": repo_local,
+            "icase_pathspecs": True,
+            "no_pager": True,
+        } == _subcmd.underlying_git._main_cmd_opts
+
+        assert (
+            dict(
+                GIT_TRACE="True",
+                GIT_AUTHOR_NAME="ss",
+                GIT_COMMITTER_NAME="sos",
+                GIT_SSH_COMMAND="ssh-l",
+            )
+            == _subcmd.underlying_git.build_git_envs()
+        )
+        assert {
+            "c": {"foo": True, "foo.bar": 10},
+            "git_dir": repo_local,
+            "icase_pathspecs": True,
+            "no_pager": True,
+        } == _subcmd.underlying_git._main_cmd_opts
+
+
+# TODO: write exhaustive tests for unchecked subcmd

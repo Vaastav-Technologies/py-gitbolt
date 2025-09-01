@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import override, Protocol, Unpack, Self, overload, Literal
+from subprocess import CompletedProcess
+from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
+from vt.utils.commons.commons.op import RootDirOp
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
@@ -283,6 +285,14 @@ class GitCommand(Git, ABC):
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
 
+    @property
+    @abstractmethod
+    def subcmd_unchecked(self) -> UncheckedSubcmd:
+        """
+        Run an unchecked git subcommand using subprocess.
+        """
+        ...
+
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
     """
@@ -330,6 +340,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         self.args_validator.validate(tree_ish, **ls_tree_opts)
         sub_cmd_args = self.cli_args_builder.build(tree_ish, **ls_tree_opts)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
+        env_vars = self.underlying_git.build_git_envs()
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
@@ -339,6 +350,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
             text=True,
             capture_output=True,
             cwd=self.root_dir,
+            env=env_vars,
         )
 
         return result.stdout.strip()
@@ -410,6 +422,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             **add_opts,
         )
         main_cmd_args = self.underlying_git.build_main_cmd_args()
+        env_vars = self.underlying_git.build_git_envs()
 
         # Run the git command
         result = self.underlying_git.runner.run_git_command(
@@ -420,6 +433,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             text=True,
             capture_output=True,
             cwd=self.root_dir,
+            env=env_vars,
         )
 
         return result.stdout.strip()
@@ -434,3 +448,97 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git add`` subprocess.
         """
         return IndividuallyOverridableACAB()
+
+
+class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
+    """
+    Unchecked git subcommand. Runs subcommands directly in subprocess.
+    """
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Self:
+        return self
+
+    # TODO: the static type-safety of `run()` is not correct.
+    #  `run([..], text=True, _input=b'<some-str>')` is incorrect
+    #  as this should raise static-type check safety issue because text=True and _input is bytes. Similarly
+    #  `run([..], text=False, _input='<some-bytes>')` does not raise issue as well.
+    @overload
+    def run(
+        self,
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        _input: str,
+        text: Literal[True],
+        **subprocess_run_kwargs: Any,
+    ) -> CompletedProcess[str]: ...
+
+    @overload
+    def run(
+        self,
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        _input: bytes,
+        text: Literal[False],
+        **subprocess_run_kwargs: Any,
+    ) -> CompletedProcess[bytes]: ...
+
+    @overload
+    def run(
+        self,
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        text: Literal[True],
+        **subprocess_run_kwargs: Any,
+    ) -> CompletedProcess[str]: ...
+
+    @overload
+    def run(
+        self,
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        text: Literal[False] = ...,
+        **subprocess_run_kwargs: Any,
+    ) -> CompletedProcess[bytes]: ...
+
+    def run(
+        self,
+        subcommand_args: list[str],
+        *subprocess_run_args: Any,
+        _input: str | bytes | None = None,
+        text: Literal[True, False] = False,
+        **subprocess_run_kwargs,
+    ) -> CompletedProcess[str] | CompletedProcess[bytes]:
+        """
+        Run unchecked git subcommand using subprocess
+
+        :param subcommand_args: the full subcommand argument list.
+        :param subprocess_run_args: additional subprocess positionals.
+        :param _input: any stdin to be passed to the subprocess.
+        :param text: ``_input`` and returns both are str if this value is ``True``. Else, bytes are considered.
+        :param subprocess_run_kwargs: additional subprocess keyword arguments.
+
+        :return: ``CompletedProcess`` capturing all the required stdout, stderr, return-code etc.
+        """
+        main_cmd_args = self.underlying_git.build_main_cmd_args()
+        envs_vars = self.underlying_git.build_git_envs()
+        another_supplied_env = subprocess_run_kwargs.pop("env", None)
+        if another_supplied_env:
+            envs_vars.update(another_supplied_env)
+        cwd = subprocess_run_kwargs.pop("cwd", None) or self.root_dir
+        capture_output = subprocess_run_kwargs.pop("capture_output", None) or True
+        check = subprocess_run_kwargs.pop("check", None) or True
+        # Run the git command
+        result = self.underlying_git.runner.run_git_command(
+            main_cmd_args,
+            subcommand_args,
+            *subprocess_run_args,
+            _input=_input,
+            text=text,
+            env=envs_vars,
+            cwd=cwd,
+            capture_output=capture_output,
+            check=check,
+            **subprocess_run_kwargs,
+        )
+        return result
