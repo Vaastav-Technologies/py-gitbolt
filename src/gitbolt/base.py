@@ -333,6 +333,7 @@ class Worktree(GitSubCommand, Protocol):
         :returns: ``git worktree list`` subcommand.
         """
         ...
+
     # endregion
 
     # region worktree lock subcommands
@@ -352,11 +353,13 @@ class Worktree(GitSubCommand, Protocol):
         :returns: ``git worktree lock`` subcommand.
         """
         ...
+
     # endregion
 
+    # region worktree move subcommands
     class Move(WorktreeSubcmd, Protocol):
         """
-        Interface for ``gt worktree move`` subcommand.
+        Interface for ``git worktree move`` subcommand.
         """
 
         @abstractmethod
@@ -368,8 +371,8 @@ class Worktree(GitSubCommand, Protocol):
 
             :param worktree: Path to the worktree that is to be moved.
             :param new_path: Path where the worktree is to be moved.
-            :param force: force move a worktree even when it is locked.
-            :param relative_paths: use relative paths for worktree.
+            :param force: `force move a worktree even when it is locked <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param relative_paths: `use relative paths for worktree <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---no-relative-paths>`_.
             """
 
     @property
