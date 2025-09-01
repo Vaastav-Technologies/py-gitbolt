@@ -27,6 +27,7 @@
 * 📄 **Transparent Output:** Returns a Git command's `stdout` as-is.
 * 🧪 **Terminal Functions:** Git subcommands are terminal functions.
 * 🧼 **Idiomatic Python:** Write commands in idiomatic Python at compile-time and be confident they’ll execute smoothly at runtime.
+* 🎀 **Add-ons:** Special features provided to ease programming with git. These can be added if required.
 
 ---
 
@@ -104,6 +105,53 @@ git = SimpleGitCommand()
 status_out = git.status_subcmd.status()
 print(status_out)
 ```
+
+### 🪼 Modular Architecture
+
+#### 🧑‍💻 Modular at the programmatic level
+
+Commands are designed to be passed around as objects. This makes them modular and thus users can opt to use only 
+particular commands.
+
+```python
+from gitbolt import get_git
+
+git = get_git() # get git object for the current working directory
+add_subcmd = git.add_subcmd
+ls_tree_subcmd = git.ls_tree_subcmd
+
+# now, functions can be written to accept only the required subcommands and nothing more than that.
+```
+
+#### 📽️ Modular at project level
+
+Only required commands and hence their implementations can be installed as per user requirement.
+
+e.g.
+
+- To install only the `git add` command related logic:
+  - ```shell
+    pip install gitbolt[add]
+    ```
+- To install command logic related to `git add` and `git rm` commands:
+  - ```shell
+    pip install gitbolt[add,rm]
+    ```
+- Install all porcelain related commands:
+  - ```shell
+    pip install gitbolt[porcelain]
+    ```
+- Install high performance `pygit2` implementations:
+  - ```shell
+    pip install gitbolt[pygit2]
+    ```
+  - ```shell
+    pip install gitbolt[add,pygit2,rm]
+    ```
+- At last, install every command's implementation:
+  - ```shell
+    pip install gitbolt[all]
+    ```
 
 ---
 
@@ -239,6 +287,23 @@ no_advice_reset_git = overridden_git.git_opts_override(no_advice=False)
 
 </details>
 
+### 🔄 Run unchecked commands
+
+At last, run unchecked commands in git.
+
+Introduced in `0.0.0dev4` to 
+- experiment.
+- have consistent interfaced commands run until all subcommands are provided by the library.
+
+```python
+from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+
+git = SimpleGitCommand()
+git = git.git_opts_override(no_advice=True)
+git.subcmd_unchecked.run(['--version']) # run the version option for git.
+git.subcmd_unchecked.run(['version']) # run the version subcommand.
+```
+
 
 ---
 
@@ -273,3 +338,4 @@ Transformers for formatting/parsing can be added later.
 
 * Support `pygit2` for direct, fast Git access.
 * Enable `porcelain` support using `pygit2` where required.
+  > `pygit2` usage will automatically make all commands return in porcelain mode.

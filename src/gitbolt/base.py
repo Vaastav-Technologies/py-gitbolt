@@ -154,6 +154,8 @@ class Add(GitSubCommand, RootDirOp, Protocol):
     Interface for ``git add`` command.
     """
 
+    # TODO: `pathspec: str` -> `pathspec_or_path: str | Path`.
+    #  This will make a convenience method for python use.
     @overload
     @abstractmethod
     def add(
@@ -242,6 +244,18 @@ class Version(GitSubCommand, Protocol):
     def _require_valid_args(build_options: bool = False) -> None:
         """
         Require that arguments sent to the version command is valid.
+
+        Examples:
+
+        Correct:
+
+        >>> Version._require_valid_args()
+
+        Error:
+
+        >>> Version._require_valid_args(1) # type: ignore[arg-type] # required bool, supplied int
+        Traceback (most recent call last):
+        gitbolt.exceptions.GitExitingException: TypeError: build_options should be bool.
 
         :param build_options: argument to be validated.
         :raise GitExitingException: if supplied ``build_options`` is invalid.
