@@ -168,7 +168,9 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
         self._ls_tree = ls_tree_subcmd or LsTreeCommandImpl(self.root_dir, self)
         self._add_subcmd = add_subcmd or AddCommandImpl(self.root_dir, self)
-        self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)
+        self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(
+            self.root_dir, self
+        )
 
     @override
     @property
