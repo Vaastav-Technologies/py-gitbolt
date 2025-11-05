@@ -225,3 +225,40 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         subcmd_unchecked = self._subcmd_unchecked.clone()
         subcmd_unchecked._set_underlying_git(self)
         return subcmd_unchecked
+
+
+class CLISimpleGitCommand(SimpleGitCommand):
+    """
+    A simple git command that can run using CLI params.
+    """
+
+    def __init__(
+        self,
+        git_root_dir: Path = Path.cwd(),
+        runner: GitCommandRunner = SimpleGitCR(),
+        *,
+        opts: list[str] | None = None,
+        envs: dict[str, str] | None = None,
+        version_subcmd: VersionCommand | None = None,
+        ls_tree_subcmd: LsTreeCommand | None = None,
+        add_subcmd: AddCommand | None = None,
+        subcmd_unchecked: UncheckedSubcmd | None = None,
+    ):
+        """
+        :param opts: main git cli options.
+        :param envs: main git cli env vars.
+        """
+        super().__init__(git_root_dir, runner, version_subcmd=version_subcmd, ls_tree_subcmd=ls_tree_subcmd,
+                         add_subcmd=add_subcmd, subcmd_unchecked=subcmd_unchecked)
+        self._main_cmd_cli_opts = opts
+        self._cmd_cli_envs = envs
+
+    @override
+    def build_main_cmd_args(self) -> list[str]:
+        return super().build_main_cmd_args() + self._main_cmd_cli_opts if self._main_cmd_cli_opts else super().build_main_cmd_args()
+
+    @override
+    def build_git_envs(self) -> dict[str, str]:
+        if self._cmd_cli_envs:
+            return super().build_git_envs() | self._cmd_cli_envs
+        return super().build_git_envs()
