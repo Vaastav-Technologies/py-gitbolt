@@ -38,8 +38,6 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars = {}
-        self._main_cmd_opts_from_cli: list[str] | None = None
-        self._env_vars_from_cli: dict[str, str] | None = None
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -225,7 +223,7 @@ class GitCommand(Git, ABC):
 
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
-        env: dict[str, str] = self._env_vars_from_cli or {}
+        env: dict[str, str] = {}
         for key, val in self._env_vars.items():
             if not_none_not_unset(val):
                 env[key] = str(val)

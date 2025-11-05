@@ -210,8 +210,6 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         # region clone protected members
         cloned._main_cmd_opts = self._main_cmd_opts
         cloned._env_vars = self._env_vars
-        cloned._main_cmd_opts_from_cli = self._main_cmd_opts_from_cli
-        cloned._env_vars_from_cli = self._env_vars_from_cli
         # endregion
         return cloned
 
