@@ -248,14 +248,24 @@ class CLISimpleGitCommand(SimpleGitCommand):
         :param opts: main git cli options.
         :param envs: main git cli env vars.
         """
-        super().__init__(git_root_dir, runner, version_subcmd=version_subcmd, ls_tree_subcmd=ls_tree_subcmd,
-                         add_subcmd=add_subcmd, subcmd_unchecked=subcmd_unchecked)
+        super().__init__(
+            git_root_dir,
+            runner,
+            version_subcmd=version_subcmd,
+            ls_tree_subcmd=ls_tree_subcmd,
+            add_subcmd=add_subcmd,
+            subcmd_unchecked=subcmd_unchecked,
+        )
         self._main_cmd_cli_opts = opts
         self._cmd_cli_envs = envs
 
     @override
     def build_main_cmd_args(self) -> list[str]:
-        return super().build_main_cmd_args() + self._main_cmd_cli_opts if self._main_cmd_cli_opts else super().build_main_cmd_args()
+        return (
+            super().build_main_cmd_args() + self._main_cmd_cli_opts
+            if self._main_cmd_cli_opts
+            else super().build_main_cmd_args()
+        )
 
     @override
     def build_git_envs(self) -> dict[str, str]:
