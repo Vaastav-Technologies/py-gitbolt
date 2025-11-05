@@ -38,6 +38,33 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars = {}
+        self._main_cmd_opts_from_cli: list[str] | None = None
+        self._env_vars_from_cli: dict[str, str] | None = None
+
+    @overload
+    def from_cli(self, *, opts: list[str]) -> GitCommand:
+        ...
+
+    @overload
+    def from_cli(self, *, envs: dict[str, str]) -> GitCommand:
+        ...
+
+    @overload
+    def from_cli(self, *, opts: list[str], envs: dict[str, str]) -> GitCommand:
+        ...
+
+    def from_cli(self, *, opts: list[str] | None = None, envs: dict[str, str] | None = None) -> GitCommand:
+        """
+        Useful to obtain git instance from CLI strings.
+
+        :param opts: main git cli commands list.
+        :param envs: main git env vars.
+        :returns: a ``GitCommand`` for main command opts and env vars set from cli strings.
+        """
+        _git_cmd = self.clone()
+        _git_cmd._main_cmd_opts_from_cli = opts
+        _git_cmd._env_vars_from_cli = envs
+        return _git_cmd
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -49,7 +76,8 @@ class GitCommand(Git, ABC):
         :return: CLI args for git main cli command.
         """
         return (
-            self._main_cmd_cap_c_args()
+            self._main_cmd_opts_from_cli or []
+            + self._main_cmd_cap_c_args()
             + self._main_cmd_small_c_args()
             + self._main_cmd_config_env_args()
             + self._main_cmd_exec_path_args()
@@ -223,7 +251,7 @@ class GitCommand(Git, ABC):
 
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
-        env: dict[str, str] = {}
+        env: dict[str, str] = self._env_vars_from_cli or {}
         for key, val in self._env_vars.items():
             if not_none_not_unset(val):
                 env[key] = str(val)
