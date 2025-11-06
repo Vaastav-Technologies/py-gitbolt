@@ -964,9 +964,11 @@ class TestMainCLIGit:
     class TestEnvOverrides:
         class TestSupplied:
             class TestSameCall:
-                def test_one_supplied(self):
-                    git = SimpleGitCommand()
+                @pytest.mark.parametrize("prefer_cli", [True, False])
+                def test_one_supplied(self, prefer_cli):
+                    git = CLISimpleGitCommand(envs=dict(GIT_AUTHOR_NAME="ss"), prefer_cli=prefer_cli)
                     assert git.git_envs_override(GIT_TRACE=True).build_git_envs() == {
+                        "GIT_AUTHOR_NAME": "ss",
                         "GIT_TRACE": "True"
                     }
 
