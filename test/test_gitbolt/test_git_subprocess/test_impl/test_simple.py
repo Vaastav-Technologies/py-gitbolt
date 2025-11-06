@@ -646,14 +646,16 @@ class TestMainCLIGit:
         after that.
         """
         @pytest.mark.parametrize("opts", [
+            None,
             [],
             ["--no-replace-objects"],
             ["--paginate", "--git-dir", ".", "--no-replace-objects"],
             ["--"]
         ])
-        def test_cmd_call(self, opts):
+        def test_opts(self, opts):
             git = CLISimpleGitCommand(opts=opts)
-            assert opts == git.build_main_cmd_args()
+            opts = opts or []   # just for envs=None case
+            assert git.build_main_cmd_args() == opts
 
         @pytest.mark.parametrize("envs", [
             None,
