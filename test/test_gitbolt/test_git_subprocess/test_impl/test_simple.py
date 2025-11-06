@@ -729,15 +729,23 @@ class TestMainCLIGit:
                 assert git.build_main_cmd_args() == opts
 
         class TestMultipleCalls:
-            def test_one_supplied(self):
-                git = SimpleGitCommand()
+            @pytest.mark.parametrize("opts", [
+                [],
+                ["--no-replace-objects"],
+                ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+                ["-c", "p1=v1", "-c", "p2=v2"]
+            ])
+            @pytest.mark.parametrize("prefer_cli", [True, False])
+            def test_one_supplied(self, opts: list[str], prefer_cli: bool):
+                git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
+                overriding_opts = ["--exec-path", "tmp", "--noglob-pathspecs",]
+                if prefer_cli:
+                    opts = overriding_opts + opts
+                else:
+                    opts.extend(overriding_opts)
                 assert git.git_opts_override().git_opts_override(
                     exec_path=Path("tmp")
-                ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == [
-                    "--exec-path",
-                    "tmp",
-                    "--noglob-pathspecs",
-                ]
+                ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == opts
 
             def test_multiple_supplied(self):
                 git = SimpleGitCommand()
