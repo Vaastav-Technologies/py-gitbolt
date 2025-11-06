@@ -679,6 +679,22 @@ class TestMainCLIGit:
             envs = envs or {}   # just for envs=None case
             assert git.build_git_envs() == envs
 
+        @pytest.mark.parametrize("opts, envs", [
+            (None, None),
+            ([], {}),
+            ([], {"GIT_COMMITTER_NAME": "ss"}),
+            ([], {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"}),
+            (["--no-pager", "--no-replace-objects"], {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"}),
+            (["--namespace", "n1", "--paginate"], {}),
+            (["--config-env", "env1=val1", "--config-env", "env2=val2", "--no-replace-objects"], None),
+        ])
+        def test_opts_and_envs(self, opts: list[str], envs: dict[str, str]):
+            git = CLISimpleGitCommand(opts=opts, envs=envs)
+            opts = opts or []
+            envs = envs or {}
+            assert git.build_git_envs() == envs
+            assert git.build_main_cmd_args() == opts
+
     class TestMainCmdOverrides:
         class TestSingleCall:
             @pytest.mark.parametrize("inouts", [
