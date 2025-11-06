@@ -732,38 +732,51 @@ class TestMainCLIGit:
             ["-c", "p1=v1", "-c", "p2=v2"]
         ])
         @pytest.mark.parametrize("prefer_cli", [True, False])
-        class TestSingleCall:
-            def test_single_supplied(self, opts: list[str], prefer_cli: bool):
-                git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli).git_opts_override(C=[Path()])
-                overriding_opts = ["-C", str(Path())]
-                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                assert git.build_main_cmd_args() == opts
+        class TestNonOverriding:
+            class TestSingleCall:
+                def test_single_supplied(self, opts: list[str], prefer_cli: bool):
+                    git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli).git_opts_override(C=[Path()])
+                    overriding_opts = ["-C", str(Path())]
+                    opts = _adjust_opts(opts, prefer_cli, overriding_opts)
+                    assert git.build_main_cmd_args() == opts
 
-            def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
-                git = CLISimpleGitCommand(opts=opts.copy(),
-                                          prefer_cli=prefer_cli).git_opts_override(namespace="n1", exec_path=Path(),
-                                                                                c=dict(p3="v3", p4="v4v5"))
-                overriding_opts = ['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1']
-                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                assert git.build_main_cmd_args() == opts
+                def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
+                    git = CLISimpleGitCommand(opts=opts.copy(),
+                                              prefer_cli=prefer_cli).git_opts_override(namespace="n1", exec_path=Path(),
+                                                                                    c=dict(p3="v3", p4="v4v5"))
+                    overriding_opts = ['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1']
+                    opts = _adjust_opts(opts, prefer_cli, overriding_opts)
+                    assert git.build_main_cmd_args() == opts
 
-        @pytest.mark.parametrize("opts", [
-            [],
-            ["--no-replace-objects"],
-            ["--paginate", "--git-dir", ".", "--no-replace-objects"],
-            ["-c", "p1=v1", "-c", "p2=v2"]
-        ])
-        @pytest.mark.parametrize("prefer_cli", [True, False])
-        class TestMultipleCalls:
-            def test_one_supplied(self, opts: list[str], prefer_cli: bool):
-                git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
-                overriding_opts = ["--exec-path", "tmp", "--noglob-pathspecs",]
-                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                assert git.git_opts_override().git_opts_override(
-                    exec_path=Path("tmp")
-                ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == opts
+            class TestMultipleCalls:
+                def test_one_supplied(self, opts: list[str], prefer_cli: bool):
+                    git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
+                    overriding_opts = ["--exec-path", "tmp", "--noglob-pathspecs",]
+                    opts = _adjust_opts(opts, prefer_cli, overriding_opts)
+                    assert git.git_opts_override().git_opts_override(
+                        exec_path=Path("tmp")
+                    ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == opts
 
-            def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
+                def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
+                    git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
+                    overriding_opts = [
+                        "--config-env",
+                        "auth=suhas",
+                        "--config-env",
+                        "comm=suyog",
+                        "--exec-path",
+                        "tmp",
+                        "--no-advice",
+                        "--noglob-pathspecs",
+                    ]
+                    opts = _adjust_opts(opts, prefer_cli, overriding_opts)
+                    assert git.git_opts_override(exec_path=Path("tmp")).git_opts_override(
+                        noglob_pathspecs=True, no_advice=True
+                    ).git_opts_override(
+                        config_env={"auth": "suhas", "comm": "suyog"}
+                    ).build_main_cmd_args() == opts
+
+            def test_intermixed(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                 overriding_opts = [
                     "--config-env",
@@ -772,6 +785,7 @@ class TestMainCLIGit:
                     "comm=suyog",
                     "--exec-path",
                     "tmp",
+                    "--no-pager",
                     "--no-advice",
                     "--noglob-pathspecs",
                 ]
@@ -780,7 +794,7 @@ class TestMainCLIGit:
                     noglob_pathspecs=True, no_advice=True
                 ).git_opts_override(
                     config_env={"auth": "suhas", "comm": "suyog"}
-                ).build_main_cmd_args() == opts
+                ).git_opts_override(no_pager=True).build_main_cmd_args() == opts
 
         class TestOverrideValues:
             def test_unset_value_alone(self):
