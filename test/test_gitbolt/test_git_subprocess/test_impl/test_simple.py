@@ -636,6 +636,31 @@ class TestMainGit:
                 assert main_o_git._env_vars == {}  # overriding opts didn't override envs
 
 
+# TODO: this goes into vt-commons (maybe in cli package).
+def _adjust_opts(opts: list[str], prefer_overriding: bool, overriding_opts: list[str]) -> list[str]:
+    """
+    Position ``overriding_opts`` after ``opts`` in the returned list when prefer_overriding is ``True``.
+
+    Position ``overriding_opts`` before ``opts`` in the returned list when prefer_overriding is ``False``.
+
+    >>> _adjust_opts(["a", "b"], True, ["c", "d"])
+    ['a', 'b', 'c', 'd']
+
+    >>> _adjust_opts(["a", "b"], False, ["c", "d"])
+    ['c', 'd', 'a', 'b']
+
+    :param opts: options to adjust according to ``prefer_cli``.
+    :param prefer_overriding: positions ``overriding_opts`` after (when ``True``) or before (when ``False``) ``opts``.
+    :param overriding_opts: options that will be positioned before or after ``opts``.
+    :returns: options with appropriate ordering of ``opts`` and ``overriding_opts`` according to ``prefer_cli``.
+    """
+    if prefer_overriding:
+        opts = overriding_opts + opts
+    else:
+        opts.extend(overriding_opts)
+    return opts
+
+
 class TestMainCLIGit:
     """
     Test for ``CLISimpleGitCommand``.
@@ -711,10 +736,7 @@ class TestMainCLIGit:
             def test_single_supplied(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli).git_opts_override(C=[Path()])
                 overriding_opts = ["-C", str(Path())]
-                if prefer_cli:
-                    opts = overriding_opts + opts
-                else:
-                    opts.extend(overriding_opts)
+                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                 assert git.build_main_cmd_args() == opts
 
             def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
@@ -722,10 +744,7 @@ class TestMainCLIGit:
                                           prefer_cli=prefer_cli).git_opts_override(namespace="n1", exec_path=Path(),
                                                                                 c=dict(p3="v3", p4="v4v5"))
                 overriding_opts = ['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1']
-                if prefer_cli:
-                    opts = overriding_opts + opts
-                else:
-                    opts.extend(overriding_opts)
+                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                 assert git.build_main_cmd_args() == opts
 
         class TestMultipleCalls:
@@ -739,10 +758,7 @@ class TestMainCLIGit:
             def test_one_supplied(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                 overriding_opts = ["--exec-path", "tmp", "--noglob-pathspecs",]
-                if prefer_cli:
-                    opts = overriding_opts + opts
-                else:
-                    opts.extend(overriding_opts)
+                opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                 assert git.git_opts_override().git_opts_override(
                     exec_path=Path("tmp")
                 ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == opts
