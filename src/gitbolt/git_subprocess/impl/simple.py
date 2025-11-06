@@ -196,9 +196,21 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return add_subcmd
 
     @override
-    def clone(self) -> "SimpleGitCommand":
+    def clone(self) -> SimpleGitCommand:
         # region obtain class instance
-        cloned = SimpleGitCommand(
+        cloned = self._subclass_clone()
+        # endregion
+        # region clone protected members
+        cloned._main_cmd_opts = self._main_cmd_opts
+        cloned._env_vars = self._env_vars
+        # endregion
+        return cloned
+
+    def _subclass_clone(self) -> SimpleGitCommand:
+        """
+        :returns: clone as defined by the subclass.
+        """
+        return SimpleGitCommand(
             self.root_dir,
             self.runner,
             version_subcmd=self.version_subcmd,
@@ -206,12 +218,6 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             add_subcmd=self.add_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )
-        # endregion
-        # region clone protected members
-        cloned._main_cmd_opts = self._main_cmd_opts
-        cloned._env_vars = self._env_vars
-        # endregion
-        return cloned
 
     @override
     @property
@@ -270,3 +276,16 @@ class CLISimpleGitCommand(SimpleGitCommand):
         if self._cmd_cli_envs:
             return super().build_git_envs() | self._cmd_cli_envs
         return super().build_git_envs()
+
+    @override
+    def _subclass_clone(self) -> CLISimpleGitCommand:
+        return CLISimpleGitCommand(
+            self.root_dir,
+            self.runner,
+            opts=self._main_cmd_cli_opts,
+            envs=self._cmd_cli_envs,
+            version_subcmd=self.version_subcmd,
+            ls_tree_subcmd=self.ls_tree_subcmd,
+            add_subcmd=self.add_subcmd,
+            subcmd_unchecked=self.subcmd_unchecked,
+        )
