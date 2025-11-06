@@ -1,6 +1,6 @@
 [project]
 name = "gitbolt"
-version = "0.0.0dev10"
+version = "0.0.0dev11"
 description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
@@ -36,8 +36,8 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "vt-err-hndlr >= 0.0.0dev3",
-  "vt-commons >= 0.0.1.dev4",
+  "vt-err-hndlr >= 0.0.0dev5",
+  "vt-commons >= 0.0.1.dev9",
 ]
 
 [project.optional-dependencies]

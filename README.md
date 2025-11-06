@@ -28,6 +28,7 @@
 * 🧪 **Terminal Functions:** Git subcommands are terminal functions.
 * 🧼 **Idiomatic Python:** Write commands in idiomatic Python at compile-time and be confident they’ll execute smoothly at runtime.
 * 🎀 **Add-ons:** Special features provided to ease programming with git. These can be added if required.
+* 💻 **CLI-cmd:** Take commands from cli and run in `gitbolt`.
 
 ---
 
@@ -304,6 +305,24 @@ git.subcmd_unchecked.run(['--version']) # run the version option for git.
 git.subcmd_unchecked.run(['version']) # run the version subcommand.
 ```
 
+#### 💻 Run commands received from CLI
+
+Introduced in `0.0.0dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
+
+While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example 
+would be to make a system that receives CLI commands and does certain modifications/additions inside `gitbolt` before
+actually running them. An example:
+
+```python
+from gitbolt.git_subprocess.impl.simple import CLISimpleGitCommand
+
+opts = ["--no-pager", "--namespace", "n1"]   # options received from outside your program.
+envs = dict(GIT_AUTHOR_NAME="ss")   # env-vars received form outside your program.
+git = CLISimpleGitCommand(opts=opts, envs=envs)
+
+# these can later be overridden
+git = git.git_opts_override(namespace="n2")
+```
 
 ---
 
