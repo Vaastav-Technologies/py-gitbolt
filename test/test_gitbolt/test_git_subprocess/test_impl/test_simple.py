@@ -640,29 +640,25 @@ class TestMainCLIGit:
     """
     Test for ``CLISimpleGitCommand``.
     """
+    class TestNoArgCtorCall:
+        def test_main_cmd_args(self):
+            git = CLISimpleGitCommand()
+            assert [] == git.build_main_cmd_args()
+
+        def test_main_envs_args(self):
+            git = CLISimpleGitCommand()
+            assert {} == git.build_git_envs()
+
     class TestMainCmdOverrides:
         class TestSupplied:
-            class TestSameCall:
-                def test_none_supplied(self):
-                    git = CLISimpleGitCommand()
-                    assert [] == git.build_main_cmd_args()
-
-                def test_empty_supplied(self):
-                    git = CLISimpleGitCommand(opts=[])
-                    assert [] == git.build_main_cmd_args()
-
-                def test_one_supplied(self):
-                    git = CLISimpleGitCommand(opts=["--no-replace-objects"])
-                    assert ["--no-replace-objects"] == git.build_main_cmd_args()
-
-                def test_multiple_supplied(self):
-                    git = CLISimpleGitCommand(opts=["--paginate", "--git-dir", ".", "--no-replace-objects"])
-                    assert git.build_main_cmd_args() == [
-                        "--paginate",
-                        "--git-dir",
-                        ".",
-                        "--no-replace-objects",
-                    ]
+            @pytest.mark.parametrize("inouts", [
+                [],
+                ["--no-replace-objects"],
+                ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+            ])
+            def test_ctor_call(self, inouts):
+                git = CLISimpleGitCommand(opts=inouts)
+                assert inouts == git.build_main_cmd_args()
 
         class TestMultipleCalls:
             def test_one_supplied(self):
