@@ -660,15 +660,29 @@ class TestMainCLIGit:
             assert {} == git.build_git_envs()
 
     class TestMainCmdOverrides:
-        class TestSupplied:
+        class TestSingleCall:
             @pytest.mark.parametrize("inouts", [
                 [],
                 ["--no-replace-objects"],
                 ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+                ["-c", "p1=v1", "-c", "p2=v2"]
             ])
-            def test_ctor_call(self, inouts):
-                git = CLISimpleGitCommand(opts=inouts)
-                assert inouts == git.build_main_cmd_args()
+            def test_single_supplied(self, inouts: list[str]):
+                git = CLISimpleGitCommand(opts=inouts.copy()).git_opts_override(C=[Path()])
+                inouts.extend(["-C", str(Path())])
+                assert git.build_main_cmd_args() == inouts
+
+            @pytest.mark.parametrize("inouts", [
+                [],
+                ["--no-replace-objects"],
+                ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+                ["-c", "p1=v1", "-c", "p2=v2"]
+            ])
+            def test_multiple_supplied(self, inouts: list[str]):
+                git = CLISimpleGitCommand(opts=inouts.copy()).git_opts_override(namespace="n1", exec_path=Path(),
+                                                                                c=dict(p3="v3", p4="v4v5"))
+                inouts.extend(['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1'])
+                assert git.build_main_cmd_args() == inouts
 
         class TestMultipleCalls:
             def test_one_supplied(self):
