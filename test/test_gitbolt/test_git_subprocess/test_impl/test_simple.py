@@ -645,6 +645,16 @@ class TestMainCLIGit:
         Tests where the values are directly and exclusively set on ctor and no other setting operation is performed
         after that.
         """
+
+        class TestNoArg:
+            def test_opts(self):
+                git = CLISimpleGitCommand()
+                assert [] == git.build_main_cmd_args()
+
+            def test_envs(self):
+                git = CLISimpleGitCommand()
+                assert {} == git.build_git_envs()
+
         @pytest.mark.parametrize("opts", [
             None,
             [],
@@ -668,15 +678,6 @@ class TestMainCLIGit:
             git = CLISimpleGitCommand(envs=envs)
             envs = envs or {}   # just for envs=None case
             assert git.build_git_envs() == envs
-
-    class TestNoArgCtorCall:
-        def test_main_cmd_args(self):
-            git = CLISimpleGitCommand()
-            assert [] == git.build_main_cmd_args()
-
-        def test_main_envs_args(self):
-            git = CLISimpleGitCommand()
-            assert {} == git.build_git_envs()
 
     class TestMainCmdOverrides:
         class TestSingleCall:
