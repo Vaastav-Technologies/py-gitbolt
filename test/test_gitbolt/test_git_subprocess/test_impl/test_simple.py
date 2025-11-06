@@ -645,10 +645,10 @@ def _adjust_opts(
     Position ``overriding_opts`` before ``opts`` in the returned list when prefer_overriding is ``False``.
 
     >>> _adjust_opts(["a", "b"], True, ["c", "d"])
-    ['a', 'b', 'c', 'd']
+    ['c', 'd', 'a', 'b']
 
     >>> _adjust_opts(["a", "b"], False, ["c", "d"])
-    ['c', 'd', 'a', 'b']
+    ['a', 'b', 'c', 'd']
 
     :param opts: options to adjust according to ``prefer_cli``.
     :param prefer_overriding: positions ``overriding_opts`` after (when ``True``) or before (when ``False``) ``opts``.
