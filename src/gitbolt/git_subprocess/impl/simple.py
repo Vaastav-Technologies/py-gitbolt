@@ -265,16 +265,14 @@ class CLISimpleGitCommand(SimpleGitCommand):
 
     @override
     def build_main_cmd_args(self) -> list[str]:
-        return (
-            super().build_main_cmd_args() + self._main_cmd_cli_opts
-            if self._main_cmd_cli_opts
-            else super().build_main_cmd_args()
-        )
+        if self._main_cmd_cli_opts:
+            return self._main_cmd_cli_opts + super().build_main_cmd_args()
+        return super().build_main_cmd_args()
 
     @override
     def build_git_envs(self) -> dict[str, str]:
         if self._cmd_cli_envs:
-            return super().build_git_envs() | self._cmd_cli_envs
+            return self._cmd_cli_envs | super().build_git_envs()
         return super().build_git_envs()
 
     @override
