@@ -625,6 +625,7 @@ def _adjust_opts(opts: list[str], prefer_overriding: bool, overriding_opts: list
     return opts
 
 
+# TODO: complete all the test cases for CLISimpleGitCommand
 class TestMainCLIGit:
     """
     Test for ``CLISimpleGitCommand``.
