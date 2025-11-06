@@ -696,6 +696,10 @@ class TestMainCLIGit:
             assert git.build_main_cmd_args() == opts
 
     class TestMainCmdOverrides:
+        """
+        Tests for programmatically overriding user supplied cli git opts.
+        """
+
         class TestSingleCall:
             @pytest.mark.parametrize("inouts", [
                 [],
