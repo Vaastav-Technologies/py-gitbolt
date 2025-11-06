@@ -24,6 +24,7 @@ def test_overrides_and_exec_path():
     git = SimpleGitCommand()
     assert git.git_opts_override(exec_path=None).exec_path is not None
 
+
 @pytest.mark.parametrize("git", [SimpleGitCommand(), CLISimpleGitCommand()])
 class TestMainGit:
     class TestMainCmdOverrides:
@@ -88,7 +89,10 @@ class TestMainGit:
                 """
                 assert git.git_opts_override(
                     exec_path=Path("tmp"), C=[Path()]
-                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == ["-C", "."]
+                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == [
+                    "-C",
+                    ".",
+                ]
 
             class TestMultipleCalls:
                 def test_unset_value_on_last_call(self, git):
@@ -196,7 +200,13 @@ class TestMainGit:
                         ({"foo.bar": None}, ["-c", "foo.bar"]),
                         # Mixed values
                         (
-                            {"a.b": "x", "c.d": "", "e.f": True, "g.h": False, "i.j": None},
+                            {
+                                "a.b": "x",
+                                "c.d": "",
+                                "e.f": True,
+                                "g.h": False,
+                                "i.j": None,
+                            },
                             [
                                 "-c",
                                 "a.b=x",
@@ -219,7 +229,10 @@ class TestMainGit:
                         # Missing key
                         ({}, []),
                         # UNSET should remove the key
-                        ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+                        (
+                            {"foo.bar": "value", "bar.baz": UNSET},
+                            ["-c", "foo.bar=value"],
+                        ),
                         # All keys are unset
                         ({"foo.bar": UNSET}, []),
                         # Mixed unset, true, false
@@ -232,7 +245,6 @@ class TestMainGit:
                 def test_main_cmd_c_args(self, git, input_dict, expected):
                     git = git.git_opts_override(c=input_dict)
                     assert git._main_cmd_small_c_args() == expected
-
 
     class TestEnvOverrides:
         class TestSupplied:
@@ -295,7 +307,9 @@ class TestMainGit:
                 }
 
             def test_multiple_supplied(self, git):
-                assert git.git_envs_override(GIT_SSH=Path("/tmp/SSH")).git_envs_override(
+                assert git.git_envs_override(
+                    GIT_SSH=Path("/tmp/SSH")
+                ).git_envs_override(
                     GIT_TERMINAL_PROMPT=1, GIT_NO_REPLACE_OBJECTS=True
                 ).git_envs_override(
                     GIT_ALTERNATE_OBJECT_DIRECTORIES=Path("/tmp/alter")
@@ -308,11 +322,15 @@ class TestMainGit:
 
             class TestMainOptsMixed:
                 def test_one_supplied(self, git):
-                    assert git.git_envs_override().git_opts_override().git_envs_override(
-                        GIT_TRACE_SETUP=2
-                    ).git_envs_override().git_opts_override(
-                        noglob_pathspecs=True, icase_pathspecs=False
-                    ).build_git_envs() == {"GIT_TRACE_SETUP": "2"}
+                    assert (
+                        git.git_envs_override()
+                        .git_opts_override()
+                        .git_envs_override(GIT_TRACE_SETUP=2)
+                        .git_envs_override()
+                        .git_opts_override(noglob_pathspecs=True, icase_pathspecs=False)
+                        .build_git_envs()
+                        == {"GIT_TRACE_SETUP": "2"}
+                    )
 
                 def test_one_supplied_more_calls(self, git):
                     assert git.git_envs_override().git_opts_override(
@@ -321,12 +339,17 @@ class TestMainGit:
                         GIT_ADVICE=False
                     ).git_opts_override(
                         noglob_pathspecs=True, icase_pathspecs=False
-                    ).build_git_envs() == {"GIT_TRACE_SETUP": "2", "GIT_ADVICE": "False"}
+                    ).build_git_envs() == {
+                        "GIT_TRACE_SETUP": "2",
+                        "GIT_ADVICE": "False",
+                    }
 
                 def test_multiple_supplied(self, git):
                     assert git.git_envs_override(
                         GIT_SSH=Path("/tmp/SSH")
-                    ).git_opts_override(exec_path=Path("/tmp/git-dir")).git_envs_override(
+                    ).git_opts_override(
+                        exec_path=Path("/tmp/git-dir")
+                    ).git_envs_override(
                         GIT_TERMINAL_PROMPT=1, GIT_NO_REPLACE_OBJECTS=True
                     ).git_envs_override(
                         GIT_ALTERNATE_OBJECT_DIRECTORIES=Path("/tmp/alter")
@@ -466,7 +489,13 @@ class TestMainGit:
                         ({"foo.bar": None}, ["-c", "foo.bar"]),
                         # Mixed values
                         (
-                            {"a.b": "x", "c.d": "", "e.f": True, "g.h": False, "i.j": None},
+                            {
+                                "a.b": "x",
+                                "c.d": "",
+                                "e.f": True,
+                                "g.h": False,
+                                "i.j": None,
+                            },
                             [
                                 "-c",
                                 "a.b=x",
@@ -489,7 +518,10 @@ class TestMainGit:
                         # Missing key
                         ({}, []),
                         # UNSET should remove the key
-                        ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+                        (
+                            {"foo.bar": "value", "bar.baz": UNSET},
+                            ["-c", "foo.bar=value"],
+                        ),
                         # All keys are unset
                         ({"foo.bar": UNSET}, []),
                         # Mixed unset, true, false
@@ -502,7 +534,6 @@ class TestMainGit:
                 def test_main_cmd_c_args(self, git, input_dict, expected):
                     git = git.git_opts_override(c=input_dict)
                     assert git._main_cmd_small_c_args() == expected
-
 
     class TestOptsEnvMixedOverrides:
         class TestNoOverrides:
@@ -596,12 +627,18 @@ class TestMainGit:
                 main_o_git = git.git_opts_override(
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
-                assert git._env_vars == {}  # overriding opts didn't override envs in parent
-                assert main_o_git._env_vars == {}  # overriding opts didn't override envs
+                assert (
+                    git._env_vars == {}
+                )  # overriding opts didn't override envs in parent
+                assert (
+                    main_o_git._env_vars == {}
+                )  # overriding opts didn't override envs
 
 
 # TODO: this goes into vt-commons (maybe in cli package).
-def _adjust_opts(opts: list[str], prefer_overriding: bool, overriding_opts: list[str]) -> list[str]:
+def _adjust_opts(
+    opts: list[str], prefer_overriding: bool, overriding_opts: list[str]
+) -> list[str]:
     """
     Position ``overriding_opts`` after ``opts`` in the returned list when prefer_overriding is ``True``.
 
@@ -630,6 +667,7 @@ class TestMainCLIGit:
     """
     Test for ``CLISimpleGitCommand``.
     """
+
     class TestOnlyCtorCall:
         """
         Tests where the values are directly and exclusively set on ctor and no other setting operation is performed
@@ -645,39 +683,60 @@ class TestMainCLIGit:
                 git = CLISimpleGitCommand()
                 assert {} == git.build_git_envs()
 
-        @pytest.mark.parametrize("opts", [
-            None,
-            [],
-            ["--no-replace-objects"],
-            ["--paginate", "--git-dir", ".", "--no-replace-objects"],
-            ["--"]
-        ])
+        @pytest.mark.parametrize(
+            "opts",
+            [
+                None,
+                [],
+                ["--no-replace-objects"],
+                ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+                ["--"],
+            ],
+        )
         def test_opts(self, opts):
             git = CLISimpleGitCommand(opts=opts)
-            opts = opts or []   # just for opts=None case
+            opts = opts or []  # just for opts=None case
             assert git.build_main_cmd_args() == opts
 
-        @pytest.mark.parametrize("envs", [
-            None,
-            {},
-            {"GIT_AUTHOR_NAME": "ss"},
-            {"GIT_EDITOR": "vi", "GIT_SSH": "/ssh/home/.ssh", "GIT_TRACE": "1"},
-            {"GIT_TERMINAL_PROMPT": "0", "GNUPGHOME": "/tmp/path"},
-        ])
+        @pytest.mark.parametrize(
+            "envs",
+            [
+                None,
+                {},
+                {"GIT_AUTHOR_NAME": "ss"},
+                {"GIT_EDITOR": "vi", "GIT_SSH": "/ssh/home/.ssh", "GIT_TRACE": "1"},
+                {"GIT_TERMINAL_PROMPT": "0", "GNUPGHOME": "/tmp/path"},
+            ],
+        )
         def test_envs(self, envs: dict[str, str]):
             git = CLISimpleGitCommand(envs=envs)
-            envs = envs or {}   # just for envs=None case
+            envs = envs or {}  # just for envs=None case
             assert git.build_git_envs() == envs
 
-        @pytest.mark.parametrize("opts, envs", [
-            (None, None),
-            ([], {}),
-            ([], {"GIT_COMMITTER_NAME": "ss"}),
-            ([], {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"}),
-            (["--no-pager", "--no-replace-objects"], {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"}),
-            (["--namespace", "n1", "--paginate"], {}),
-            (["--config-env", "env1=val1", "--config-env", "env2=val2", "--no-replace-objects"], None),
-        ])
+        @pytest.mark.parametrize(
+            "opts, envs",
+            [
+                (None, None),
+                ([], {}),
+                ([], {"GIT_COMMITTER_NAME": "ss"}),
+                ([], {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"}),
+                (
+                    ["--no-pager", "--no-replace-objects"],
+                    {"SSH_HOME": "/ssh/path", "GIT_COMMITTER_NAME": "ss"},
+                ),
+                (["--namespace", "n1", "--paginate"], {}),
+                (
+                    [
+                        "--config-env",
+                        "env1=val1",
+                        "--config-env",
+                        "env2=val2",
+                        "--no-replace-objects",
+                    ],
+                    None,
+                ),
+            ],
+        )
         def test_opts_and_envs(self, opts: list[str], envs: dict[str, str]):
             git = CLISimpleGitCommand(opts=opts, envs=envs)
             opts = opts or []
@@ -690,37 +749,61 @@ class TestMainCLIGit:
         Tests for programmatically overriding user supplied cli git opts.
         """
 
-        @pytest.mark.parametrize("opts", [
-            [],
-            ["--no-replace-objects"],
-            ["--paginate", "--git-dir", ".", "--no-replace-objects"],
-            ["-c", "p1=v1", "-c", "p2=v2"]
-        ])
+        @pytest.mark.parametrize(
+            "opts",
+            [
+                [],
+                ["--no-replace-objects"],
+                ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+                ["-c", "p1=v1", "-c", "p2=v2"],
+            ],
+        )
         @pytest.mark.parametrize("prefer_cli", [True, False])
         class TestNonOverriding:
             class TestSingleCall:
                 def test_single_supplied(self, opts: list[str], prefer_cli: bool):
-                    git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli).git_opts_override(C=[Path()])
+                    git = CLISimpleGitCommand(
+                        opts=opts.copy(), prefer_cli=prefer_cli
+                    ).git_opts_override(C=[Path()])
                     overriding_opts = ["-C", str(Path())]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert git.build_main_cmd_args() == opts
 
                 def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
-                    git = CLISimpleGitCommand(opts=opts.copy(),
-                                              prefer_cli=prefer_cli).git_opts_override(namespace="n1", exec_path=Path(),
-                                                                                    c=dict(p3="v3", p4="v4v5"))
-                    overriding_opts = ['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1']
+                    git = CLISimpleGitCommand(
+                        opts=opts.copy(), prefer_cli=prefer_cli
+                    ).git_opts_override(
+                        namespace="n1", exec_path=Path(), c=dict(p3="v3", p4="v4v5")
+                    )
+                    overriding_opts = [
+                        "-c",
+                        "p3=v3",
+                        "-c",
+                        "p4=v4v5",
+                        "--exec-path",
+                        ".",
+                        "--namespace",
+                        "n1",
+                    ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert git.build_main_cmd_args() == opts
 
             class TestMultipleCalls:
                 def test_one_supplied(self, opts: list[str], prefer_cli: bool):
                     git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
-                    overriding_opts = ["--exec-path", "tmp", "--noglob-pathspecs",]
+                    overriding_opts = [
+                        "--exec-path",
+                        "tmp",
+                        "--noglob-pathspecs",
+                    ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                    assert git.git_opts_override().git_opts_override(
-                        exec_path=Path("tmp")
-                    ).git_opts_override(noglob_pathspecs=True).build_main_cmd_args() == opts
+                    assert (
+                        git.git_opts_override()
+                        .git_opts_override(exec_path=Path("tmp"))
+                        .git_opts_override(noglob_pathspecs=True)
+                        .build_main_cmd_args()
+                        == opts
+                    )
 
                 def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
                     git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
@@ -735,11 +818,15 @@ class TestMainCLIGit:
                         "--noglob-pathspecs",
                     ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                    assert git.git_opts_override(exec_path=Path("tmp")).git_opts_override(
-                        noglob_pathspecs=True, no_advice=True
-                    ).git_opts_override(
-                        config_env={"auth": "suhas", "comm": "suyog"}
-                    ).build_main_cmd_args() == opts
+                    assert (
+                        git.git_opts_override(exec_path=Path("tmp"))
+                        .git_opts_override(noglob_pathspecs=True, no_advice=True)
+                        .git_opts_override(
+                            config_env={"auth": "suhas", "comm": "suyog"}
+                        )
+                        .build_main_cmd_args()
+                        == opts
+                    )
 
             def test_intermixed(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
@@ -755,11 +842,14 @@ class TestMainCLIGit:
                     "--noglob-pathspecs",
                 ]
                 opts = _adjust_opts(opts, prefer_cli, overriding_opts)
-                assert git.git_opts_override(exec_path=Path("tmp")).git_opts_override(
-                    noglob_pathspecs=True, no_advice=True
-                ).git_opts_override(
-                    config_env={"auth": "suhas", "comm": "suyog"}
-                ).git_opts_override(no_pager=True).build_main_cmd_args() == opts
+                assert (
+                    git.git_opts_override(exec_path=Path("tmp"))
+                    .git_opts_override(noglob_pathspecs=True, no_advice=True)
+                    .git_opts_override(config_env={"auth": "suhas", "comm": "suyog"})
+                    .git_opts_override(no_pager=True)
+                    .build_main_cmd_args()
+                    == opts
+                )
 
         class TestOverrideValues:
             def test_unset_value_alone(self):
@@ -767,12 +857,9 @@ class TestMainCLIGit:
                 only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
                 """
                 git = CLISimpleGitCommand(opts=["--no-pager"])
-                assert (
-                    git.git_opts_override(exec_path=Path("tmp"))
-                    .git_opts_override(exec_path=UNSET)
-                    .build_main_cmd_args()
-                    == ["--no-pager"]
-                )
+                assert git.git_opts_override(exec_path=Path("tmp")).git_opts_override(
+                    exec_path=UNSET
+                ).build_main_cmd_args() == ["--no-pager"]
 
             def test_override_conflicting_value_alone(self):
                 """
@@ -796,9 +883,12 @@ class TestMainCLIGit:
                 opts = ["--no-pager"]
                 git = CLISimpleGitCommand(opts=["--no-pager"], prefer_cli=prefer_cli)
                 opts = _adjust_opts(opts, prefer_cli, ["-C", str(Path("."))])
-                assert git.git_opts_override(
-                    exec_path=Path("tmp"), C=[Path()]
-                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == opts
+                assert (
+                    git.git_opts_override(exec_path=Path("tmp"), C=[Path()])
+                    .git_opts_override(exec_path=UNSET)
+                    .build_main_cmd_args()
+                    == opts
+                )
 
             @pytest.mark.parametrize("prefer_cli", [True, False])
             def test_override_conflicting_value_defined_with_others(self, prefer_cli):
@@ -809,9 +899,12 @@ class TestMainCLIGit:
                 opts = ["--exec-path", str(Path("tmp", "exec"))]
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                 opts = _adjust_opts(opts, prefer_cli, ["-C", str(Path("."))])
-                assert git.git_opts_override(
-                    exec_path=Path("tmp"), C=[Path()]
-                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == opts
+                assert (
+                    git.git_opts_override(exec_path=Path("tmp"), C=[Path()])
+                    .git_opts_override(exec_path=UNSET)
+                    .build_main_cmd_args()
+                    == opts
+                )
 
             class TestMultipleCalls:
                 def test_unset_value_on_last_call(self):
@@ -923,7 +1016,13 @@ class TestMainCLIGit:
                         ({"foo.bar": None}, ["-c", "foo.bar"]),
                         # Mixed values
                         (
-                            {"a.b": "x", "c.d": "", "e.f": True, "g.h": False, "i.j": None},
+                            {
+                                "a.b": "x",
+                                "c.d": "",
+                                "e.f": True,
+                                "g.h": False,
+                                "i.j": None,
+                            },
                             [
                                 "-c",
                                 "a.b=x",
@@ -946,7 +1045,10 @@ class TestMainCLIGit:
                         # Missing key
                         ({}, []),
                         # UNSET should remove the key
-                        ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+                        (
+                            {"foo.bar": "value", "bar.baz": UNSET},
+                            ["-c", "foo.bar=value"],
+                        ),
                         # All keys are unset
                         ({"foo.bar": UNSET}, []),
                         # Mixed unset, true, false
@@ -960,16 +1062,17 @@ class TestMainCLIGit:
                     git = SimpleGitCommand().git_opts_override(c=input_dict)
                     assert git._main_cmd_small_c_args() == expected
 
-
     class TestEnvOverrides:
         class TestSupplied:
             class TestSameCall:
                 @pytest.mark.parametrize("prefer_cli", [True, False])
                 def test_one_supplied(self, prefer_cli):
-                    git = CLISimpleGitCommand(envs=dict(GIT_AUTHOR_NAME="ss"), prefer_cli=prefer_cli)
+                    git = CLISimpleGitCommand(
+                        envs=dict(GIT_AUTHOR_NAME="ss"), prefer_cli=prefer_cli
+                    )
                     assert git.git_envs_override(GIT_TRACE=True).build_git_envs() == {
                         "GIT_AUTHOR_NAME": "ss",
-                        "GIT_TRACE": "True"
+                        "GIT_TRACE": "True",
                     }
 
                 def test_multiple_supplied(self):
@@ -1033,7 +1136,9 @@ class TestMainCLIGit:
 
             def test_multiple_supplied(self):
                 git = SimpleGitCommand()
-                assert git.git_envs_override(GIT_SSH=Path("/tmp/SSH")).git_envs_override(
+                assert git.git_envs_override(
+                    GIT_SSH=Path("/tmp/SSH")
+                ).git_envs_override(
                     GIT_TERMINAL_PROMPT=1, GIT_NO_REPLACE_OBJECTS=True
                 ).git_envs_override(
                     GIT_ALTERNATE_OBJECT_DIRECTORIES=Path("/tmp/alter")
@@ -1047,11 +1152,15 @@ class TestMainCLIGit:
             class TestMainOptsMixed:
                 def test_one_supplied(self):
                     git = SimpleGitCommand()
-                    assert git.git_envs_override().git_opts_override().git_envs_override(
-                        GIT_TRACE_SETUP=2
-                    ).git_envs_override().git_opts_override(
-                        noglob_pathspecs=True, icase_pathspecs=False
-                    ).build_git_envs() == {"GIT_TRACE_SETUP": "2"}
+                    assert (
+                        git.git_envs_override()
+                        .git_opts_override()
+                        .git_envs_override(GIT_TRACE_SETUP=2)
+                        .git_envs_override()
+                        .git_opts_override(noglob_pathspecs=True, icase_pathspecs=False)
+                        .build_git_envs()
+                        == {"GIT_TRACE_SETUP": "2"}
+                    )
 
                 def test_one_supplied_more_calls(self):
                     git = SimpleGitCommand()
@@ -1061,13 +1170,18 @@ class TestMainCLIGit:
                         GIT_ADVICE=False
                     ).git_opts_override(
                         noglob_pathspecs=True, icase_pathspecs=False
-                    ).build_git_envs() == {"GIT_TRACE_SETUP": "2", "GIT_ADVICE": "False"}
+                    ).build_git_envs() == {
+                        "GIT_TRACE_SETUP": "2",
+                        "GIT_ADVICE": "False",
+                    }
 
                 def test_multiple_supplied(self):
                     git = SimpleGitCommand()
                     assert git.git_envs_override(
                         GIT_SSH=Path("/tmp/SSH")
-                    ).git_opts_override(exec_path=Path("/tmp/git-dir")).git_envs_override(
+                    ).git_opts_override(
+                        exec_path=Path("/tmp/git-dir")
+                    ).git_envs_override(
                         GIT_TERMINAL_PROMPT=1, GIT_NO_REPLACE_OBJECTS=True
                     ).git_envs_override(
                         GIT_ALTERNATE_OBJECT_DIRECTORIES=Path("/tmp/alter")
@@ -1213,7 +1327,13 @@ class TestMainCLIGit:
                         ({"foo.bar": None}, ["-c", "foo.bar"]),
                         # Mixed values
                         (
-                            {"a.b": "x", "c.d": "", "e.f": True, "g.h": False, "i.j": None},
+                            {
+                                "a.b": "x",
+                                "c.d": "",
+                                "e.f": True,
+                                "g.h": False,
+                                "i.j": None,
+                            },
                             [
                                 "-c",
                                 "a.b=x",
@@ -1236,7 +1356,10 @@ class TestMainCLIGit:
                         # Missing key
                         ({}, []),
                         # UNSET should remove the key
-                        ({"foo.bar": "value", "bar.baz": UNSET}, ["-c", "foo.bar=value"]),
+                        (
+                            {"foo.bar": "value", "bar.baz": UNSET},
+                            ["-c", "foo.bar=value"],
+                        ),
                         # All keys are unset
                         ({"foo.bar": UNSET}, []),
                         # Mixed unset, true, false
@@ -1249,7 +1372,6 @@ class TestMainCLIGit:
                 def test_main_cmd_c_args(self, input_dict, expected):
                     git = SimpleGitCommand().git_opts_override(c=input_dict)
                     assert git._main_cmd_small_c_args() == expected
-
 
     class TestOptsEnvMixedOverrides:
         class TestNoOverrides:
@@ -1351,8 +1473,12 @@ class TestMainCLIGit:
                 main_o_git = git.git_opts_override(
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
-                assert git._env_vars == {}  # overriding opts didn't override envs in parent
-                assert main_o_git._env_vars == {}  # overriding opts didn't override envs
+                assert (
+                    git._env_vars == {}
+                )  # overriding opts didn't override envs in parent
+                assert (
+                    main_o_git._env_vars == {}
+                )  # overriding opts didn't override envs
 
 
 class TestLsTreeSubcmd:
