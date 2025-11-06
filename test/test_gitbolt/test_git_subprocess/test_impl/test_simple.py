@@ -664,7 +664,7 @@ class TestMainCLIGit:
         ])
         def test_opts(self, opts):
             git = CLISimpleGitCommand(opts=opts)
-            opts = opts or []   # just for envs=None case
+            opts = opts or []   # just for opts=None case
             assert git.build_main_cmd_args() == opts
 
         @pytest.mark.parametrize("envs", [
