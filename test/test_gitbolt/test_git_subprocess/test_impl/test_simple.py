@@ -640,6 +640,16 @@ class TestMainCLIGit:
     """
     Test for ``CLISimpleGitCommand``.
     """
+    @pytest.mark.parametrize("inouts", [
+        [],
+        ["--no-replace-objects"],
+        ["--paginate", "--git-dir", ".", "--no-replace-objects"],
+        ["--"]
+    ])
+    def test_ctor_call(self, inouts):
+        git = CLISimpleGitCommand(opts=inouts)
+        assert inouts == git.build_main_cmd_args()
+
     class TestNoArgCtorCall:
         def test_main_cmd_args(self):
             git = CLISimpleGitCommand()
