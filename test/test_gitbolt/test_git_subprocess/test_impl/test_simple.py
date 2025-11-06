@@ -643,17 +643,21 @@ class TestMainCLIGit:
     class TestMainCmdOverrides:
         class TestSupplied:
             class TestSameCall:
+                def test_none_supplied(self):
+                    git = CLISimpleGitCommand()
+                    assert [] == git.build_main_cmd_args()
+
+                def test_empty_supplied(self):
+                    git = CLISimpleGitCommand(opts=[])
+                    assert [] == git.build_main_cmd_args()
+
                 def test_one_supplied(self):
-                    git = SimpleGitCommand()
-                    assert ["--no-replace-objects"] == git.git_opts_override(
-                        no_replace_objects=True
-                    ).build_main_cmd_args()
+                    git = CLISimpleGitCommand(opts=["--no-replace-objects"])
+                    assert ["--no-replace-objects"] == git.build_main_cmd_args()
 
                 def test_multiple_supplied(self):
-                    git = SimpleGitCommand()
-                    assert git.git_opts_override(
-                        no_replace_objects=True, git_dir=Path(), paginate=True
-                    ).build_main_cmd_args() == [
+                    git = CLISimpleGitCommand(opts=["--paginate", "--git-dir", ".", "--no-replace-objects"])
+                    assert git.build_main_cmd_args() == [
                         "--paginate",
                         "--git-dir",
                         ".",
