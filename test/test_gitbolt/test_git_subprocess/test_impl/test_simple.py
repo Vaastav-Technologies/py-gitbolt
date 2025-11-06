@@ -655,6 +655,18 @@ class TestMainCLIGit:
             git = CLISimpleGitCommand(opts=opts)
             assert opts == git.build_main_cmd_args()
 
+        @pytest.mark.parametrize("envs", [
+            None,
+            {},
+            {"GIT_AUTHOR_NAME": "ss"},
+            {"GIT_EDITOR": "vi", "GIT_SSH": "/ssh/home/.ssh", "GIT_TRACE": "1"},
+            {"GIT_TERMINAL_PROMPT": "0", "GNUPGHOME": "/tmp/path"},
+        ])
+        def test_envs(self, envs: dict[str, str]):
+            git = CLISimpleGitCommand(envs=envs)
+            envs = envs or {}   # just for envs=None case
+            assert git.build_git_envs() == envs
+
     class TestNoArgCtorCall:
         def test_main_cmd_args(self):
             git = CLISimpleGitCommand()
