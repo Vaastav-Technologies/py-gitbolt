@@ -706,16 +706,26 @@ class TestMainCLIGit:
             ["--paginate", "--git-dir", ".", "--no-replace-objects"],
             ["-c", "p1=v1", "-c", "p2=v2"]
         ])
+        @pytest.mark.parametrize("prefer_cli", [True, False])
         class TestSingleCall:
-            def test_single_supplied(self, opts: list[str]):
-                git = CLISimpleGitCommand(opts=opts.copy()).git_opts_override(C=[Path()])
-                opts.extend(["-C", str(Path())])
+            def test_single_supplied(self, opts: list[str], prefer_cli: bool):
+                git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli).git_opts_override(C=[Path()])
+                overriding_opts = ["-C", str(Path())]
+                if prefer_cli:
+                    opts = overriding_opts + opts
+                else:
+                    opts.extend(overriding_opts)
                 assert git.build_main_cmd_args() == opts
 
-            def test_multiple_supplied(self, opts: list[str]):
-                git = CLISimpleGitCommand(opts=opts.copy()).git_opts_override(namespace="n1", exec_path=Path(),
+            def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
+                git = CLISimpleGitCommand(opts=opts.copy(),
+                                          prefer_cli=prefer_cli).git_opts_override(namespace="n1", exec_path=Path(),
                                                                                 c=dict(p3="v3", p4="v4v5"))
-                opts.extend(['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1'])
+                overriding_opts = ['-c', 'p3=v3', '-c', 'p4=v4v5', '--exec-path', '.', '--namespace', 'n1']
+                if prefer_cli:
+                    opts = overriding_opts + opts
+                else:
+                    opts.extend(overriding_opts)
                 assert git.build_main_cmd_args() == opts
 
         class TestMultipleCalls:
