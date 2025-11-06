@@ -765,22 +765,52 @@ class TestMainCLIGit:
                 """
                 only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
                 """
-                git = SimpleGitCommand()
+                git = CLISimpleGitCommand(opts=["--no-pager"])
                 assert (
                     git.git_opts_override(exec_path=Path("tmp"))
                     .git_opts_override(exec_path=UNSET)
                     .build_main_cmd_args()
-                    == []
+                    == ["--no-pager"]
                 )
 
-            def test_unset_value_defined_with_others(self):
+            def test_override_conflicting_value_alone(self):
+                """
+                only --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call
+                but is set from before in the ctor.
+                """
+                opts = ["--exec-path", str(Path("tmp", "exec"))]
+                git = CLISimpleGitCommand(opts=opts.copy())
+                assert (
+                    git.git_opts_override(exec_path=Path("tmp"))
+                    .git_opts_override(exec_path=UNSET)
+                    .build_main_cmd_args()
+                    == opts
+                )
+
+            @pytest.mark.parametrize("prefer_cli", [True, False])
+            def test_unset_value_defined_with_others(self, prefer_cli):
                 """
                 -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call.
                 """
-                git = SimpleGitCommand()
+                opts = ["--no-pager"]
+                git = CLISimpleGitCommand(opts=["--no-pager"], prefer_cli=prefer_cli)
+                opts = _adjust_opts(opts, prefer_cli, ["-C", str(Path("."))])
                 assert git.git_opts_override(
                     exec_path=Path("tmp"), C=[Path()]
-                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == ["-C", "."]
+                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == opts
+
+            @pytest.mark.parametrize("prefer_cli", [True, False])
+            def test_override_conflicting_value_defined_with_others(self, prefer_cli):
+                """
+                -C and --exec-path is set in first ``git_opts_override()`` call and is unset in next ``git_opts_override()`` call
+                but is set from before in the ctor.
+                """
+                opts = ["--exec-path", str(Path("tmp", "exec"))]
+                git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
+                opts = _adjust_opts(opts, prefer_cli, ["-C", str(Path("."))])
+                assert git.git_opts_override(
+                    exec_path=Path("tmp"), C=[Path()]
+                ).git_opts_override(exec_path=UNSET).build_main_cmd_args() == opts
 
             class TestMultipleCalls:
                 def test_unset_value_on_last_call(self):
