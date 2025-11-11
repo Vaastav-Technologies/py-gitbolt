@@ -244,7 +244,7 @@ class Version(GitSubCommand, Protocol):
             ...
 
     @abstractmethod
-    def version(self, build_options: bool = False) -> str:
+    def version(self, build_options: bool = False) -> VersionInfo:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.
@@ -290,7 +290,7 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
 
     @property
-    def version(self) -> str:
+    def version(self) -> Version.VersionInfo:
         """
         :return: current git version.
         """
