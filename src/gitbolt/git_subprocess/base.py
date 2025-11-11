@@ -10,12 +10,14 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import override, Protocol, Unpack, Self, overload, Literal, Any
+from typing import override, Protocol, Unpack, Self, overload, Literal, Any, NamedTuple
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 from vt.utils.commons.commons.op import RootDirOp
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from gitbolt.exceptions import GitExitingException
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.git_subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
@@ -324,7 +326,47 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):
-    pass
+
+    class VersionInfoForCmd(Version.VersionInfo):
+
+        def __init__(self, rosetta: str):
+            self.rosetta = rosetta
+            self._cache = NamedTuple("VersionInfoCache", [("version", str | None),
+                                                          ("semver", tuple[str, ...] | None),
+                                                          ("build_options", dict[str, str] | None)])
+            self._cache.version = None
+            self._cache.build_options = None
+            self._cache.semver = None
+
+        def str_version(self) -> str:
+            if self._cache.version is not None:
+                return self._cache.version
+            v_str = self.rosetta.splitlines()[0]
+            self._cache.version = v_str
+            return v_str
+
+        def semver(self) -> tuple:
+            if self._cache.semver is not None:
+                return self._cache.semver
+            t_ver = self.str_version().split()[-1].split(".")
+            return tuple(t_ver)
+
+        def build_options(self) -> dict[str, str]:
+            if self._cache.build_options is not None:
+                return self._cache.build_options
+            if not self.rosetta.splitlines()[1:]:
+                errmsg = "Unable to populate build_options as possibly --build-options switch wasn't used."
+                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+
+            self._cache.build_options = {}
+            for b_str in self.rosetta.splitlines()[1:]:
+                b_k, b_v = b_str.split(": ")
+                self._cache.build_options[b_k] = b_v
+            return self._cache.build_options
+
+        @override
+        def __str__(self):
+            return self.rosetta
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
