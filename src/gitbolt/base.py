@@ -230,6 +230,19 @@ class Version(GitSubCommand, Protocol):
     Interface for ``git version`` command.
     """
 
+    class VersionInfo:
+        @abstractmethod
+        def str_version(self) -> str:
+            ...
+
+        @abstractmethod
+        def semver(self) -> tuple:
+            ...
+
+        @abstractmethod
+        def build_options(self) -> dict[str, str]:
+            ...
+
     @abstractmethod
     def version(self, build_options: bool = False) -> str:
         """
