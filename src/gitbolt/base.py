@@ -232,7 +232,7 @@ class Version(GitSubCommand, Protocol):
 
     class VersionInfo:
         @abstractmethod
-        def str_version(self) -> str:
+        def version(self) -> str:
             ...
 
         @abstractmethod

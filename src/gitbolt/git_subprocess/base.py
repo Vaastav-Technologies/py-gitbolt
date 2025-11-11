@@ -338,7 +338,7 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             self._cache.build_options = None
             self._cache.semver = None
 
-        def str_version(self) -> str:
+        def version(self) -> str:
             if self._cache.version is not None:
                 return self._cache.version
             v_str = self.rosetta.splitlines()[0]
@@ -348,7 +348,7 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
         def semver(self) -> tuple:
             if self._cache.semver is not None:
                 return self._cache.semver
-            t_ver = self.str_version().split()[-1].split(".")
+            t_ver = self.version().split()[-1].split(".")
             return tuple(t_ver)
 
         def build_options(self) -> dict[str, str]:

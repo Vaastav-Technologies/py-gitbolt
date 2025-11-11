@@ -1562,22 +1562,22 @@ class TestLsTreeSubcmd:
 
 def test_version():
     git = SimpleGitCommand()
-    assert "git version 2" in git.version.str_version()
+    assert "git version 2" in git.version.version()
 
 
 def test_version_build_options():
     git = SimpleGitCommand()
     version_build_info = git.version_subcmd.version(build_options=True)
-    assert "git version 2" in version_build_info
-    assert "cpu: " in version_build_info
-    assert "shell-path: " in version_build_info
+    assert "git version 2" in version_build_info.version()
+    assert "cpu: " in version_build_info.build_options()
+    assert "shell-path: " in version_build_info.build_options()
     git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
     ano_build_info = git.version_subcmd.git_opts_override(namespace="suhas").version(
         build_options=True
     )
-    assert "git version 2" in ano_build_info
-    assert "cpu: " in ano_build_info
-    assert "shell-path: " in ano_build_info
+    assert "git version 2" in ano_build_info.version()
+    assert "cpu: " in ano_build_info.build_options()
+    assert "shell-path: " in ano_build_info.build_options()
 
 
 class TestAddSubcmd:
