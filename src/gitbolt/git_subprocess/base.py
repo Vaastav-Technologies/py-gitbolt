@@ -247,7 +247,6 @@ class GitCommand(Git, ABC):
         return self._get_path(html_path_str)
 
     @override
-    @property
     def info_path(self) -> Path:
         info_path_str = "--info-path"
         return self._get_path(info_path_str)
