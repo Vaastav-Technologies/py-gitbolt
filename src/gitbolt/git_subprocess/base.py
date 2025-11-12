@@ -242,7 +242,6 @@ class GitCommand(Git, ABC):
     # endregion
 
     @override
-    @property
     def html_path(self) -> Path:
         html_path_str = "--html-path"
         return self._get_path(html_path_str)
