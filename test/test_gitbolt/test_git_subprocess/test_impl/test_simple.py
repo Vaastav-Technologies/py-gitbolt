@@ -1564,6 +1564,10 @@ def test_version():
     git = SimpleGitCommand()
     assert "git version 2" in git.version.version()
 
+def test_version_build_info():
+    git = SimpleGitCommand()
+    git.version_subcmd.version(build_options=True).build_options()
+
 
 def test_version_build_options():
     git = SimpleGitCommand()

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override, Literal
+from typing import override, Literal, overload
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -44,6 +44,15 @@ class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
 
 
 class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
+
+    @overload
+    def version(self) -> Version.VersionInfo:
+        ...
+
+    @overload
+    def version(self, build_options: Literal[True]) -> Version.VersionWithBuildInfo:
+        ...
+
     @override
     def version(self, build_options: Literal[True, False] = False) -> Version.VersionInfo | Version.VersionWithBuildInfo:
         self._require_valid_args(build_options)
