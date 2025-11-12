@@ -1562,7 +1562,7 @@ class TestLsTreeSubcmd:
 
 def test_version():
     git = SimpleGitCommand()
-    assert "git version 2" in git.version.version()
+    assert "git version 2" in git.version().version()
 
 def test_version_build_info():
     git = SimpleGitCommand()

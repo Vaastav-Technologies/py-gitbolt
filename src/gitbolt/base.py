@@ -301,7 +301,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
 
-    @property
     def version(self) -> Version.VersionInfo:
         """
         :return: current git version.
