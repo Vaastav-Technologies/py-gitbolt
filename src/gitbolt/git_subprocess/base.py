@@ -330,15 +330,16 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
     class VersionInfoForCmd(Version.VersionInfo):
 
+        class Cache:
+            def __init__(self):
+                self.version: str | None = None
+                self.semver: tuple[str, ...] | None = None
+                self.build_options: dict[str, str] | None = None
+
         def __init__(self, rosetta_supplier: Callable[[], str]):
             self.rosetta_supplier = rosetta_supplier
             self.rosetta: str | None = None
-            self._cache = NamedTuple("VersionInfoCache", [("version", str | None),
-                                                          ("semver", tuple[str, ...] | None),
-                                                          ("build_options", dict[str, str] | None)])
-            self._cache.version = None
-            self._cache.build_options = None
-            self._cache.semver = None
+            self._cache = VersionCommand.VersionInfoForCmd.Cache()
 
         def version(self) -> str:
             if self.rosetta is None:
