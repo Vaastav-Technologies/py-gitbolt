@@ -260,7 +260,6 @@ class GitCommand(Git, ABC):
         return self._get_path(man_path_str)
 
     @override
-    @property
     def exec_path(self) -> Path:
         exec_path_str = "--exec-path"
         return self._get_path(exec_path_str)

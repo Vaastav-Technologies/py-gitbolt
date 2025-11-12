@@ -307,7 +307,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         return self.version_subcmd.version()
 
-    @property
     @abstractmethod
     def exec_path(self) -> Path:
         """

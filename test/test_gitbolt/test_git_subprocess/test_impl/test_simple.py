@@ -17,12 +17,12 @@ from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCom
 
 def test_exec_path():
     git = SimpleGitCommand()
-    assert isinstance(git.exec_path, Path)
+    assert isinstance(git.exec_path(), Path)
 
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
-    assert git.git_opts_override(exec_path=None).exec_path is not None
+    assert git.git_opts_override(exec_path=None).exec_path() is not None
 
 
 @pytest.mark.parametrize("git", [SimpleGitCommand(), CLISimpleGitCommand()])
