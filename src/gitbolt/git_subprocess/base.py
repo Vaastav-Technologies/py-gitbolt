@@ -252,7 +252,6 @@ class GitCommand(Git, ABC):
         return self._get_path(info_path_str)
 
     @override
-    @property
     def man_path(self) -> Path:
         man_path_str = "--man-path"
         return self._get_path(man_path_str)
