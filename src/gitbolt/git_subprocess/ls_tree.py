@@ -122,6 +122,12 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> builder.build("HEAD", format_="%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)")
         ['ls-tree', '--format', '%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)', 'HEAD']
 
+        >>> builder.build("HEAD", format_="'%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)'")
+        ['ls-tree', '--format', "'%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)'", 'HEAD']
+
+        >>> builder.build("HEAD", format_='"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"')
+        ['ls-tree', '--format', '"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"', 'HEAD']
+
         * With paths::
 
         >>> builder.build("HEAD", path=["src", "README.md"])
