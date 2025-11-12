@@ -52,7 +52,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         env_vars = self.underlying_git.build_git_envs()
         if build_options:
             sub_cmd_args.append("--build-options")
-        rosetta = self.underlying_git.runner.run_git_command(
+        rosetta_supplier = lambda : self.underlying_git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             check=True,
@@ -60,7 +60,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
             capture_output=True,
             env=env_vars,
         ).stdout.strip()
-        return VersionCommand.VersionInfoForCmd(rosetta)
+        return VersionCommand.VersionInfoForCmd(rosetta_supplier)
 
     def clone(self) -> "VersionCommandImpl":
         return VersionCommandImpl(self.underlying_git)

@@ -8,6 +8,7 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
+from collections.abc import Callable
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any, NamedTuple
@@ -329,8 +330,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
     class VersionInfoForCmd(Version.VersionInfo):
 
-        def __init__(self, rosetta: str):
-            self.rosetta = rosetta
+        def __init__(self, rosetta_supplier: Callable[[], str]):
+            self.rosetta_supplier = rosetta_supplier
+            self.rosetta: str | None = None
             self._cache = NamedTuple("VersionInfoCache", [("version", str | None),
                                                           ("semver", tuple[str, ...] | None),
                                                           ("build_options", dict[str, str] | None)])
@@ -339,6 +341,8 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             self._cache.semver = None
 
         def version(self) -> str:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
             if self._cache.version is not None:
                 return self._cache.version
             v_str = self.rosetta.splitlines()[0]
@@ -352,6 +356,8 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             return tuple(t_ver)
 
         def build_options(self) -> dict[str, str]:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
             if self._cache.build_options is not None:
                 return self._cache.build_options
             if not self.rosetta.splitlines()[1:]:
@@ -366,6 +372,8 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
         @override
         def __str__(self):
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
             return self.rosetta
 
 
