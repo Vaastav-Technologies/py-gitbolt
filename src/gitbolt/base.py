@@ -239,12 +239,24 @@ class Version(GitSubCommand, Protocol):
         def semver(self) -> tuple:
             ...
 
+    class VersionWithBuildInfo(VersionInfo):
+
         @abstractmethod
         def build_options(self) -> dict[str, str]:
             ...
 
+    @overload
     @abstractmethod
-    def version(self, build_options: bool = False) -> VersionInfo:
+    def version(self) -> VersionInfo:
+        ...
+
+    @overload
+    @abstractmethod
+    def version(self, build_options: Literal[True]) -> VersionWithBuildInfo:
+        ...
+
+    @abstractmethod
+    def version(self, build_options: Literal[True, False] = False) -> VersionInfo | VersionWithBuildInfo:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.

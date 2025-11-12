@@ -328,19 +328,20 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
-    class VersionInfoForCmd(Version.VersionInfo):
+    class _Cache:
+        def __init__(self):
+            self.version: str | None = None
+            self.semver: tuple[str, ...] | None = None
+            self.build_options: dict[str, str] | None = None
 
-        class Cache:
-            def __init__(self):
-                self.version: str | None = None
-                self.semver: tuple[str, ...] | None = None
-                self.build_options: dict[str, str] | None = None
+    class VersionInfoForCmd(Version.VersionInfo):
 
         def __init__(self, rosetta_supplier: Callable[[], str]):
             self.rosetta_supplier = rosetta_supplier
             self.rosetta: str | None = None
-            self._cache = VersionCommand.VersionInfoForCmd.Cache()
+            self._cache = VersionCommand._Cache()
 
+        @override
         def version(self) -> str:
             if self.rosetta is None:
                 self.rosetta = self.rosetta_supplier()
@@ -350,12 +351,25 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             self._cache.version = v_str
             return v_str
 
+        @override
         def semver(self) -> tuple:
             if self._cache.semver is not None:
                 return self._cache.semver
             t_ver = self.version().split()[-1].split(".")
             return tuple(t_ver)
 
+        @override
+        def __str__(self):
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            return self.rosetta
+
+    class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
+
+        def __init__(self, rosetta_supplier: Callable[[], str]):
+            super().__init__(rosetta_supplier)
+
+        @override
         def build_options(self) -> dict[str, str]:
             if self.rosetta is None:
                 self.rosetta = self.rosetta_supplier()
@@ -370,12 +384,6 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
                 b_k, b_v = b_str.split(": ")
                 self._cache.build_options[b_k] = b_v
             return self._cache.build_options
-
-        @override
-        def __str__(self):
-            if self.rosetta is None:
-                self.rosetta = self.rosetta_supplier()
-            return self.rosetta
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):

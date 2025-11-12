@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override
+from typing import override, Literal
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -45,7 +45,7 @@ class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
 
 class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
     @override
-    def version(self, build_options: bool = False) -> Version.VersionInfo:
+    def version(self, build_options: Literal[True, False] = False) -> Version.VersionInfo | Version.VersionWithBuildInfo:
         self._require_valid_args(build_options)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
@@ -60,6 +60,8 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
             capture_output=True,
             env=env_vars,
         ).stdout.strip()
+        if build_options:
+            return VersionCommand.VersionWithBuildInfoForCmd(rosetta_supplier)
         return VersionCommand.VersionInfoForCmd(rosetta_supplier)
 
     def clone(self) -> "VersionCommandImpl":
