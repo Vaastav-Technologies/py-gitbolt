@@ -11,7 +11,7 @@ from abc import abstractmethod, ABC
 from collections.abc import Callable
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import override, Protocol, Unpack, Self, overload, Literal, Any, NamedTuple
+from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 from vt.utils.commons.commons.op import RootDirOp

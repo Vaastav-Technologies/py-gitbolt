@@ -61,14 +61,14 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         env_vars = self.underlying_git.build_git_envs()
         if build_options:
             sub_cmd_args.append("--build-options")
-        rosetta_supplier = lambda : self.underlying_git.runner.run_git_command(
+        def rosetta_supplier():
+            return self.underlying_git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             check=True,
             text=True,
             capture_output=True,
-            env=env_vars,
-        ).stdout.strip()
+            env=env_vars,).stdout.strip()
         if build_options:
             return VersionCommand.VersionWithBuildInfoForCmd(rosetta_supplier)
         return VersionCommand.VersionInfoForCmd(rosetta_supplier)
