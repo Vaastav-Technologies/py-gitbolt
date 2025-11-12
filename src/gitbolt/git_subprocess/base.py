@@ -330,9 +330,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
     class _Cache:
         def __init__(self):
-            self.version: str | None = None
-            self.semver: tuple[str, ...] | None = None
-            self.build_options: dict[str, str] | None = None
+            self.version = None
+            self.semver = None
+            self.build_options = None
 
     class VersionInfoForCmd(Version.VersionInfo):
 
