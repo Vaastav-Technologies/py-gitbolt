@@ -232,31 +232,27 @@ class Version(GitSubCommand, Protocol):
 
     class VersionInfo:
         @abstractmethod
-        def version(self) -> str:
-            ...
+        def version(self) -> str: ...
 
         @abstractmethod
-        def semver(self) -> tuple:
-            ...
+        def semver(self) -> tuple: ...
 
     class VersionWithBuildInfo(VersionInfo):
-
         @abstractmethod
-        def build_options(self) -> dict[str, str]:
-            ...
+        def build_options(self) -> dict[str, str]: ...
 
     @overload
     @abstractmethod
-    def version(self) -> VersionInfo:
-        ...
+    def version(self) -> VersionInfo: ...
 
     @overload
     @abstractmethod
-    def version(self, build_options: Literal[True]) -> VersionWithBuildInfo:
-        ...
+    def version(self, build_options: Literal[True]) -> VersionWithBuildInfo: ...
 
     @abstractmethod
-    def version(self, build_options: Literal[True, False] = False) -> VersionInfo | VersionWithBuildInfo:
+    def version(
+        self, build_options: Literal[True, False] = False
+    ) -> VersionInfo | VersionWithBuildInfo:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.

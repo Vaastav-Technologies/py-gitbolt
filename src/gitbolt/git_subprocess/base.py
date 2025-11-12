@@ -323,7 +323,6 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):
-
     class _Cache:
         def __init__(self):
             self.version = None
@@ -331,7 +330,6 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             self.build_options = None
 
     class VersionInfoForCmd(Version.VersionInfo):
-
         def __init__(self, rosetta_supplier: Callable[[], str]):
             self.rosetta_supplier = rosetta_supplier
             self.rosetta: str | None = None
@@ -361,7 +359,6 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             return self.rosetta
 
     class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
-
         def __init__(self, rosetta_supplier: Callable[[], str]):
             super().__init__(rosetta_supplier)
 
@@ -373,7 +370,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
                 return self._cache.build_options
             if not self.rosetta.splitlines()[1:]:
                 errmsg = "Unable to populate build_options as possibly --build-options switch wasn't used."
-                raise GitExitingException(errmsg, exit_code=ERR_INVALID_USAGE) from ValueError(errmsg)
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
 
             self._cache.build_options = {}
             for b_str in self.rosetta.splitlines()[1:]:
