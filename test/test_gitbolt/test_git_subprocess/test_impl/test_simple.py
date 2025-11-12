@@ -1497,6 +1497,21 @@ class TestLsTreeSubcmd:
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
         )
 
+    @pytest.mark.parametrize("fmt, res", [("%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)", "100644 blob 7c35e066a9001b24677ae572214d292cebc55979       6	a-file"),
+                                          ("%(objectmode) %(objecttype) %(objectname) %(objectsize)%x09%(path)", "100644 blob 7c35e066a9001b24677ae572214d292cebc55979 6	a-file"),
+                                          ("'%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)'", "'blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file'"),
+                                          ('"%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)"', '"blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file"')])
+    def test_ls_tree_custom_fmt(self, repo_local, fmt, res):
+        git = SimpleGitCommand(repo_local)
+        Path(repo_local, "a-file").write_text("a-file")
+        git.add_subcmd.add(".")
+        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked.run(
+            ["config", "--local", "user.email", "suhas@example.com"]
+        )
+        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        assert git.ls_tree_subcmd.ls_tree("HEAD", format_=fmt) == res
+
     class TestArgValidation:
         @pytest.mark.parametrize(
             "tree_ish",
