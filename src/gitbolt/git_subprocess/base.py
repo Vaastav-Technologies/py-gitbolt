@@ -359,8 +359,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             return self.rosetta
 
     class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
-        def __init__(self, rosetta_supplier: Callable[[], str]):
+        def __init__(self, rosetta_supplier: Callable[[], str], splitter_expr: str = ": "):
             super().__init__(rosetta_supplier)
+            self.splitter_expr = splitter_expr
 
         @override
         def build_options(self) -> dict[str, str]:
@@ -376,8 +377,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
             self._cache.build_options = {}
             for b_str in self.rosetta.splitlines()[1:]:
-                b_k, b_v = b_str.split(": ")
-                self._cache.build_options[b_k] = b_v
+                if self.splitter_expr in b_str:
+                    b_k, b_v = b_str.split(self.splitter_expr)
+                    self._cache.build_options[b_k] = b_v
             return self._cache.build_options
 
 
