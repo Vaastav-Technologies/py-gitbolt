@@ -34,7 +34,7 @@ def get_git(git_root_dir: Path = Path.cwd()) -> Git:
     >>> import subprocess
     >>> import gitbolt
     >>> git = gitbolt.get_git()
-    >>> assert git.version == subprocess.run(['git', 'version'], capture_output=True, text=True).stdout.strip()
+    >>> assert git.version().version() == subprocess.run(['git', 'version'], capture_output=True, text=True).stdout.strip()
 
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     """
