@@ -12,6 +12,7 @@ from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
 from gitbolt.exceptions import GitExitingException
+from gitbolt.git_subprocess.exceptions import GitCmdException
 from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 
 
@@ -1742,3 +1743,76 @@ class TestSubcommandsPersistence:
 
 
 # TODO: write exhaustive tests for unchecked subcmd
+
+
+class TestUncheckedSubcmd:
+    class TestCheck:
+        """
+        Test different combination of the ``check`` kwarg. All of these ``git log`` commands fails because repo has no
+        commits yet.
+        """
+
+        def test_fails_when_no_check_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(
+                GitCmdException,
+                match="fatal: your current branch 'master' does not have any commits yet",
+            ):
+                git.subcmd_unchecked.run(["log"])
+
+        def test_fails_on_check_true(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(
+                GitCmdException,
+                match="fatal: your current branch 'master' does not have any commits yet",
+            ):
+                git.subcmd_unchecked.run(["log"], check=True)
+
+        def test_no_fail_on_check_false(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            git.subcmd_unchecked.run(["log"], check=False)
+
+    class TestCaptureOutput:
+        """
+        Test different combinations of capture_output kwarg
+        """
+
+        @classmethod
+        def _prepare_repo(cls, git: SimpleGitCommand):
+            git.subcmd_unchecked.run(
+                ["commit", "--allow-empty", "-m", "initial commit"]
+            )
+
+        def test_captures_output_when_no_capture_output_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"]).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_captures_output_when_capture_output_true(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"], capture_output=True).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_no_output_captured_on_capture_output_false(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            assert (
+                git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
+            )
