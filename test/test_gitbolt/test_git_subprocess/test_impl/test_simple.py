@@ -12,6 +12,7 @@ from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
 from gitbolt.exceptions import GitExitingException
+from gitbolt.git_subprocess.exceptions import GitCmdException
 from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 
 
@@ -1742,3 +1743,23 @@ class TestSubcommandsPersistence:
 
 
 # TODO: write exhaustive tests for unchecked subcmd
+
+class TestUncheckedSubcmd:
+    class TestCheck:
+        """
+        Test different combination of the ``check`` kwarg. All of these ``git log`` commands fails because repo has no
+        commits yet.
+        """
+        def test_fails_when_no_check_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(GitCmdException, match="fatal: your current branch 'master' does not have any commits yet"):
+                git.subcmd_unchecked.run(["log"])
+
+        def test_fails_on_check_true(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(GitCmdException, match="fatal: your current branch 'master' does not have any commits yet"):
+                git.subcmd_unchecked.run(["log"], check=True)
+
+        def test_no_fail_on_check_false(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            git.subcmd_unchecked.run(["log"], check=False)
