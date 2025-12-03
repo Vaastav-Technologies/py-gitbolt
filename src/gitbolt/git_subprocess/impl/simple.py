@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override
+from typing import override, Literal, overload
 
 from vt.utils.commons.commons.op import RootDirOp
 
+from gitbolt.base import Version
 from gitbolt.add import AddArgsValidator
 from gitbolt.git_subprocess import (
     GitCommand,
@@ -43,22 +44,36 @@ class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
 
 
 class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
+    @overload
+    def version(self) -> Version.VersionInfo: ...
+
+    @overload
+    def version(self, build_options: Literal[True]) -> Version.VersionWithBuildInfo: ...
+
     @override
-    def version(self, build_options: bool = False) -> str:
+    def version(
+        self, build_options: Literal[True, False] = False
+    ) -> Version.VersionInfo | Version.VersionWithBuildInfo:
         self._require_valid_args(build_options)
         main_cmd_args = self.underlying_git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
         env_vars = self.underlying_git.build_git_envs()
         if build_options:
             sub_cmd_args.append("--build-options")
-        return self.underlying_git.runner.run_git_command(
-            main_cmd_args,
-            sub_cmd_args,
-            check=True,
-            text=True,
-            capture_output=True,
-            env=env_vars,
-        ).stdout.strip()
+
+        def rosetta_supplier():
+            return self.underlying_git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                env=env_vars,
+            ).stdout.strip()
+
+        if build_options:
+            return VersionCommand.VersionWithBuildInfoForCmd(rosetta_supplier)
+        return VersionCommand.VersionInfoForCmd(rosetta_supplier)
 
     def clone(self) -> "VersionCommandImpl":
         return VersionCommandImpl(self.underlying_git)

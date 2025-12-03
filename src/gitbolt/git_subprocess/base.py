@@ -8,14 +8,17 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
+from collections.abc import Callable
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 from vt.utils.commons.commons.op import RootDirOp
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from gitbolt.exceptions import GitExitingException
 from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.git_subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
@@ -239,25 +242,21 @@ class GitCommand(Git, ABC):
     # endregion
 
     @override
-    @property
     def html_path(self) -> Path:
         html_path_str = "--html-path"
         return self._get_path(html_path_str)
 
     @override
-    @property
     def info_path(self) -> Path:
         info_path_str = "--info-path"
         return self._get_path(info_path_str)
 
     @override
-    @property
     def man_path(self) -> Path:
         man_path_str = "--man-path"
         return self._get_path(man_path_str)
 
     @override
-    @property
     def exec_path(self) -> Path:
         exec_path_str = "--exec-path"
         return self._get_path(exec_path_str)
@@ -324,7 +323,62 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):
-    pass
+    class _Cache:
+        def __init__(self):
+            self.version = None
+            self.semver = None
+            self.build_options = None
+
+    class VersionInfoForCmd(Version.VersionInfo):
+        def __init__(self, rosetta_supplier: Callable[[], str]):
+            self.rosetta_supplier = rosetta_supplier
+            self.rosetta: str | None = None
+            self._cache = VersionCommand._Cache()
+
+        @override
+        def version(self) -> str:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            if self._cache.version is not None:
+                return self._cache.version
+            v_str = self.rosetta.splitlines()[0]
+            self._cache.version = v_str
+            return v_str
+
+        @override
+        def semver(self) -> tuple:
+            if self._cache.semver is not None:
+                return self._cache.semver
+            t_ver = self.version().split()[-1].split(".")
+            return tuple(t_ver)
+
+        @override
+        def __str__(self):
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            return self.rosetta
+
+    class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
+        def __init__(self, rosetta_supplier: Callable[[], str]):
+            super().__init__(rosetta_supplier)
+
+        @override
+        def build_options(self) -> dict[str, str]:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            if self._cache.build_options is not None:
+                return self._cache.build_options
+            if not self.rosetta.splitlines()[1:]:
+                errmsg = "Unable to populate build_options as possibly --build-options switch wasn't used."
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
+
+            self._cache.build_options = {}
+            for b_str in self.rosetta.splitlines()[1:]:
+                b_k, b_v = b_str.split(": ")
+                self._cache.build_options[b_k] = b_v
+            return self._cache.build_options
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):

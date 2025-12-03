@@ -108,9 +108,25 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         * With --format::
 
         >>> builder.build("HEAD", format_="%(objectname)")
-        ['ls-tree', '--format=%(objectname)', 'HEAD']
+        ['ls-tree', '--format', '%(objectname)', 'HEAD']
+
         >>> builder.build("HEAD", format_="")
-        ['ls-tree', '--format=', 'HEAD']
+        ['ls-tree', '--format', '', 'HEAD']
+
+        >>> builder.build("HEAD", format_="''")
+        ['ls-tree', '--format', "''", 'HEAD']
+
+        >>> builder.build("HEAD", format_='""')
+        ['ls-tree', '--format', '""', 'HEAD']
+
+        >>> builder.build("HEAD", format_="%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)")
+        ['ls-tree', '--format', '%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)', 'HEAD']
+
+        >>> builder.build("HEAD", format_="'%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)'")
+        ['ls-tree', '--format', "'%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)'", 'HEAD']
+
+        >>> builder.build("HEAD", format_='"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"')
+        ['ls-tree', '--format', '"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"', 'HEAD']
 
         * With paths::
 
@@ -140,7 +156,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         ...     format_="%(objectname) %(path)",
         ...     path=["dir1", "dir2/file.txt"]
         ... )
-        ['ls-tree', '-d', '-r', '-t', '-l', '-z', '--name-only', '--object-only', '--full-name', '--full-tree', '--abbrev=10', '--format=%(objectname) %(path)', 'HEAD', 'dir1', 'dir2/file.txt']
+        ['ls-tree', '-d', '-r', '-t', '-l', '-z', '--name-only', '--object-only', '--full-name', '--full-tree', '--abbrev=10', '--format', '%(objectname) %(path)', 'HEAD', 'dir1', 'dir2/file.txt']
 
         * Empty or falsy values, mostly will fail at validation::
 
@@ -344,11 +360,17 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().format_arg(None)
         []
         >>> IndividuallyOverridableLTCAB().format_arg('%(objectname)')
-        ['--format=%(objectname)']
-        >>> IndividuallyOverridableLTCAB().format_arg('')
-        ['--format=']
+        ['--format', '%(objectname)']
+        >>> IndividuallyOverridableLTCAB().format_arg('""')
+        ['--format', '""']
+        >>> IndividuallyOverridableLTCAB().format_arg("''")
+        ['--format', "''"]
+        >>> IndividuallyOverridableLTCAB().format_arg('%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)')
+        ['--format', '%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)']
+        >>> IndividuallyOverridableLTCAB().format_arg('"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"')
+        ['--format', '"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"']
         """
-        return [f"--format={_format}"] if _format is not None else []
+        return ["--format", _format] if _format is not None else []
 
     def tree_ish_arg(self, tree_ish: str) -> list[str]:
         """

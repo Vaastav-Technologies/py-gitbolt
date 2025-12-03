@@ -230,8 +230,29 @@ class Version(GitSubCommand, Protocol):
     Interface for ``git version`` command.
     """
 
+    class VersionInfo:
+        @abstractmethod
+        def version(self) -> str: ...
+
+        @abstractmethod
+        def semver(self) -> tuple: ...
+
+    class VersionWithBuildInfo(VersionInfo):
+        @abstractmethod
+        def build_options(self) -> dict[str, str]: ...
+
+    @overload
     @abstractmethod
-    def version(self, build_options: bool = False) -> str:
+    def version(self) -> VersionInfo: ...
+
+    @overload
+    @abstractmethod
+    def version(self, build_options: Literal[True]) -> VersionWithBuildInfo: ...
+
+    @abstractmethod
+    def version(
+        self, build_options: Literal[True, False] = False
+    ) -> VersionInfo | VersionWithBuildInfo:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.
@@ -276,14 +297,12 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
 
-    @property
-    def version(self) -> str:
+    def version(self) -> Version.VersionInfo:
         """
         :return: current git version.
         """
         return self.version_subcmd.version()
 
-    @property
     @abstractmethod
     def exec_path(self) -> Path:
         """
@@ -291,7 +310,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def html_path(self) -> Path:
         """
@@ -299,7 +317,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def info_path(self) -> Path:
         """
@@ -307,7 +324,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def man_path(self) -> Path:
         """

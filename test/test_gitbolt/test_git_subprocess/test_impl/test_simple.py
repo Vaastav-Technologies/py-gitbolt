@@ -17,12 +17,12 @@ from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCom
 
 def test_exec_path():
     git = SimpleGitCommand()
-    assert isinstance(git.exec_path, Path)
+    assert isinstance(git.exec_path(), Path)
 
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
-    assert git.git_opts_override(exec_path=None).exec_path is not None
+    assert git.git_opts_override(exec_path=None).exec_path() is not None
 
 
 @pytest.mark.parametrize("git", [SimpleGitCommand(), CLISimpleGitCommand()])
@@ -1497,6 +1497,38 @@ class TestLsTreeSubcmd:
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
         )
 
+    @pytest.mark.parametrize(
+        "fmt, res",
+        [
+            (
+                "%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)",
+                "100644 blob 7c35e066a9001b24677ae572214d292cebc55979       6	a-file",
+            ),
+            (
+                "%(objectmode) %(objecttype) %(objectname) %(objectsize)%x09%(path)",
+                "100644 blob 7c35e066a9001b24677ae572214d292cebc55979 6	a-file",
+            ),
+            (
+                "'%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)'",
+                "'blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file'",
+            ),
+            (
+                '"%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)"',
+                '"blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file"',
+            ),
+        ],
+    )
+    def test_ls_tree_custom_fmt(self, repo_local, fmt, res):
+        git = SimpleGitCommand(repo_local)
+        Path(repo_local, "a-file").write_text("a-file")
+        git.add_subcmd.add(".")
+        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked.run(
+            ["config", "--local", "user.email", "suhas@example.com"]
+        )
+        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        assert git.ls_tree_subcmd.ls_tree("HEAD", format_=fmt) == res
+
     class TestArgValidation:
         @pytest.mark.parametrize(
             "tree_ish",
@@ -1562,22 +1594,27 @@ class TestLsTreeSubcmd:
 
 def test_version():
     git = SimpleGitCommand()
-    assert "git version 2" in git.version
+    assert "git version 2" in git.version().version()
+
+
+def test_version_build_info():
+    git = SimpleGitCommand()
+    git.version_subcmd.version(build_options=True).build_options()
 
 
 def test_version_build_options():
     git = SimpleGitCommand()
     version_build_info = git.version_subcmd.version(build_options=True)
-    assert "git version 2" in version_build_info
-    assert "cpu: " in version_build_info
-    assert "shell-path: " in version_build_info
+    assert "git version 2" in version_build_info.version()
+    assert "cpu" in version_build_info.build_options()
+    assert "shell-path" in version_build_info.build_options()
     git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
     ano_build_info = git.version_subcmd.git_opts_override(namespace="suhas").version(
         build_options=True
     )
-    assert "git version 2" in ano_build_info
-    assert "cpu: " in ano_build_info
-    assert "shell-path: " in ano_build_info
+    assert "git version 2" in ano_build_info.version()
+    assert "cpu" in ano_build_info.build_options()
+    assert "shell-path" in ano_build_info.build_options()
 
 
 class TestAddSubcmd:
