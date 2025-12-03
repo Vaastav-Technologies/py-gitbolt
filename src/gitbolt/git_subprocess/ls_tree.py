@@ -370,7 +370,7 @@ class IndividuallyOverridableLTCAB(LsTreeCLIArgsBuilder):
         >>> IndividuallyOverridableLTCAB().format_arg('"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"')
         ['--format', '"%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)"']
         """
-        return ['--format', _format] if _format is not None else []
+        return ["--format", _format] if _format is not None else []
 
     def tree_ish_arg(self, tree_ish: str) -> list[str]:
         """
