@@ -359,7 +359,9 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
             return self.rosetta
 
     class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
-        def __init__(self, rosetta_supplier: Callable[[], str], splitter_expr: str = ": "):
+        def __init__(
+            self, rosetta_supplier: Callable[[], str], splitter_expr: str = ": "
+        ):
             super().__init__(rosetta_supplier)
             self.splitter_expr = splitter_expr
 
