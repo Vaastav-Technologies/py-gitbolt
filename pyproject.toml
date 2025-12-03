@@ -1,6 +1,6 @@
 [project]
 name = "gitbolt"
-version = "0.0.0dev11"
+version = "0.0.0dev12"
 description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
