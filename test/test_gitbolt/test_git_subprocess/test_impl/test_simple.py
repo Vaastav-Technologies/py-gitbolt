@@ -1763,3 +1763,31 @@ class TestUncheckedSubcmd:
         def test_no_fail_on_check_false(self, repo_local):
             git = SimpleGitCommand(repo_local)
             git.subcmd_unchecked.run(["log"], check=False)
+
+    class TestCaptureOutput:
+        """
+        Test different combinations of capture_output kwarg
+        """
+        @classmethod
+        def _prepare_repo(cls, git: SimpleGitCommand):
+            git.subcmd_unchecked.run(["commit", "--allow-empty", "-m", "initial commit"])
+
+        def test_captures_output_when_no_capture_output_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(GIT_AUTHOR_NAME="ss", GIT_AUTHOR_EMAIL="ss@ss.ss",
+                                                                 GIT_COMMITTER_NAME="ss", GIT_COMMITTER_EMAIL="ss@ss.ss")
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"]).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_captures_output_when_capture_output_true(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(GIT_AUTHOR_NAME="ss", GIT_AUTHOR_EMAIL="ss@ss.ss",
+                                                                 GIT_COMMITTER_NAME="ss", GIT_COMMITTER_EMAIL="ss@ss.ss")
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"], capture_output=True).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_no_output_captured_on_capture_output_false(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(GIT_AUTHOR_NAME="ss", GIT_AUTHOR_EMAIL="ss@ss.ss",
+                                                                 GIT_COMMITTER_NAME="ss", GIT_COMMITTER_EMAIL="ss@ss.ss")
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            assert git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
