@@ -40,7 +40,7 @@ class GitCommand(Git, ABC):
         """
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
-        self._env_vars: GitEnvVars = {}
+        self._env_vars: GitEnvVars | None = None
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -216,7 +216,7 @@ class GitCommand(Git, ABC):
     # endregion
 
     # region build_git_envs
-    def build_git_envs(self) -> dict[str, str]:
+    def build_git_envs(self) -> dict[str, str] | None:
         """
         Terminal operation to build and return effective Git environment variables
         from the merged ``GitEnvVars`` object.
@@ -226,16 +226,22 @@ class GitCommand(Git, ABC):
 
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
-        env: dict[str, str] = {}
-        for key, val in self._env_vars.items():
-            if not_none_not_unset(val):
-                env[key] = str(val)
-        return env
+        if self._env_vars is None:
+            return None
+        else:
+            env: dict[str, str] = {}
+            for key, val in self._env_vars.items():
+                if not_none_not_unset(val):
+                    env[key] = str(val)
+            return env
 
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
         _git_cmd = self.clone()
-        _env_vars = merge_git_envs(overrides, self._env_vars)
+        if self._env_vars:
+            _env_vars = merge_git_envs(overrides, self._env_vars)
+        else:
+            _env_vars = overrides
         _git_cmd._env_vars = _env_vars
         return _git_cmd
 
@@ -582,7 +588,8 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         envs_vars = self.underlying_git.build_git_envs()
         another_supplied_env = subprocess_run_kwargs.pop("env", None)
         if another_supplied_env:
-            envs_vars.update(another_supplied_env)
+            if envs_vars is not None:
+                envs_vars.update(another_supplied_env)
         cwd = subprocess_run_kwargs.pop("cwd", self.root_dir)
         capture_output = subprocess_run_kwargs.pop("capture_output", True)
         check = subprocess_run_kwargs.pop("check", True)
