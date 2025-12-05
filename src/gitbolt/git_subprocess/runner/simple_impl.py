@@ -77,6 +77,7 @@ class SimpleGitCR(GitCommandRunner):
         text: Literal[True, False] = False,
         **subprocess_run_kwargs: Any,
     ) -> CompletedProcess[str] | CompletedProcess[bytes]:
+        print([GIT_CMD, *main_cmd_args, *subcommand_args])
         try:
             return subprocess.run(
                 [GIT_CMD, *main_cmd_args, *subcommand_args],
