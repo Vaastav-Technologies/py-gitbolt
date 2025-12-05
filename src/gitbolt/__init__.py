@@ -33,8 +33,9 @@ def get_git(git_root_dir: Path = Path.cwd()) -> Git:
     * Get git version:
 
     >>> import subprocess
+    >>> import pathlib
     >>> from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
-    >>> subprocess.run(["git", "version"], capture_output=True).stdout.strip()
+    >>> subprocess.run(["git", "version"], capture_output=True, cwd=pathlib.Path.cwd()).stdout.strip()
 
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     """
