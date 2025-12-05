@@ -711,7 +711,6 @@ class TestMainCLIGit:
         )
         def test_envs(self, envs: dict[str, str]):
             git = CLISimpleGitCommand(envs=envs)
-            envs = envs or {}  # just for envs=None case
             assert git.build_git_envs() == envs
 
         @pytest.mark.parametrize(
