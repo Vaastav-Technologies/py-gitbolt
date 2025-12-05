@@ -293,7 +293,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
         return super().build_main_cmd_args()
 
     @override
-    def build_git_envs(self) -> dict[str, str]:
+    def build_git_envs(self) -> dict[str, str] | None:
         if self._cmd_cli_envs:
             if self.prefer_cli:
                 return super().build_git_envs() | self._cmd_cli_envs

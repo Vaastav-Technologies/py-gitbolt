@@ -216,7 +216,7 @@ class GitCommand(Git, ABC):
     # endregion
 
     # region build_git_envs
-    def build_git_envs(self) -> dict[str, str]:
+    def build_git_envs(self) -> dict[str, str] | None:
         """
         Terminal operation to build and return effective Git environment variables
         from the merged ``GitEnvVars`` object.
@@ -226,11 +226,14 @@ class GitCommand(Git, ABC):
 
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
-        env: dict[str, str] = {}
-        for key, val in self._env_vars.items():
-            if not_none_not_unset(val):
-                env[key] = str(val)
-        return env
+        if self._env_vars:
+            env: dict[str, str] = {}
+            for key, val in self._env_vars.items():
+                if not_none_not_unset(val):
+                    env[key] = str(val)
+            return env
+        else:
+            return None
 
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
