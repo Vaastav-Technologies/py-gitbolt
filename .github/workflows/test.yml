@@ -2,8 +2,7 @@ name: 🔧 test
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: [5-failing-tests-on-macos]
 
 jobs:
   test:
