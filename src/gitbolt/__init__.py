@@ -23,7 +23,6 @@ from gitbolt.constants import GIT_DIR as GIT_DIR
 # endregion
 
 
-# TODO: check failing test on macos
 def get_git(git_root_dir: Path = Path.cwd()) -> Git:
     """
     Get operational and programmatic ``Git``.
