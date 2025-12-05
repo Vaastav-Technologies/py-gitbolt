@@ -238,7 +238,10 @@ class GitCommand(Git, ABC):
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
         _git_cmd = self.clone()
-        _env_vars = merge_git_envs(overrides, self._env_vars)
+        if self._env_vars:
+            _env_vars = merge_git_envs(overrides, self._env_vars)
+        else:
+            _env_vars = overrides
         _git_cmd._env_vars = _env_vars
         return _git_cmd
 
