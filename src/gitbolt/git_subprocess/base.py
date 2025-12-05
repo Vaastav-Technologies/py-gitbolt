@@ -588,7 +588,8 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         envs_vars = self.underlying_git.build_git_envs()
         another_supplied_env = subprocess_run_kwargs.pop("env", None)
         if another_supplied_env:
-            envs_vars.update(another_supplied_env)
+            if envs_vars is not None:
+                envs_vars.update(another_supplied_env)
         cwd = subprocess_run_kwargs.pop("cwd", self.root_dir)
         capture_output = subprocess_run_kwargs.pop("capture_output", True)
         check = subprocess_run_kwargs.pop("check", True)
