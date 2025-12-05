@@ -539,7 +539,7 @@ class TestMainGit:
     class TestOptsEnvMixedOverrides:
         class TestNoOverrides:
             def test_leaves_envs_empty(self, git):
-                assert git._env_vars == {}
+                assert git._env_vars is None
 
             def test_leaves_opts_empty(self, git):
                 assert git._main_cmd_opts == {}
@@ -556,7 +556,7 @@ class TestMainGit:
                         GIT_AUTHOR_NAME="ss", GIT_OBJECT_DIRECTORY=Path("/tmp/obj-dir/")
                     )
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # parent ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -569,7 +569,7 @@ class TestMainGit:
                     )
                     envs_o_o_git = envs_o_git.git_envs_override(GIT_SSH_COMMAND="gpg")
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # ancestor ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -629,10 +629,10 @@ class TestMainGit:
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
                 assert (
-                    git._env_vars == {}
+                    git._env_vars is None
                 )  # overriding opts didn't override envs in parent
                 assert (
-                    main_o_git._env_vars == {}
+                    main_o_git._env_vars is None
                 )  # overriding opts didn't override envs
 
 
@@ -682,7 +682,7 @@ class TestMainCLIGit:
 
             def test_envs(self):
                 git = CLISimpleGitCommand()
-                assert {} == git.build_git_envs()
+                assert git.build_git_envs() is None
 
         @pytest.mark.parametrize(
             "opts",
@@ -740,7 +740,6 @@ class TestMainCLIGit:
         def test_opts_and_envs(self, opts: list[str], envs: dict[str, str]):
             git = CLISimpleGitCommand(opts=opts, envs=envs)
             opts = opts or []
-            envs = envs or {}
             assert git.build_git_envs() == envs
             assert git.build_main_cmd_args() == opts
 
@@ -1377,7 +1376,7 @@ class TestMainCLIGit:
         class TestNoOverrides:
             def test_leaves_envs_empty(self):
                 git = SimpleGitCommand()
-                assert git._env_vars == {}
+                assert git._env_vars is None
 
             def test_leaves_opts_empty(self):
                 git = SimpleGitCommand()
@@ -1396,7 +1395,7 @@ class TestMainCLIGit:
                         GIT_AUTHOR_NAME="ss", GIT_OBJECT_DIRECTORY=Path("/tmp/obj-dir/")
                     )
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # parent ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -1410,7 +1409,7 @@ class TestMainCLIGit:
                     )
                     envs_o_o_git = envs_o_git.git_envs_override(GIT_SSH_COMMAND="gpg")
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # ancestor ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -1474,10 +1473,10 @@ class TestMainCLIGit:
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
                 assert (
-                    git._env_vars == {}
+                    git._env_vars is None
                 )  # overriding opts didn't override envs in parent
                 assert (
-                    main_o_git._env_vars == {}
+                    main_o_git._env_vars is None
                 )  # overriding opts didn't override envs
 
 
