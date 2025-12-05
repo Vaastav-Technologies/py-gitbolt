@@ -297,13 +297,10 @@ class CLISimpleGitCommand(SimpleGitCommand):
     def build_git_envs(self) -> dict[str, str] | None:
         if self._cmd_cli_envs is None:
             return super().build_git_envs()
-        if self._cmd_cli_envs:
-            if self.prefer_cli:
-                return (super().build_git_envs() or {}) | self._cmd_cli_envs
-            else:
-                return self._cmd_cli_envs | (super().build_git_envs() or {})
+        if self.prefer_cli:
+            return (super().build_git_envs() or {}) | self._cmd_cli_envs
         else:
-            return super().build_git_envs()
+            return self._cmd_cli_envs | (super().build_git_envs() or {})
 
     @override
     def _subclass_clone(self) -> CLISimpleGitCommand:
