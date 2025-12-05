@@ -34,7 +34,7 @@ def get_git(git_root_dir: Path = Path.cwd()) -> Git:
 
     >>> import subprocess
     >>> import gitbolt
-    >>> gitbolt.get_git().version()
+    >>> gitbolt.get_git().version().version()
 
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     """
