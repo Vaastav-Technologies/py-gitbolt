@@ -11,9 +11,9 @@ import subprocess
 from subprocess import CompletedProcess
 from typing import overload, override, Any, Literal
 
-from gitbolt.git_subprocess.constants import GIT_CMD
-from gitbolt.git_subprocess.exceptions import GitCmdException
-from gitbolt.git_subprocess.runner import GitCommandRunner
+from gitbolt.subprocess.constants import GIT_CMD
+from gitbolt.subprocess.exceptions import GitCmdException
+from gitbolt.subprocess.runner import GitCommandRunner
 
 
 class SimpleGitCR(GitCommandRunner):

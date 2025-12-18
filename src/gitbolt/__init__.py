@@ -38,6 +38,6 @@ def get_git(git_root_dir: Path = Path.cwd()) -> Git:
 
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     """
-    from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+    from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
     return SimpleGitCommand(git_root_dir)

@@ -12,8 +12,8 @@ from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
 from gitbolt.exceptions import GitExitingException
-from gitbolt.git_subprocess.exceptions import GitCmdException
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
+from gitbolt.subprocess.exceptions import GitCmdException
+from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 
 
 def test_exec_path():

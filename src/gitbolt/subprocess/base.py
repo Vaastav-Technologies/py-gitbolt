@@ -19,12 +19,12 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.exceptions import GitExitingException
-from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
-from gitbolt.git_subprocess.ls_tree import (
+from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
+from gitbolt.subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
     IndividuallyOverridableLTCAB,
 )
-from gitbolt.git_subprocess.runner import GitCommandRunner
+from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.utils import merge_git_opts, merge_git_envs
 

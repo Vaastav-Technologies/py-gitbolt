@@ -15,7 +15,7 @@ from vt.utils.commons.commons.op import RootDirOp
 
 from gitbolt.base import Version
 from gitbolt.add import AddArgsValidator
-from gitbolt.git_subprocess import (
+from gitbolt.subprocess import (
     GitCommand,
     VersionCommand,
     LsTreeCommand,
@@ -23,11 +23,11 @@ from gitbolt.git_subprocess import (
     AddCommand,
     UncheckedSubcmd,
 )
-from gitbolt.git_subprocess.add import AddCLIArgsBuilder
-from gitbolt.git_subprocess.constants import VERSION_CMD
-from gitbolt.git_subprocess.ls_tree import LsTreeCLIArgsBuilder
-from gitbolt.git_subprocess.runner import GitCommandRunner
-from gitbolt.git_subprocess.runner.simple_impl import SimpleGitCR
+from gitbolt.subprocess.add import AddCLIArgsBuilder
+from gitbolt.subprocess.constants import VERSION_CMD
+from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
+from gitbolt.subprocess.runner import GitCommandRunner
+from gitbolt.subprocess.runner.simple_impl import SimpleGitCR
 from gitbolt.ls_tree import LsTreeArgsValidator
 
 
