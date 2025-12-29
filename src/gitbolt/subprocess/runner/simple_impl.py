@@ -21,7 +21,11 @@ class SimpleGitCR(GitCommandRunner):
     """
     Simple git command runner that simply runs everything `as-is` in a subprocess.
     """
+
     def __init__(self, git_prog: str | pathlib.Path = GIT_CMD):
+        """
+        :param git_prog: git program name/location. Useful when user wants to run a separate git version/git emulator.
+        """
         self._git_prog = git_prog
 
     @overload
