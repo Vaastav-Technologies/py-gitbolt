@@ -7,6 +7,7 @@ A simple and straight-forward git command subprocess runner implementation.
 
 from __future__ import annotations
 
+import pathlib
 import subprocess
 from subprocess import CompletedProcess
 from typing import overload, override, Any, Literal
@@ -20,6 +21,12 @@ class SimpleGitCR(GitCommandRunner):
     """
     Simple git command runner that simply runs everything `as-is` in a subprocess.
     """
+
+    def __init__(self, git_prog: str | pathlib.Path = GIT_CMD):
+        """
+        :param git_prog: git program name/location. Useful when user wants to run a separate git version/git emulator.
+        """
+        self._git_prog = git_prog
 
     @overload
     @override
@@ -79,7 +86,7 @@ class SimpleGitCR(GitCommandRunner):
     ) -> CompletedProcess[str] | CompletedProcess[bytes]:
         try:
             return subprocess.run(
-                [GIT_CMD, *main_cmd_args, *subcommand_args],
+                [str(self.git_prog), *main_cmd_args, *subcommand_args],
                 *subprocess_run_args,
                 input=_input,
                 text=text,
@@ -89,3 +96,8 @@ class SimpleGitCR(GitCommandRunner):
             raise GitCmdException(
                 e.stderr, called_process_error=e, exit_code=e.returncode
             ) from e
+
+    @override
+    @property
+    def git_prog(self) -> str | pathlib.Path:
+        return self._git_prog
