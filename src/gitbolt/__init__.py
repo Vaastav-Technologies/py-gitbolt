@@ -48,12 +48,14 @@ def get_git(git_root_dir: Path = Path.cwd()) -> Git:
     return _SimpleGitCommand(git_root_dir)
 
 
-def get_git_command(git_root_dir: Path = Path.cwd(), *,
-                    git_prog: str | Path = GIT_CMD,
-                    main_cmd_opts: list[str] | None = None,
-                    main_cmd_envs: dict[str, str] | None = None,
-                    prefer_cli: bool = False,
-                    ) -> GitCommand:
+def get_git_command(
+    git_root_dir: Path = Path.cwd(),
+    *,
+    git_prog: str | Path = GIT_CMD,
+    main_cmd_opts: list[str] | None = None,
+    main_cmd_envs: dict[str, str] | None = None,
+    prefer_cli: bool = False,
+) -> GitCommand:
     """
     Get operational and programmatic ``Git`` which runs as a subprocess.
 
@@ -85,4 +87,10 @@ def get_git_command(git_root_dir: Path = Path.cwd(), *,
     if main_cmd_opts is None:
         return _SimpleGitCommand(git_root_dir, runner)
     else:
-        return _CLISimpleGitCommand(git_root_dir, runner, opts=main_cmd_opts, envs=main_cmd_envs, prefer_cli=prefer_cli)
+        return _CLISimpleGitCommand(
+            git_root_dir,
+            runner,
+            opts=main_cmd_opts,
+            envs=main_cmd_envs,
+            prefer_cli=prefer_cli,
+        )
