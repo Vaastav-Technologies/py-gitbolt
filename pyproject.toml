@@ -36,7 +36,7 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "vt-err-hndlr >= 0.0.0dev5",
+  "vt-err-hndlr >= 0.0.0dev6",
   "vt-commons >= 0.0.1.dev9",
 ]
 
