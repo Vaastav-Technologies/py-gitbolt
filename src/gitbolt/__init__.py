@@ -24,7 +24,7 @@ from gitbolt.constants import GIT_DIR as GIT_DIR
 from gitbolt.subprocess.constants import GIT_CMD
 from gitbolt.subprocess.impl.simple import SimpleGitCommand as _SimpleGitCommand
 from gitbolt.subprocess.impl.simple import CLISimpleGitCommand as _CLISimpleGitCommand
-from gitbolt.subprocess.runner.simple_impl import SimpleGitCR as _SimpleGitCR
+from gitbolt.subprocess.runner.simple import SimpleGitCR as _SimpleGitCR
 # endregion
 
 
