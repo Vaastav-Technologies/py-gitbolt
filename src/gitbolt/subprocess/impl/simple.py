@@ -36,7 +36,7 @@ class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
         self._underlying_git = git
 
     @property
-    def underlying_git(self) -> GitCommand:
+    def git(self) -> GitCommand:
         return self._underlying_git
 
     def _set_underlying_git(self, git: "GitCommand") -> None:
@@ -55,14 +55,14 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         self, build_options: Literal[True, False] = False
     ) -> Version.VersionInfo | Version.VersionWithBuildInfo:
         self._require_valid_args(build_options)
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
+        main_cmd_args = self.git.build_main_cmd_args()
         sub_cmd_args = [VERSION_CMD]
-        env_vars = self.underlying_git.build_git_envs()
+        env_vars = self.git.build_git_envs()
         if build_options:
             sub_cmd_args.append("--build-options")
 
         def rosetta_supplier():
-            return self.underlying_git.runner.run_git_command(
+            return self.git.runner.run_git_command(
                 main_cmd_args,
                 sub_cmd_args,
                 check=True,
@@ -76,7 +76,7 @@ class VersionCommandImpl(VersionCommand, GitSubcmdCommandImpl):
         return VersionCommand.VersionInfoForCmd(rosetta_supplier)
 
     def clone(self) -> "VersionCommandImpl":
-        return VersionCommandImpl(self.underlying_git)
+        return VersionCommandImpl(self.git)
 
 
 class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
@@ -117,7 +117,7 @@ class LsTreeCommandImpl(LsTreeCommand, GitSubcmdCommandImpl):
         return self._cli_args_builder
 
     def clone(self) -> "LsTreeCommandImpl":
-        return LsTreeCommandImpl(self.root_dir, self.underlying_git)
+        return LsTreeCommandImpl(self.root_dir, self.git)
 
 
 class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
@@ -150,7 +150,7 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         return self._cli_args_builder
 
     def clone(self) -> "AddCommandImpl":
-        return AddCommandImpl(self.root_dir, self.underlying_git)
+        return AddCommandImpl(self.root_dir, self.git)
 
 
 class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
@@ -164,7 +164,7 @@ class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
         return self._root_dir
 
     def clone(self) -> "UncheckedSubcmdImpl":
-        return UncheckedSubcmdImpl(self.root_dir, self.underlying_git)
+        return UncheckedSubcmdImpl(self.root_dir, self.git)
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):

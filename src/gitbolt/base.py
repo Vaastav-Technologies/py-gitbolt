@@ -35,9 +35,9 @@ class HasGitUnderneath[G: "Git"](ForGit, Protocol):
 
     @property
     @abstractmethod
-    def underlying_git(self) -> G:
+    def git(self) -> G:
         """
-        :return: stored git instance reference.
+        :return: stored underlying git instance reference.
         """
         ...
 

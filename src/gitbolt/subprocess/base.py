@@ -306,13 +306,13 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
-        overridden_git = self.underlying_git.git_opts_override(**overrides)
+        overridden_git = self.git.git_opts_override(**overrides)
         self._set_underlying_git(overridden_git)
         return self
 
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
-        overridden_git = self.underlying_git.git_envs_override(**overrides)
+        overridden_git = self.git.git_envs_override(**overrides)
         self._set_underlying_git(overridden_git)
         return self
 
@@ -403,11 +403,11 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
         self.args_validator.validate(tree_ish, **ls_tree_opts)
         sub_cmd_args = self.cli_args_builder.build(tree_ish, **ls_tree_opts)
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        env_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
 
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             check=True,
@@ -485,11 +485,11 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             pathspec_file_nul=pathspec_file_nul,
             **add_opts,
         )
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        env_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
 
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             _input=pathspec_stdin,
@@ -584,8 +584,8 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
 
         :return: ``CompletedProcess`` capturing all the required stdout, stderr, return-code etc.
         """
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        envs_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        envs_vars = self.git.build_git_envs()
         another_supplied_env = subprocess_run_kwargs.pop("env", None)
         if another_supplied_env:
             if envs_vars is not None:
@@ -594,7 +594,7 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         capture_output = subprocess_run_kwargs.pop("capture_output", True)
         check = subprocess_run_kwargs.pop("check", True)
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             subcommand_args,
             *subprocess_run_args,

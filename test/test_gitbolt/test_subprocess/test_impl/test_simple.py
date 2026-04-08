@@ -1687,7 +1687,7 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.underlying_git.build_git_envs()
+            == _subcmd.git.build_git_envs()
         )
 
     def test_opts_set_remain_set(self, repo_local, subcmd):
@@ -1702,7 +1702,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
     def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
@@ -1721,7 +1721,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
         assert (
             dict(
@@ -1730,14 +1730,14 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.underlying_git.build_git_envs()
+            == _subcmd.git.build_git_envs()
         )
         assert {
             "c": {"foo": True, "foo.bar": 10},
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
 
 # TODO: write exhaustive tests for unchecked subcmd
