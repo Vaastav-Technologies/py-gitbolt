@@ -103,8 +103,8 @@ git subcommands are modeled as terminal functions that return stdout.
 from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
-status_out = git.status_subcmd.status()
-print(status_out)
+version_stdout = git.version_subcmd.version().version()
+print(version_stdout)
 ```
 
 ### 🪼 Modular Architecture
