@@ -20,29 +20,21 @@ from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 
 
-class ForGit(Protocol):
-    """
-    Marker interface to mark an operation for git.
-    """
-
-    pass
-
-
-class HasGitUnderneath[G: "Git"](ForGit, Protocol):
+class HasGitUnderneath[G: "Git"](Protocol):
     """
     Stores a reference to main git instance.
     """
 
     @property
     @abstractmethod
-    def underlying_git(self) -> G:
+    def git(self) -> G:
         """
-        :return: stored git instance reference.
+        :return: stored underlying git instance reference.
         """
         ...
 
 
-class CanOverrideGitOpts(ForGit, Protocol):
+class CanOverrideGitOpts(Protocol):
     """
     Can override main git command options.
 
@@ -65,7 +57,7 @@ class CanOverrideGitOpts(ForGit, Protocol):
         ...
 
 
-class CanOverrideGitEnvs(ForGit, Protocol):
+class CanOverrideGitEnvs(Protocol):
     """
     Can override main git command environment variables.
 
@@ -230,8 +222,29 @@ class Version(GitSubCommand, Protocol):
     Interface for ``git version`` command.
     """
 
+    class VersionInfo:
+        @abstractmethod
+        def version(self) -> str: ...
+
+        @abstractmethod
+        def semver(self) -> tuple: ...
+
+    class VersionWithBuildInfo(VersionInfo):
+        @abstractmethod
+        def build_options(self) -> dict[str, str]: ...
+
+    @overload
     @abstractmethod
-    def version(self, build_options: bool = False) -> str:
+    def version(self) -> VersionInfo: ...
+
+    @overload
+    @abstractmethod
+    def version(self, build_options: Literal[True]) -> VersionWithBuildInfo: ...
+
+    @abstractmethod
+    def version(
+        self, build_options: Literal[True, False] = False
+    ) -> VersionInfo | VersionWithBuildInfo:
         """
         All the parameters are mirrors of the parameters of ``git version`` CLI command
         from `git version documentation <https://git-scm.com/docs/git-version>`_.
@@ -374,14 +387,12 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
     """
 
-    @property
-    def version(self) -> str:
+    def version(self) -> Version.VersionInfo:
         """
         :return: current git version.
         """
         return self.version_subcmd.version()
 
-    @property
     @abstractmethod
     def exec_path(self) -> Path:
         """
@@ -389,7 +400,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def html_path(self) -> Path:
         """
@@ -397,7 +407,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def info_path(self) -> Path:
         """
@@ -405,7 +414,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def man_path(self) -> Path:
         """

@@ -8,20 +8,23 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
+from collections.abc import Callable
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
 from vt.utils.commons.commons.op import RootDirOp
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from gitbolt.git_subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
-from gitbolt.git_subprocess.ls_tree import (
+from gitbolt.exceptions import GitExitingException
+from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
+from gitbolt.subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
     IndividuallyOverridableLTCAB,
 )
-from gitbolt.git_subprocess.runner import GitCommandRunner
+from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.utils import merge_git_opts, merge_git_envs
 
@@ -37,7 +40,7 @@ class GitCommand(Git, ABC):
         """
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
-        self._env_vars: GitEnvVars = {}
+        self._env_vars: GitEnvVars | None = None
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -213,7 +216,7 @@ class GitCommand(Git, ABC):
     # endregion
 
     # region build_git_envs
-    def build_git_envs(self) -> dict[str, str]:
+    def build_git_envs(self) -> dict[str, str] | None:
         """
         Terminal operation to build and return effective Git environment variables
         from the merged ``GitEnvVars`` object.
@@ -223,41 +226,43 @@ class GitCommand(Git, ABC):
 
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
-        env: dict[str, str] = {}
-        for key, val in self._env_vars.items():
-            if not_none_not_unset(val):
-                env[key] = str(val)
-        return env
+        if self._env_vars is None:
+            return None
+        else:
+            env: dict[str, str] = {}
+            for key, val in self._env_vars.items():
+                if not_none_not_unset(val):
+                    env[key] = str(val)
+            return env
 
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
         _git_cmd = self.clone()
-        _env_vars = merge_git_envs(overrides, self._env_vars)
+        if self._env_vars:
+            _env_vars = merge_git_envs(overrides, self._env_vars)
+        else:
+            _env_vars = overrides
         _git_cmd._env_vars = _env_vars
         return _git_cmd
 
     # endregion
 
     @override
-    @property
     def html_path(self) -> Path:
         html_path_str = "--html-path"
         return self._get_path(html_path_str)
 
     @override
-    @property
     def info_path(self) -> Path:
         info_path_str = "--info-path"
         return self._get_path(info_path_str)
 
     @override
-    @property
     def man_path(self) -> Path:
         man_path_str = "--man-path"
         return self._get_path(man_path_str)
 
     @override
-    @property
     def exec_path(self) -> Path:
         exec_path_str = "--exec-path"
         return self._get_path(exec_path_str)
@@ -301,13 +306,13 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
-        overridden_git = self.underlying_git.git_opts_override(**overrides)
+        overridden_git = self.git.git_opts_override(**overrides)
         self._set_underlying_git(overridden_git)
         return self
 
     @override
     def git_envs_override(self, **overrides: Unpack[GitEnvVars]) -> Self:
-        overridden_git = self.underlying_git.git_envs_override(**overrides)
+        overridden_git = self.git.git_envs_override(**overrides)
         self._set_underlying_git(overridden_git)
         return self
 
@@ -324,7 +329,66 @@ class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
 
 
 class VersionCommand(Version, GitSubcmdCommand, Protocol):
-    pass
+    class _Cache:
+        def __init__(self):
+            self.version = None
+            self.semver = None
+            self.build_options = None
+
+    class VersionInfoForCmd(Version.VersionInfo):
+        def __init__(self, rosetta_supplier: Callable[[], str]):
+            self.rosetta_supplier = rosetta_supplier
+            self.rosetta: str | None = None
+            self._cache = VersionCommand._Cache()
+
+        @override
+        def version(self) -> str:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            if self._cache.version is not None:
+                return self._cache.version
+            v_str = self.rosetta.splitlines()[0]
+            self._cache.version = v_str
+            return v_str
+
+        @override
+        def semver(self) -> tuple:
+            if self._cache.semver is not None:
+                return self._cache.semver
+            t_ver = self.version().split()[-1].split(".")
+            return tuple(t_ver)
+
+        @override
+        def __str__(self):
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            return self.rosetta
+
+    class VersionWithBuildInfoForCmd(VersionInfoForCmd, Version.VersionWithBuildInfo):
+        def __init__(
+            self, rosetta_supplier: Callable[[], str], splitter_expr: str = ": "
+        ):
+            super().__init__(rosetta_supplier)
+            self.splitter_expr = splitter_expr
+
+        @override
+        def build_options(self) -> dict[str, str]:
+            if self.rosetta is None:
+                self.rosetta = self.rosetta_supplier()
+            if self._cache.build_options is not None:
+                return self._cache.build_options
+            if not self.rosetta.splitlines()[1:]:
+                errmsg = "Unable to populate build_options as possibly --build-options switch wasn't used."
+                raise GitExitingException(
+                    errmsg, exit_code=ERR_INVALID_USAGE
+                ) from ValueError(errmsg)
+
+            self._cache.build_options = {}
+            for b_str in self.rosetta.splitlines()[1:]:
+                if self.splitter_expr in b_str:
+                    b_k, b_v = b_str.split(self.splitter_expr)
+                    self._cache.build_options[b_k] = b_v
+            return self._cache.build_options
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
@@ -339,11 +403,11 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
     def ls_tree(self, tree_ish: str, **ls_tree_opts: Unpack[GitLsTreeOpts]) -> str:
         self.args_validator.validate(tree_ish, **ls_tree_opts)
         sub_cmd_args = self.cli_args_builder.build(tree_ish, **ls_tree_opts)
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        env_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
 
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             check=True,
@@ -421,11 +485,11 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
             pathspec_file_nul=pathspec_file_nul,
             **add_opts,
         )
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        env_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
 
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,
             _input=pathspec_stdin,
@@ -520,16 +584,17 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
 
         :return: ``CompletedProcess`` capturing all the required stdout, stderr, return-code etc.
         """
-        main_cmd_args = self.underlying_git.build_main_cmd_args()
-        envs_vars = self.underlying_git.build_git_envs()
+        main_cmd_args = self.git.build_main_cmd_args()
+        envs_vars = self.git.build_git_envs()
         another_supplied_env = subprocess_run_kwargs.pop("env", None)
         if another_supplied_env:
-            envs_vars.update(another_supplied_env)
-        cwd = subprocess_run_kwargs.pop("cwd", None) or self.root_dir
-        capture_output = subprocess_run_kwargs.pop("capture_output", None) or True
-        check = subprocess_run_kwargs.pop("check", None) or True
+            if envs_vars is not None:
+                envs_vars.update(another_supplied_env)
+        cwd = subprocess_run_kwargs.pop("cwd", self.root_dir)
+        capture_output = subprocess_run_kwargs.pop("capture_output", True)
+        check = subprocess_run_kwargs.pop("check", True)
         # Run the git command
-        result = self.underlying_git.runner.run_git_command(
+        result = self.git.runner.run_git_command(
             main_cmd_args,
             subcommand_args,
             *subprocess_run_args,
