@@ -7,6 +7,7 @@ Git command runner interfaces to run subprocess calls.
 
 from __future__ import annotations
 
+import pathlib
 from abc import abstractmethod
 from subprocess import CompletedProcess
 from typing import Protocol, overload, Any, Literal
@@ -62,3 +63,11 @@ class GitCommandRunner(Protocol):
         text: Literal[False] = ...,
         **subprocess_run_kwargs: Any,
     ) -> CompletedProcess[bytes]: ...
+
+    @property
+    @abstractmethod
+    def git_prog(self) -> str | pathlib.Path:
+        """
+        :returns: git path location or git program name.
+        """
+        ...

@@ -9,7 +9,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, Unpack, override, Literal
 
-from gitbolt.git_subprocess.constants import ADD_CMD
+from gitbolt.subprocess.constants import ADD_CMD
 from gitbolt.models import GitAddOpts
 
 
