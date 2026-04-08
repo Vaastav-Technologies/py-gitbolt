@@ -12,17 +12,18 @@ from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
 from gitbolt.exceptions import GitExitingException
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
+from gitbolt.subprocess.exceptions import GitCmdException
+from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 
 
 def test_exec_path():
     git = SimpleGitCommand()
-    assert isinstance(git.exec_path, Path)
+    assert isinstance(git.exec_path(), Path)
 
 
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
-    assert git.git_opts_override(exec_path=None).exec_path is not None
+    assert git.git_opts_override(exec_path=None).exec_path() is not None
 
 
 @pytest.mark.parametrize("git", [SimpleGitCommand(), CLISimpleGitCommand()])
@@ -538,7 +539,7 @@ class TestMainGit:
     class TestOptsEnvMixedOverrides:
         class TestNoOverrides:
             def test_leaves_envs_empty(self, git):
-                assert git._env_vars == {}
+                assert git._env_vars is None
 
             def test_leaves_opts_empty(self, git):
                 assert git._main_cmd_opts == {}
@@ -555,7 +556,7 @@ class TestMainGit:
                         GIT_AUTHOR_NAME="ss", GIT_OBJECT_DIRECTORY=Path("/tmp/obj-dir/")
                     )
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # parent ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -568,7 +569,7 @@ class TestMainGit:
                     )
                     envs_o_o_git = envs_o_git.git_envs_override(GIT_SSH_COMMAND="gpg")
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # ancestor ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -628,10 +629,10 @@ class TestMainGit:
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
                 assert (
-                    git._env_vars == {}
+                    git._env_vars is None
                 )  # overriding opts didn't override envs in parent
                 assert (
-                    main_o_git._env_vars == {}
+                    main_o_git._env_vars is None
                 )  # overriding opts didn't override envs
 
 
@@ -681,7 +682,7 @@ class TestMainCLIGit:
 
             def test_envs(self):
                 git = CLISimpleGitCommand()
-                assert {} == git.build_git_envs()
+                assert git.build_git_envs() is None
 
         @pytest.mark.parametrize(
             "opts",
@@ -710,7 +711,6 @@ class TestMainCLIGit:
         )
         def test_envs(self, envs: dict[str, str]):
             git = CLISimpleGitCommand(envs=envs)
-            envs = envs or {}  # just for envs=None case
             assert git.build_git_envs() == envs
 
         @pytest.mark.parametrize(
@@ -740,7 +740,6 @@ class TestMainCLIGit:
         def test_opts_and_envs(self, opts: list[str], envs: dict[str, str]):
             git = CLISimpleGitCommand(opts=opts, envs=envs)
             opts = opts or []
-            envs = envs or {}
             assert git.build_git_envs() == envs
             assert git.build_main_cmd_args() == opts
 
@@ -1377,7 +1376,7 @@ class TestMainCLIGit:
         class TestNoOverrides:
             def test_leaves_envs_empty(self):
                 git = SimpleGitCommand()
-                assert git._env_vars == {}
+                assert git._env_vars is None
 
             def test_leaves_opts_empty(self):
                 git = SimpleGitCommand()
@@ -1396,7 +1395,7 @@ class TestMainCLIGit:
                         GIT_AUTHOR_NAME="ss", GIT_OBJECT_DIRECTORY=Path("/tmp/obj-dir/")
                     )
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # parent ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -1410,7 +1409,7 @@ class TestMainCLIGit:
                     )
                     envs_o_o_git = envs_o_git.git_envs_override(GIT_SSH_COMMAND="gpg")
                     assert (
-                        git._env_vars == {}
+                        git._env_vars is None
                     )  # ancestor ``git`` object protected properties still empty.
                     assert envs_o_git._env_vars == {
                         "GIT_AUTHOR_NAME": "ss",
@@ -1474,10 +1473,10 @@ class TestMainCLIGit:
                     namespace="ss", git_dir=Path("/tmp/git-dir/.git")
                 )
                 assert (
-                    git._env_vars == {}
+                    git._env_vars is None
                 )  # overriding opts didn't override envs in parent
                 assert (
-                    main_o_git._env_vars == {}
+                    main_o_git._env_vars is None
                 )  # overriding opts didn't override envs
 
 
@@ -1496,6 +1495,38 @@ class TestLsTreeSubcmd:
             git.ls_tree_subcmd.ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
         )
+
+    @pytest.mark.parametrize(
+        "fmt, res",
+        [
+            (
+                "%(objectmode) %(objecttype) %(objectname) %(objectsize:padded)%x09%(path)",
+                "100644 blob 7c35e066a9001b24677ae572214d292cebc55979       6	a-file",
+            ),
+            (
+                "%(objectmode) %(objecttype) %(objectname) %(objectsize)%x09%(path)",
+                "100644 blob 7c35e066a9001b24677ae572214d292cebc55979 6	a-file",
+            ),
+            (
+                "'%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)'",
+                "'blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file'",
+            ),
+            (
+                '"%(objecttype) %(objectmode) %(objectname) %(objectsize)%x09%(path)"',
+                '"blob 100644 7c35e066a9001b24677ae572214d292cebc55979 6	a-file"',
+            ),
+        ],
+    )
+    def test_ls_tree_custom_fmt(self, repo_local, fmt, res):
+        git = SimpleGitCommand(repo_local)
+        Path(repo_local, "a-file").write_text("a-file")
+        git.add_subcmd.add(".")
+        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked.run(
+            ["config", "--local", "user.email", "suhas@example.com"]
+        )
+        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        assert git.ls_tree_subcmd.ls_tree("HEAD", format_=fmt) == res
 
     class TestArgValidation:
         @pytest.mark.parametrize(
@@ -1562,22 +1593,27 @@ class TestLsTreeSubcmd:
 
 def test_version():
     git = SimpleGitCommand()
-    assert "git version 2" in git.version
+    assert "git version 2" in git.version().version()
+
+
+def test_version_build_info():
+    git = SimpleGitCommand()
+    git.version_subcmd.version(build_options=True).build_options()
 
 
 def test_version_build_options():
     git = SimpleGitCommand()
     version_build_info = git.version_subcmd.version(build_options=True)
-    assert "git version 2" in version_build_info
-    assert "cpu: " in version_build_info
-    assert "shell-path: " in version_build_info
+    assert "git version 2" in version_build_info.version()
+    assert "cpu" in version_build_info.build_options()
+    assert "shell-path" in version_build_info.build_options()
     git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
     ano_build_info = git.version_subcmd.git_opts_override(namespace="suhas").version(
         build_options=True
     )
-    assert "git version 2" in ano_build_info
-    assert "cpu: " in ano_build_info
-    assert "shell-path: " in ano_build_info
+    assert "git version 2" in ano_build_info.version()
+    assert "cpu" in ano_build_info.build_options()
+    assert "shell-path" in ano_build_info.build_options()
 
 
 class TestAddSubcmd:
@@ -1651,7 +1687,7 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.underlying_git.build_git_envs()
+            == _subcmd.git.build_git_envs()
         )
 
     def test_opts_set_remain_set(self, repo_local, subcmd):
@@ -1666,7 +1702,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
     def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
@@ -1685,7 +1721,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
         assert (
             dict(
@@ -1694,14 +1730,87 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.underlying_git.build_git_envs()
+            == _subcmd.git.build_git_envs()
         )
         assert {
             "c": {"foo": True, "foo.bar": 10},
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.underlying_git._main_cmd_opts
+        } == _subcmd.git._main_cmd_opts
 
 
 # TODO: write exhaustive tests for unchecked subcmd
+
+
+class TestUncheckedSubcmd:
+    class TestCheck:
+        """
+        Test different combination of the ``check`` kwarg. All of these ``git log`` commands fails because repo has no
+        commits yet.
+        """
+
+        def test_fails_when_no_check_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(
+                GitCmdException,
+                match="fatal: your current branch 'master' does not have any commits yet",
+            ):
+                git.subcmd_unchecked.run(["log"])
+
+        def test_fails_on_check_true(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            with pytest.raises(
+                GitCmdException,
+                match="fatal: your current branch 'master' does not have any commits yet",
+            ):
+                git.subcmd_unchecked.run(["log"], check=True)
+
+        def test_no_fail_on_check_false(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            git.subcmd_unchecked.run(["log"], check=False)
+
+    class TestCaptureOutput:
+        """
+        Test different combinations of capture_output kwarg
+        """
+
+        @classmethod
+        def _prepare_repo(cls, git: SimpleGitCommand):
+            git.subcmd_unchecked.run(
+                ["commit", "--allow-empty", "-m", "initial commit"]
+            )
+
+        def test_captures_output_when_no_capture_output_supplied(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"]).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_captures_output_when_capture_output_true(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            op = git.subcmd_unchecked.run(["log"], capture_output=True).stdout.strip()
+            assert b"initial commit" in op
+
+        def test_no_output_captured_on_capture_output_false(self, repo_local):
+            git = SimpleGitCommand(repo_local).git_envs_override(
+                GIT_AUTHOR_NAME="ss",
+                GIT_AUTHOR_EMAIL="ss@ss.ss",
+                GIT_COMMITTER_NAME="ss",
+                GIT_COMMITTER_EMAIL="ss@ss.ss",
+            )
+            TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
+            assert (
+                git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
+            )
