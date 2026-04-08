@@ -20,15 +20,7 @@ from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 
 
-class ForGit(Protocol):
-    """
-    Marker interface to mark an operation for git.
-    """
-
-    pass
-
-
-class HasGitUnderneath[G: "Git"](ForGit, Protocol):
+class HasGitUnderneath[G: "Git"](Protocol):
     """
     Stores a reference to main git instance.
     """
@@ -42,7 +34,7 @@ class HasGitUnderneath[G: "Git"](ForGit, Protocol):
         ...
 
 
-class CanOverrideGitOpts(ForGit, Protocol):
+class CanOverrideGitOpts(Protocol):
     """
     Can override main git command options.
 
@@ -65,7 +57,7 @@ class CanOverrideGitOpts(ForGit, Protocol):
         ...
 
 
-class CanOverrideGitEnvs(ForGit, Protocol):
+class CanOverrideGitEnvs(Protocol):
     """
     Can override main git command environment variables.
 
