@@ -78,7 +78,7 @@ Gitbolt lets you pass subcommands around as typed objects. This enables highly f
 
 ```python
 import gitbolt
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 version_subcmd = git.version_subcmd
@@ -100,7 +100,7 @@ method_which_only_adds_a_file(add_subcmd)
 git subcommands are modeled as terminal functions that return stdout.
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 status_out = git.status_subcmd.status()
@@ -170,7 +170,7 @@ Extensive use of type-hints ensures that invalid usages fail early — at *compi
 #### 🔁 Override a single Git env (e.g., `GIT_TRACE`)
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_envs_override(GIT_TRACE=True)
@@ -180,7 +180,7 @@ git = git.git_envs_override(GIT_TRACE=True)
 
 ```python
 from pathlib import Path
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'), GIT_EDITOR='vim')
@@ -190,7 +190,7 @@ git = git.git_envs_override(GIT_TRACE=1, GIT_DIR=Path('/tmp/git-dir/'), GIT_EDIT
 
 ```python
 from pathlib import Path
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_envs_override(GIT_SSH=Path('/tmp/SSH')).git_envs_override(
@@ -203,7 +203,7 @@ re_overridden_git = overridden_git.git_envs_override(GIT_TRACE=True)
 #### ❌ Unset Git envs using a special `UNSET` marker
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 from vt.utils.commons.commons.core_py import UNSET
 
 git = SimpleGitCommand()
@@ -214,7 +214,7 @@ no_advice_unset_git = overridden_git.git_envs_override(GIT_TRACE=UNSET)
 #### 🔄 Reset Git envs by setting new values
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_envs_override(GIT_TRACE=True)
@@ -232,7 +232,7 @@ git_trace_reset_git = overridden_git.git_envs_override(GIT_TRACE=False)
 #### 🔁 Override a single Git opt (e.g., `--no-replace-objects`)
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_opts_override(no_replace_objects=True)
@@ -242,7 +242,7 @@ git = git.git_opts_override(no_replace_objects=True)
 
 ```python
 from pathlib import Path
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_opts_override(no_replace_objects=True, git_dir=Path(), paginate=True)
@@ -252,7 +252,7 @@ git = git.git_opts_override(no_replace_objects=True, git_dir=Path(), paginate=Tr
 
 ```python
 from pathlib import Path
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_opts_override(exec_path=Path('tmp')).git_opts_override(
@@ -268,7 +268,7 @@ re_overridden_git = overridden_git.git_opts_override(glob_pathspecs=True)
 
 ```python
 from pathlib import Path
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 from vt.utils.commons.commons.core_py import UNSET
 
 git = SimpleGitCommand()
@@ -279,7 +279,7 @@ no_advice_unset_git = overridden_git.git_opts_override(no_advice=UNSET)
 #### 🔄 Reset Git opts by setting new values
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 overridden_git = git.git_opts_override(no_advice=True)
@@ -297,7 +297,7 @@ Introduced in `0.0.0dev4` to
 - have consistent interfaced commands run until all subcommands are provided by the library.
 
 ```python
-from gitbolt.git_subprocess.impl.simple import SimpleGitCommand
+from gitbolt.subprocess.impl.simple import SimpleGitCommand
 
 git = SimpleGitCommand()
 git = git.git_opts_override(no_advice=True)
@@ -314,7 +314,7 @@ would be to make a system that receives CLI commands and does certain modificati
 actually running them. An example:
 
 ```python
-from gitbolt.git_subprocess.impl.simple import CLISimpleGitCommand
+from gitbolt.subprocess.impl.simple import CLISimpleGitCommand
 
 opts = ["--no-pager", "--namespace", "n1"]   # options received from outside your program.
 envs = dict(GIT_AUTHOR_NAME="ss")   # env-vars received form outside your program.
