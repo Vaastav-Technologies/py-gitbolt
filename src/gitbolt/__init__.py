@@ -52,8 +52,8 @@ def get_git_command(
     git_root_dir: Path = Path.cwd(),
     *,
     git_prog: str | Path = GIT_CMD,
-    main_cmd_opts: list[str] | None = None,
-    main_cmd_envs: dict[str, str] | None = None,
+    opts: list[str] | None = None,
+    envs: dict[str, str] | None = None,
     prefer_cli: bool = False,
 ) -> GitCommand:
     """
@@ -75,8 +75,8 @@ def get_git_command(
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     :param git_prog: git program name/location. Useful when user wants to run a separate git version/git emulator.
     :param opts: main git cli options. The main git command options like ``--no-replace-objects``, ``--no-pager``, ``-C`` etc are git main command args.
-    :param envs: main git cli env vars. Not supplying any env vars (default behavior: ``None``) simply supplies all
-        the env vars to the underlying runner.
+    :param envs: main git cli environment variables (env vars). Not supplying any env vars (default behavior: ``None``)
+        simply supplies all the env vars to the underlying runner.
     :param prefer_cli: cli opts and envs will be given priority over programmatically set opts and envs. Setting
         this param to ``True`` will make cli opts and envs appear later in the opts and envs strings which will
         make them override previously programmatically set opts and envs.
@@ -84,13 +84,13 @@ def get_git_command(
         separate runner in subprocess.
     """
     runner = _SimpleGitCR(git_prog)
-    if main_cmd_opts is None:
+    if opts is None:
         return _SimpleGitCommand(git_root_dir, runner)
     else:
         return _CLISimpleGitCommand(
             git_root_dir,
             runner,
-            opts=main_cmd_opts,
-            envs=main_cmd_envs,
+            opts=opts,
+            envs=envs,
             prefer_cli=prefer_cli,
         )

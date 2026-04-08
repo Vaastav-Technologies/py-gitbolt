@@ -266,8 +266,8 @@ class CLISimpleGitCommand(SimpleGitCommand):
     ):
         """
         :param opts: main git cli options.
-        :param envs: main git cli env vars. Not supplying any env vars (default behavior: ``None``) simply supplies all
-            the env vars to the underlying runner.
+        :param envs: main git cli environment variables (env vars). Not supplying any env
+            vars (default behavior: ``None``) simply supplies all the env vars to the underlying runner.
         :param prefer_cli: cli opts and envs will be given priority over programmatically set opts and envs. Setting
             this param to ``True`` will make cli opts and envs appear later in the opts and envs strings which will
             make them override previously programmatically set opts and envs.

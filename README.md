@@ -315,9 +315,9 @@ actually running them. An example:
 ```python
 import gitbolt
 
-opts = ["--no-pager", "--namespace", "n1"]   # options received from outside your program.
-envs = dict(GIT_AUTHOR_NAME="ss")   # env-vars received form outside your program.
-git = gitbolt.get_git_command(main_cmd_opts=opts, main_cmd_envs=envs)
+opts = ["--no-pager", "--namespace", "n1"]  # options received from outside your program.
+envs = dict(GIT_AUTHOR_NAME="ss")  # env-vars received form outside your program.
+git = gitbolt.get_git_command(opts=opts, envs=envs)
 
 # these can later be overridden
 git = git.git_opts_override(namespace="n2")
