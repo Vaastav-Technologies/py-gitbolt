@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, Popen, PIPE
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
@@ -601,6 +601,66 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             capture_output=capture_output,
             check=check,
             **subprocess_run_kwargs,
+        )
+        return result
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[True] = True,
+        **popen_kwargs: Any,
+    ) -> Popen[str]: ...
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[False] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[bytes]: ...
+
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[True, False] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[str] | Popen[bytes]:
+        """
+        Open unchecked git subcommand communicable process, using ``subprocess.Popen``.
+
+        All the arguments are congruent to ``subprocess.Popen`` and mostly passes as-is.
+
+        :param subcommand_args: the full subcommand argument list.
+        :param popen_args: additional subprocess positionals.
+        :param text: ``_input`` and returns both are str if this value is ``True``. Else, bytes are considered.
+        :param popen_kwargs: additional subprocess keyword arguments.
+
+        :return: ``Popen`` capturing all the required stdout, stderr etc and streaming stdin.
+        """
+        main_cmd_args = self.git_main_cmd_args()
+        envs_vars = self.git_envs(popen_kwargs.pop("env", None))
+        cwd = popen_kwargs.pop("cwd", self.root_dir)
+        stdin = popen_kwargs.pop("stdin", PIPE)
+        stdout = popen_kwargs.pop("stdout", PIPE)
+        stderr = popen_kwargs.pop("stderr", PIPE)
+        bufsize = popen_kwargs.pop("bufsize", 0)
+        # Popen the git command
+        result = self.git.runner.popen_git_command(
+            main_cmd_args,
+            subcommand_args,
+            *popen_args,
+            text=text,
+            env=envs_vars,
+            cwd=cwd,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            bufsize=bufsize,
+            **popen_kwargs,
         )
         return result
 
