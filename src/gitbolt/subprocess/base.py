@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, Popen, PIPE
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
 from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
@@ -584,12 +584,8 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
 
         :return: ``CompletedProcess`` capturing all the required stdout, stderr, return-code etc.
         """
-        main_cmd_args = self.git.build_main_cmd_args()
-        envs_vars = self.git.build_git_envs()
-        another_supplied_env = subprocess_run_kwargs.pop("env", None)
-        if another_supplied_env:
-            if envs_vars is not None:
-                envs_vars.update(another_supplied_env)
+        main_cmd_args = self.git_main_cmd_args()
+        envs_vars = self.git_envs(subprocess_run_kwargs.pop("env", None))
         cwd = subprocess_run_kwargs.pop("cwd", self.root_dir)
         capture_output = subprocess_run_kwargs.pop("capture_output", True)
         check = subprocess_run_kwargs.pop("check", True)
@@ -607,3 +603,101 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             **subprocess_run_kwargs,
         )
         return result
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[True] = True,
+        **popen_kwargs: Any,
+    ) -> Popen[str]: ...
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[False] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[bytes]: ...
+
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[True, False] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[str] | Popen[bytes]:
+        """
+        Open unchecked git subcommand communicable process, using ``subprocess.Popen``.
+
+        All the arguments are congruent to ``subprocess.Popen`` and mostly passes as-is.
+
+        :param subcommand_args: the full subcommand argument list.
+        :param popen_args: additional subprocess positionals.
+        :param text: ``_input`` and returns both are str if this value is ``True``. Else, bytes are considered.
+        :param popen_kwargs: additional subprocess keyword arguments.
+
+        :return: ``Popen`` capturing all the required stdout, stderr etc and streaming stdin.
+        """
+        main_cmd_args = self.git_main_cmd_args()
+        envs_vars = self.git_envs(popen_kwargs.pop("env", None))
+        cwd = popen_kwargs.pop("cwd", self.root_dir)
+        stdin = popen_kwargs.pop("stdin", PIPE)
+        stdout = popen_kwargs.pop("stdout", PIPE)
+        stderr = popen_kwargs.pop("stderr", PIPE)
+        bufsize = popen_kwargs.pop("bufsize", 0)
+        # Popen the git command
+        result = self.git.runner.popen_git_command(
+            main_cmd_args,
+            subcommand_args,
+            *popen_args,
+            text=text,
+            env=envs_vars,
+            cwd=cwd,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            bufsize=bufsize,
+            **popen_kwargs,
+        )
+        return result
+
+    def make_cmd(self, subcommand_args: list[str]) -> list[str]:
+        """
+        Make full runnable command for execution from the supplied ``subcommand_args``.
+
+        As knowledge of the git program and the main command is encapsulated within this ``UncheckedSubcmd`` thus,
+        this is a convenience method for any external entities that want to run commands in their own subprocess.
+
+        :param subcommand_args: arguments for subcommand.
+        :returns: a fully made and runnable command for some external ``subprocess`` call.
+        """
+        return self.git.runner.make_cmd(self.git.build_main_cmd_args(), subcommand_args)
+
+    def git_main_cmd_args(self) -> list[str]:
+        """
+        Get CLI args for git main cli command.
+
+        For example, ``--no-pager --no-advice`` is the git main command in ``git --no-pager --no-advice log master -1``.
+
+        :return: CLI args for git main cli command.
+        """
+        return self.git.build_main_cmd_args()
+
+    def git_envs(self, extra_git_envs: dict[str, str] | None = None) -> dict[str, str] | None:
+        """
+        Get Git environment variables from the merged ``GitEnvVars`` object.
+
+        Skips values that are ``Unset`` or ``None``-like using ``not_none_not_unset()``.
+        Converts ``Path`` and ``datetime`` instances to ``str``.
+
+        :param extra_git_envs: extraneous git envs supplied by the caller. These will be merged into the resultant
+            git envs and then returned.
+        :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
+        """
+        env_vars = self.git.build_git_envs()
+        if extra_git_envs and env_vars is not None:
+                env_vars.update(extra_git_envs)
+        return env_vars
