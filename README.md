@@ -291,9 +291,11 @@ no_advice_reset_git = overridden_git.git_opts_override(no_advice=False)
 
 At last, run unchecked commands in git.
 
-Introduced in `0.0.0dev4` to 
+Introduced in `0.0.0.dev4` to 
 - experiment.
 - have consistent interfaced commands run until all subcommands are provided by the library.
+
+#### 🖥️ Run one process per command
 
 ```python
 import gitbolt
@@ -304,9 +306,33 @@ git.subcmd_unchecked.run(['--version']) # run the version option for git.
 git.subcmd_unchecked.run(['version']) # run the version subcommand.
 ```
 
+#### 🖥️ Run one long-running process and communicate with it
+
+Introduced in `0.0.0.dev16` to:
+- Make communicable processes using `subprocess.Popen`.
+
+Get a long-running process and communicate with it for batching and faster operations.
+
+```python
+import gitbolt
+import sys
+
+git = gitbolt.get_git_command()
+with git.subcmd_unchecked.popen(["cat-file", "--batch-command"]) as cf:
+    cf.stdin.write(b"contents HEAD\n")
+    cf.stdin.flush()
+    header = cf.stdout.readline().strip()
+    print(f"HEADER: {header}", file=sys.stderr)
+    obj, typ, size = header.split()
+    print(cf.stdout.read(int(size)))
+    cf.stdout.readline()
+```
+
+Error handling and I/O management is left to the client/caller.
+
 #### 💻 Run commands received from CLI
 
-Introduced in `0.0.0dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
+Introduced in `0.0.0.dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
 
 While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example 
 would be to make a system that receives CLI commands and does certain modifications/additions inside `gitbolt` before
