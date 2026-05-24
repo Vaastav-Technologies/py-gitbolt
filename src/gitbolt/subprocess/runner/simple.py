@@ -86,7 +86,7 @@ class SimpleGitCR(GitCommandRunner):
     ) -> CompletedProcess[str] | CompletedProcess[bytes]:
         try:
             return subprocess.run(
-                [str(self.git_prog), *main_cmd_args, *subcommand_args],
+                self.make_cmd(main_cmd_args, subcommand_args),
                 *subprocess_run_args,
                 input=_input,
                 text=text,
@@ -96,6 +96,10 @@ class SimpleGitCR(GitCommandRunner):
             raise GitCmdException(
                 e.stderr, called_process_error=e, exit_code=e.returncode
             ) from e
+
+    @override
+    def make_cmd(self, main_cmd_args: list[str], sub_cmd_args: list[str]) -> list[str]:
+        return [str(self.git_prog), *main_cmd_args, *sub_cmd_args]
 
     @override
     @property

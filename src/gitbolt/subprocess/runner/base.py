@@ -64,6 +64,17 @@ class GitCommandRunner(Protocol):
         **subprocess_run_kwargs: Any,
     ) -> CompletedProcess[bytes]: ...
 
+    @abstractmethod
+    def make_cmd(self, main_cmd_args: list[str], sub_cmd_args: list[str]) -> list[str]:
+        """
+        Make command for execution for use in an external subprocess.
+
+        :param main_cmd_args: arguments for the main command.
+        :param sub_cmd_args: arguments for subcommand.
+        :returns: a fully made and runnable command for some external ``subprocess`` call.
+        """
+        ...
+
     @property
     @abstractmethod
     def git_prog(self) -> str | pathlib.Path:
