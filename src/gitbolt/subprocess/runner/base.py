@@ -66,21 +66,25 @@ class GitCommandRunner(Protocol):
 
     @overload
     @abstractmethod
-    def popen_git_command(self,
+    def popen_git_command(
+        self,
         main_cmd_args: list[str],
         subcommand_args: list[str],
         *popen_run_args: Any,
         text: Literal[False],
-        **popen_run_kwargs: Any,) -> Popen[bytes]: ...
+        **popen_run_kwargs: Any,
+    ) -> Popen[bytes]: ...
 
     @overload
     @abstractmethod
-    def popen_git_command(self,
+    def popen_git_command(
+        self,
         main_cmd_args: list[str],
         subcommand_args: list[str],
         *popen_run_args: Any,
         text: Literal[True],
-        **popen_run_kwargs: Any,) -> Popen[str]: ...
+        **popen_run_kwargs: Any,
+    ) -> Popen[str]: ...
 
     @abstractmethod
     def make_cmd(self, main_cmd_args: list[str], sub_cmd_args: list[str]) -> list[str]:

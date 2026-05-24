@@ -99,29 +99,35 @@ class SimpleGitCR(GitCommandRunner):
 
     @overload
     @override
-    def popen_git_command(self,
+    def popen_git_command(
+        self,
         main_cmd_args: list[str],
         subcommand_args: list[str],
         *popen_run_args: Any,
         text: Literal[False],
-        **popen_run_kwargs: Any,) -> Popen[bytes]: ...
+        **popen_run_kwargs: Any,
+    ) -> Popen[bytes]: ...
 
     @overload
     @override
-    def popen_git_command(self,
+    def popen_git_command(
+        self,
         main_cmd_args: list[str],
         subcommand_args: list[str],
         *popen_run_args: Any,
         text: Literal[True],
-        **popen_run_kwargs: Any,) -> Popen[str]: ...
+        **popen_run_kwargs: Any,
+    ) -> Popen[str]: ...
 
     @override
-    def popen_git_command(self,
+    def popen_git_command(
+        self,
         main_cmd_args: list[str],
         subcommand_args: list[str],
         *popen_run_args: Any,
         text: Literal[True, False],
-        **popen_run_kwargs: Any,) -> Popen[str] | Popen[bytes]:
+        **popen_run_kwargs: Any,
+    ) -> Popen[str] | Popen[bytes]:
         try:
             return subprocess.Popen(
                 self.make_cmd(main_cmd_args, subcommand_args),

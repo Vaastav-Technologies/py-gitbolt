@@ -686,7 +686,9 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         """
         return self.git.build_main_cmd_args()
 
-    def git_envs(self, extra_git_envs: dict[str, str] | None = None) -> dict[str, str] | None:
+    def git_envs(
+        self, extra_git_envs: dict[str, str] | None = None
+    ) -> dict[str, str] | None:
         """
         Get Git environment variables from the merged ``GitEnvVars`` object.
 
@@ -699,5 +701,5 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         """
         env_vars = self.git.build_git_envs()
         if extra_git_envs and env_vars is not None:
-                env_vars.update(extra_git_envs)
+            env_vars.update(extra_git_envs)
         return env_vars
