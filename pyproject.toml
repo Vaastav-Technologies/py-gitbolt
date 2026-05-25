@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
   "vt-err-hndlr >= 0.0.0dev6",
-  "vt-commons >= 0.0.1.dev9",
+  "vt-commons >= 0.0.1.dev11",
 ]
 
 [project.optional-dependencies]
