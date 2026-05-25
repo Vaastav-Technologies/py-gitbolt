@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import override, Literal, overload
+from subprocess import Popen
+from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -24,6 +25,7 @@ from gitbolt.subprocess import (
     UncheckedSubcmd,
 )
 from gitbolt.subprocess.add import AddCLIArgsBuilder
+from gitbolt.subprocess.base import GitSession
 from gitbolt.subprocess.constants import VERSION_CMD
 from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
@@ -168,6 +170,7 @@ class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
+
     def __init__(
         self,
         git_root_dir: Path = Path.cwd(),
@@ -244,6 +247,15 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         subcmd_unchecked = self._subcmd_unchecked.clone()
         subcmd_unchecked._set_underlying_git(self)
         return subcmd_unchecked
+
+    def session(self, **commands: list[str] | Callable[[], Popen[bytes]]) -> GitSession:
+        cmds: dict[str, Callable[[], Popen[bytes]]] = {}
+        for cmd_name, runnable_cmd in commands.items():
+            if callable(runnable_cmd):
+                cmds[cmd_name] = runnable_cmd
+            else:
+                cmds[cmd_name] = lambda : self.subcmd_unchecked.popen(runnable_cmd, text=False)
+        return GitSession(self, **cmds)
 
 
 class CLISimpleGitCommand(SimpleGitCommand):
