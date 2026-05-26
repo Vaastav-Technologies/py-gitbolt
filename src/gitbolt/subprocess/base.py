@@ -338,6 +338,7 @@ class GitCommand(Git, ABC):
         ...
 
 
+# TODO: extract a base session class from this
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
     def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
         """
