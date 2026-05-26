@@ -359,8 +359,9 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self._git = git
         self.unstarted_commands: dict[str, Callable[[], Popen[bytes]]] = commands
         self.started_commands: dict[str, Popen[bytes]] = dict()
-        self.commands: SimpleNamespace | None = None
+        self.commands = SimpleNamespace()
 
+    @override
     def __enter__(self) -> Self:
         processes_started_keys: list[str] = []
         for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
@@ -373,16 +374,18 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
             del self.unstarted_commands[pk]
         return self
 
+    @override
     @property
     def git(self) -> GitCommand:
         return self._git
 
-    def __exit__(self, exc_type, exc_value, traceback, /):
+    @override
+    def __exit__(self, exc_type, exc_value, traceback, /) -> Literal[False]:
         process_done_keys: list[str] = []
         for started_popen_key, started_popen in self.started_commands.items():
             started_popen.__exit__(exc_type, exc_value, traceback)
             process_done_keys.append(started_popen_key)
-        self.commands = None
+        self.commands = SimpleNamespace()
         for pk in process_done_keys:
             del self.started_commands[pk]
         return False
