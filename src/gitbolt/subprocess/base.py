@@ -343,14 +343,16 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         Obtain a session:
 
         >>> import gitbolt
+        >>> from gitbolt.subprocess.base import GitSession
         >>> _git = gitbolt.get_git_command()
-        >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"], cat_file=["cat-file", "--batch"])
+        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked.popen(["ls-tree", "HEAD"], text=False),
+        ...                 cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
         Start the session in one go:
 
-        >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
+        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
 
         :param git: ``gitbolt.subprocess.GitCommand`` instance.
@@ -360,6 +362,8 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self.unstarted_commands: dict[str, Callable[[], Popen[bytes]]] = commands
         self.started_commands: dict[str, Popen[bytes]] = dict()
         self.commands = SimpleNamespace()
+        self.__started = False
+        self.__done = False
 
     @override
     def __enter__(self) -> Self:
@@ -372,6 +376,7 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self.commands = SimpleNamespace(**self.started_commands)
         for pk in processes_started_keys:
             del self.unstarted_commands[pk]
+        self.__started = True
         return self
 
     @override
@@ -388,7 +393,22 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self.commands = SimpleNamespace()
         for pk in process_done_keys:
             del self.started_commands[pk]
+        self.__done = True
         return False
+
+    @property
+    def started(self) -> bool:
+        """
+        :returns: Whether the session has started.
+        """
+        return self.__started
+
+    @property
+    def done(self) -> bool:
+        """
+        :returns: Whether the session has completed and thus exited/closed.
+        """
+        return self.__done
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
