@@ -98,11 +98,3 @@ def cat_file_tree_content(
                 output.append((mode, sha, full_name,))
 
     return output
-
-
-if __name__ == "__main__":
-    import gitbolt
-    git = gitbolt.get_git_command()
-    with git.session(cat_file=["cat-file", "--batch"]) as ses:
-        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}", True):
-            print(mode_, sha_, name_)
