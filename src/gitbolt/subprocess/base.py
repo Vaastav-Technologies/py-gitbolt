@@ -371,6 +371,7 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self.commands = SimpleNamespace(**self.started_commands)
         for pk in processes_started_keys:
             del self.unstarted_commands[pk]
+        return self
 
     @property
     def git(self) -> GitCommand:
