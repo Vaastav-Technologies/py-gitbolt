@@ -333,7 +333,6 @@ class GitCommand(Git, ABC):
 
 
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
-
     def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
         """
         Context Manager to start a git long-running session. Useful when a command is to be held in open state and be
@@ -365,7 +364,9 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
     def __enter__(self) -> Self:
         processes_started_keys: list[str] = []
         for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
-            self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+            self.started_commands[unstarted_command_key] = (
+                unstarted_command().__enter__()
+            )
             processes_started_keys.append(unstarted_command_key)
         self.commands = SimpleNamespace(**self.started_commands)
         for pk in processes_started_keys:

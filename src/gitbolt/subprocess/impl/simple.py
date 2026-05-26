@@ -170,7 +170,6 @@ class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
-
     def __init__(
         self,
         git_root_dir: Path = Path.cwd(),
@@ -254,7 +253,9 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             if callable(runnable_cmd):
                 cmds[cmd_name] = runnable_cmd
             else:
-                cmds[cmd_name] = lambda : self.subcmd_unchecked.popen(runnable_cmd, text=False)
+                cmds[cmd_name] = lambda: self.subcmd_unchecked.popen(
+                    runnable_cmd, text=False
+                )
         return GitSession(self, **cmds)
 
 
