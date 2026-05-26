@@ -10,7 +10,7 @@ Much faster that subprocess creation for each input/output pair.
 """
 
 import subprocess
-from typing import Iterable
+from typing import Iterable, IO, cast
 
 from vt.utils.commons.commons.core_py import read_exact
 
@@ -23,17 +23,21 @@ def cat_file_blob_content(
 
     Spawning new ``git show`` processes can be slower and resource consuming.
 
-    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode.
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param blob_hash: hash to be read from cat-file.
     :return: contents of blob hash in bytes.
     """
     write_obj = blob_hash + b"\n"
-    cat_file_popen.stdin.write(write_obj)
-    cat_file_popen.stdin.flush()
-    header = cat_file_popen.stdout.readline()
+    cat_file_popen_stdin: IO[bytes] = cast(IO[bytes], cat_file_popen.stdin) # stdin is assumed to be piped
+    cat_file_popen_stdout: IO[bytes] = cast(IO[bytes], cat_file_popen.stdout) # stdout is assumed to be piped
+    cat_file_popen_stdin.write(write_obj)
+    cat_file_popen_stdin.flush()
+    header = cat_file_popen_stdout.readline()
     obj, typ, size = header.split()
-    blob_content: bytes = read_exact(cat_file_popen.stdout, int(size))
-    cat_file_popen.stdout.readline()
+    blob_content: bytes = read_exact(cat_file_popen_stdout, int(size))
+    cat_file_popen_stdout.readline()
     return blob_content
 
 def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
@@ -68,7 +72,9 @@ def cat_file_tree_content(
     """
     Get tree data from the stdout of a long-running cat-file query for tree hash.
 
-    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode.
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
     :param prefix: prefix, useful when doing recursive tree query.

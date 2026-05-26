@@ -326,6 +326,12 @@ class GitCommand(Git, ABC):
         >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
 
+
+       Note: All commands/processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
+
         :param commands: list of string git commands suppliable to ``subprocess.Popen`` or ``subprocess.Popen`` lambdas.
         :returns: A (not yet started) long-running ``GitSession`` context manager.
         """
@@ -355,6 +361,12 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
 
         >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
+
+
+       Note: All processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
 
         :param git: ``gitbolt.subprocess.GitCommand`` instance.
         :param commands: commands in kwargs fashion.
