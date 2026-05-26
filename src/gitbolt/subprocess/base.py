@@ -335,8 +335,9 @@ class GitCommand(Git, ABC):
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
     def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
         """
-        Context Manager to start a git long-running session. Useful when a command is to be held in open state and be
-        communicated with its stdin and stdout. This is way faster that spawning multiple processes each time.
+        Reusable and reentrant context Manager to start a git long-running session. Useful when a command is to be
+        held in open state and be communicated with its stdin and stdout. This is way faster that spawning multiple
+        processes each time.
 
         Examples:
 
@@ -361,22 +362,23 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self._git = git
         self.unstarted_commands: dict[str, Callable[[], Popen[bytes]]] = commands
         self.started_commands: dict[str, Popen[bytes]] = dict()
-        self.commands = SimpleNamespace()
+        self._commands: SimpleNamespace | None = None
         self.__started = False
         self.__done = False
+        self.__depth = 0
 
     @override
     def __enter__(self) -> Self:
-        processes_started_keys: list[str] = []
-        for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
-            self.started_commands[unstarted_command_key] = (
-                unstarted_command().__enter__()
-            )
-            processes_started_keys.append(unstarted_command_key)
-        self.commands = SimpleNamespace(**self.started_commands)
-        for pk in processes_started_keys:
-            del self.unstarted_commands[pk]
-        self.__started = True
+        if self.depth == 0:
+            processes_started_keys: list[str] = []
+            for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
+                self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+                processes_started_keys.append(unstarted_command_key)
+            self._commands = SimpleNamespace(**self.started_commands)
+            for pk in processes_started_keys:
+                del self.unstarted_commands[pk]
+            self.__started = True
+        self.__depth += 1
         return self
 
     @override
@@ -386,14 +388,16 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
 
     @override
     def __exit__(self, exc_type, exc_value, traceback, /) -> Literal[False]:
-        process_done_keys: list[str] = []
-        for started_popen_key, started_popen in self.started_commands.items():
-            started_popen.__exit__(exc_type, exc_value, traceback)
-            process_done_keys.append(started_popen_key)
-        self.commands = SimpleNamespace()
-        for pk in process_done_keys:
-            del self.started_commands[pk]
-        self.__done = True
+        self.__depth -= 1
+        if self.__depth == 0:
+            process_done_keys: list[str] = []
+            for started_popen_key, started_popen in self.started_commands.items():
+                started_popen.__exit__(exc_type, exc_value, traceback)
+                process_done_keys.append(started_popen_key)
+            self._commands = None
+            for pk in process_done_keys:
+                del self.started_commands[pk]
+            self.__done = True
         return False
 
     @property
@@ -409,6 +413,30 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         :returns: Whether the session has completed and thus exited/closed.
         """
         return self.__done
+
+    @property
+    def active(self) -> bool:
+        """
+        :returns: Whether the session is currently actively running.
+        """
+        return self.started and not self.done
+
+    @property
+    def commands(self) -> SimpleNamespace:
+        """
+        :returns: All the registered commands and these can be accessed by member notations.
+        :raises RuntimeError: if commands are queried when the session is inactive.
+        """
+        if self._commands is None or not self.active:
+            raise RuntimeError("GitSession not active")
+        return self._commands
+
+    @property
+    def depth(self) -> int:
+        """
+        :returns: The current session depth. Multilevel context managers increment the depth each y one.
+        """
+        return self.__depth
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
