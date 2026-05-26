@@ -7,6 +7,7 @@ Git command interfaces with default implementation using subprocess calls.
 
 from __future__ import annotations
 
+import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -385,7 +386,12 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         if self.depth == 0:
             processes_started_keys: list[str] = []
             for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
-                self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+                try:
+                    self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+                except Exception:
+                    for k in reversed(processes_started_keys):
+                        self.started_commands[k].__exit__(*sys.exc_info())
+                    raise
                 processes_started_keys.append(unstarted_command_key)
             self._commands = SimpleNamespace(**self.started_commands)
             for pk in processes_started_keys:
