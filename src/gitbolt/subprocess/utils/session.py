@@ -36,7 +36,7 @@ def cat_file_blob_content(
     cat_file_popen.stdout.readline()
     return blob_content
 
-def parse_tree(data: bytes) -> Iterable[tuple[str, str, str]]:
+def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Parse bytes tree data.
 
@@ -51,15 +51,13 @@ def parse_tree(data: bytes) -> Iterable[tuple[str, str, str]]:
         # mode
         j = data.find(b' ', i)
         mode = data[i:j]
-
         # filename
         k = data.find(b'\x00', j)
         name = data[j + 1:k]
-
         # sha (20 bytes binary)
         sha = data[k + 1:k + 21]
 
-        yield mode.decode(), sha.hex(), name.decode()
+        yield mode, sha.hex().encode(), name
 
         i = k + 21
 
@@ -77,38 +75,43 @@ def cat_file_tree_content(
     :return: contents of tree hash in bytes.
     """
     tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
-    if not recursive:
-        return tree_content
     output = []
-
-    for mode, sha, name in parse_tree(tree_content):
-        name_b = name.encode() if isinstance(name, str) else name
-
-        full_name = prefix + name_b
-
-        # Normalize mode for comparison (octal string, no padding)
-        mode_str = mode if isinstance(mode, str) else mode.decode()
-
-        if mode_str == "40000":  # directory (tree)
-            # recurse into subtree
-            sub_tree = cat_file_tree_content(
-                cat_file_popen,
-                sha.encode() if isinstance(sha, str) else sha,
-                recursive=True,
-                prefix=full_name + b"/",
-            )
-            output.append(sub_tree)
-        else:
+    if not recursive:
+        for mode, sha, name in parse_tree(tree_content):
             # leaf node (blob, symlink, submodule)
             # format similar to ls-tree -r (but binary-safe)
             output.append(
                 b"%06o %s %s\n"
                 % (
-                    int(mode_str, 8),
+                    int(mode, 8),
                     sha.encode() if isinstance(sha, str) else sha,
-                    full_name,
+                    name,
                 )
             )
+    else:
+        for mode, sha, name in parse_tree(tree_content):
+            full_name = prefix + name
+
+            if mode == b"40000":  # directory (tree)
+                # recurse into subtree
+                sub_tree = cat_file_tree_content(
+                    cat_file_popen,
+                    sha,
+                    recursive=True,
+                    prefix=full_name + b"/",
+                )
+                output.append(sub_tree)
+            else:
+                # leaf node (blob, symlink, submodule)
+                # format similar to ls-tree -r (but binary-safe)
+                output.append(
+                    b"%06o %s %s\n"
+                    % (
+                        int(mode, 8),
+                        sha.encode() if isinstance(sha, str) else sha,
+                        name,
+                    )
+                )
 
     return b"".join(output)
 
@@ -116,6 +119,5 @@ def cat_file_tree_content(
 if __name__ == "__main__":
     import gitbolt
     git = gitbolt.get_git_command()
-    ses = git.session(cat_file=["cat-file", "--batch"])
-    with ses:
-        print(cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}"))
+    with git.session(cat_file=["cat-file", "--batch"]) as ses:
+        print(cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}", True))
