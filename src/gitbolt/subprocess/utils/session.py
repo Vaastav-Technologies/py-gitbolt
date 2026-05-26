@@ -64,7 +64,7 @@ def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
 def cat_file_tree_content(
     cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
     prefix: bytes = b"",
-) -> bytes:
+) -> list[tuple[bytes, bytes, bytes]]:
     """
     Get tree data from the stdout of a long-running cat-file query for tree hash.
 
@@ -72,22 +72,15 @@ def cat_file_tree_content(
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
     :param prefix: prefix, useful when doing recursive tree query.
-    :return: contents of tree hash in bytes.
+    :return: list of (mode, sha, filename).
     """
     tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
-    output = []
+    output: list[tuple[bytes, bytes, bytes]] = []
     if not recursive:
         for mode, sha, name in parse_tree(tree_content):
             # leaf node (blob, symlink, submodule)
             # format similar to ls-tree -r (but binary-safe)
-            output.append(
-                b"%06o %s %s\n"
-                % (
-                    int(mode, 8),
-                    sha.encode() if isinstance(sha, str) else sha,
-                    name,
-                )
-            )
+            output.append((mode, sha, name,))
     else:
         for mode, sha, name in parse_tree(tree_content):
             full_name = prefix + name
@@ -100,24 +93,18 @@ def cat_file_tree_content(
                     recursive=True,
                     prefix=full_name + b"/",
                 )
-                output.append(sub_tree)
+                output.extend(sub_tree)
             else:
                 # leaf node (blob, symlink, submodule)
                 # format similar to ls-tree -r (but binary-safe)
-                output.append(
-                    b"%06o %s %s\n"
-                    % (
-                        int(mode, 8),
-                        sha.encode() if isinstance(sha, str) else sha,
-                        name,
-                    )
-                )
+                output.append((mode, sha, full_name,))
 
-    return b"".join(output)
+    return output
 
 
 if __name__ == "__main__":
     import gitbolt
     git = gitbolt.get_git_command()
     with git.session(cat_file=["cat-file", "--batch"]) as ses:
-        print(cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}", True))
+        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}", True):
+            print(mode_, sha_, name_)
