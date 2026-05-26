@@ -762,24 +762,24 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[True] = True,
+        text: Literal[False] = False,
         **popen_kwargs: Any,
-    ) -> Popen[str]: ...
+    ) -> Popen[bytes]: ...
 
     @overload
     def popen(
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[False] = False,
+        text: Literal[True] = True,
         **popen_kwargs: Any,
-    ) -> Popen[bytes]: ...
+    ) -> Popen[str]: ...
 
     def popen(
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[True, False] = False,
+        text: Literal[False, True] = False,
         **popen_kwargs: Any,
     ) -> Popen[str] | Popen[bytes]:
         """

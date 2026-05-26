@@ -253,9 +253,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             if callable(runnable_cmd):
                 cmds[cmd_name] = runnable_cmd
             else:
-                cmds[cmd_name] = lambda: self.subcmd_unchecked.popen(
-                    runnable_cmd, text=False
-                )
+                cmds[cmd_name] = lambda: self.subcmd_unchecked.popen(runnable_cmd)
         return GitSession(self, **cmds)
 
 
