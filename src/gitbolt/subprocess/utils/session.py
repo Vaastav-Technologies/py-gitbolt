@@ -79,7 +79,6 @@ def cat_file_tree_content(
     if not recursive:
         for mode, sha, name in parse_tree(tree_content):
             # leaf node (blob, symlink, submodule)
-            # format similar to ls-tree -r (but binary-safe)
             output.append((mode, sha, name,))
     else:
         for mode, sha, name in parse_tree(tree_content):
@@ -96,7 +95,6 @@ def cat_file_tree_content(
                 output.extend(sub_tree)
             else:
                 # leaf node (blob, symlink, submodule)
-                # format similar to ls-tree -r (but binary-safe)
                 output.append((mode, sha, full_name,))
 
     return output
