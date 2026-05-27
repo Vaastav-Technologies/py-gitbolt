@@ -791,7 +791,7 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         """
         Open unchecked git subcommand communicable process, using ``subprocess.Popen``.
 
-        All the arguments are congruent to ``subprocess.Popen`` and mostly passes as-is.
+        All the arguments are congruent to ``subprocess.Popen`` and mostly pass as-is.
 
         :param subcommand_args: the full subcommand argument list.
         :param popen_args: additional subprocess positionals.
