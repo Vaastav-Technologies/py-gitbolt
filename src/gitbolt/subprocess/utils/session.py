@@ -162,7 +162,8 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
-    :param format_: the format in which the queried tree data will be formatted.
+    :param format_: the format in which the queried tree data will be formatted. Follows bytes ``%`` operator
+        interpolation.
     :return: iterable of tree data in the queried mode.
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
@@ -188,9 +189,7 @@ if __name__ == "__main__":
     import time
 
     git = gitbolt.get_git_command()
-    # with git.session(cat_file=["cat-file", "--batch"]) as ses1, git.session(cat_file=["catfile", "--batch"]) as ses2:
-    #     for mode_, sha_, name_ in cat_file_tree_content(ses1.commands.cat_file, b"HEAD^{tree}"):
-    #         print(mode_, sha_, name_)
+    # region GitSession approach
     start = time.perf_counter()
     with git.session(
         cat_file1=["cat-file", "--batch"],
@@ -200,10 +199,16 @@ if __name__ == "__main__":
             print(mode_, sha_, name_)
         print("+" * 40)
         print(cat_file_blob_content(ses.commands.cat_file2, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
+
+        print("*"*40)
+        for tree_line in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}"):
+            print(tree_line.decode())
     end = time.perf_counter()
     print(f"Session Elapsed time: {end - start:0.4f} seconds")
+    # endregion
 
     print("="*40)
+    # region Per-process call approach
     start = time.perf_counter()
     head_tree_out = git.subcmd_unchecked.run(["cat-file", "-p", "HEAD^{tree}"], text=False).stdout.splitlines()
     for head_tree in head_tree_out:
@@ -212,19 +217,4 @@ if __name__ == "__main__":
     print(git.subcmd_unchecked.run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
     end = time.perf_counter()
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
-
-    print("*"*40)
-    with git.session(cat_file=["cat-file", "--batch"]) as ses:
-        for tree_line in cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}"):
-            print(tree_line.decode())
-
-    # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
-    # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
-    # for mode_, sha_, name_ in cat_file_tree_content(cf_p_1, b"HEAD^{tree}"):
-    #         print(mode_, sha_, name_)
-    # sess = gitbolt.GitSession(git, cf_p_2=lambda: git.subcmd_unchecked.popen(["catfile", "--batch"]),
-    #                           cf_p_1=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),
-    #                           mktree=lambda: git.subcmd_unchecked.popen(["mktree", "--batch"]))
-    # with sess:
-    #     for mode_, sha_, name_ in cat_file_tree_content(sess.commands.cf_p_1, b"HEAD^{tree}"):
-    #             print(mode_, sha_, name_)
+    # endregion
