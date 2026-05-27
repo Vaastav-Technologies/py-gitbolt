@@ -12,8 +12,6 @@ Much faster that subprocess creation for each input/output pair.
 import subprocess
 from typing import Iterable, IO, cast
 
-from vt.utils.commons.commons.core_py import read_exact
-
 
 def cat_file_blob_content(
     cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes
