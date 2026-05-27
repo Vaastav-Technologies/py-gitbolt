@@ -141,6 +141,44 @@ def cat_file_tree_data(
                 yield mode, sha, full_name
 
 
+def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
+                          format_: str = "{objmode:06o} {objtype} {objhash}\x09{objpath}") -> Iterable[bytes]:
+    """
+    Get tree data from the stdout of a long-running cat-file query for tree hash in the format specified.
+
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    Query format:
+
+    - objmode: `100644`, `100755`, `120000`, `040000`, `160000`.
+    - objtype: `blob`, `tree`, `commit`.
+    - objhash: sha hash of the object.
+    - objpath: full path of the object from repo root.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
+    :param tree_hash: tree hash to be read from cat-file.
+    :param recursive: recursively query the full tree.
+    :param format_: the format in which the queried tree data will be formatted.
+    :return: iterable of tree data in the queried mode.
+    :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
+    """
+    for mode, sha, filename in cat_file_tree_data(cat_file_popen, tree_hash, recursive):
+        if mode == b"40000":
+            # directory
+            objtype = b"tree"
+        elif mode == b"160000":
+            # submodule
+            objtype = b"commit"
+        elif mode in (b"100644", b"100755", b"120000"):
+            # symlnk, executable, regular files
+            objtype = b"blob"
+        else:
+            raise GitExitingException(f"Invalid object mode: {mode}") from ValueError(mode)
+        objmode = int(mode, 8)
+        objhash = sha
+        objpath = filename
+        yield (format_.format(objmode=objmode, objtype=objtype, objhash=objhash, objpath=objpath)).encode()
+
 if __name__ == "__main__":
     import gitbolt
     import time
@@ -170,6 +208,11 @@ if __name__ == "__main__":
     print(git.subcmd_unchecked.run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
     end = time.perf_counter()
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
+
+    print("*"*40)
+    with git.session(cat_file=["cat-file", "--batch"]) as ses:
+        for tree_line in cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}"):
+            print(tree_line)
 
     # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
     # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
