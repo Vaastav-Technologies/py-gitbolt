@@ -157,7 +157,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
 
     Default format usage and explanation:
 
-    - %(objmode)06o: 06-show six-chars left-padding with 0s, o - octal number.
+    - %(objmode)06o: 06-show six-chars left-padded with 0 (zeros), o - octal number.
 
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param tree_hash: tree hash to be read from cat-file.
