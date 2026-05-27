@@ -62,7 +62,6 @@ def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
         sha = data[k + 1:k + 21]
 
         yield mode, sha.hex().encode(), name
-
         i = k + 21
 
 def cat_file_tree_content(
@@ -104,3 +103,25 @@ def cat_file_tree_content(
                 output.append((mode, sha, full_name,))
 
     return output
+
+
+if __name__ == "__main__":
+    import gitbolt
+    git = gitbolt.get_git_command()
+    # with git.session(cat_file=["cat-file", "--batch"]) as ses1, git.session(cat_file=["catfile", "--batch"]) as ses2:
+    #     for mode_, sha_, name_ in cat_file_tree_content(ses1.commands.cat_file, b"HEAD^{tree}"):
+    #         print(mode_, sha_, name_)
+    with git.session(cat_file1=["catfile", "--batch"], cat_file2=["cat-file", "--batch"],
+                     mktree=lambda: git.subcmd_unchecked.popen(["mktree"])) as ses:
+        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+            print(mode_, sha_, name_)
+    # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
+    # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
+    # for mode_, sha_, name_ in cat_file_tree_content(cf_p_1, b"HEAD^{tree}"):
+    #         print(mode_, sha_, name_)
+    # sess = gitbolt.GitSession(git, cf_p_2=lambda: git.subcmd_unchecked.popen(["catfile", "--batch"]),
+    #                           cf_p_1=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),
+    #                           mktree=lambda: git.subcmd_unchecked.popen(["mktree", "--batch"]))
+    # with sess:
+    #     for mode_, sha_, name_ in cat_file_tree_content(sess.commands.cf_p_1, b"HEAD^{tree}"):
+    #             print(mode_, sha_, name_)
