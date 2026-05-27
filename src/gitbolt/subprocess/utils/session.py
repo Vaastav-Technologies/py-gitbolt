@@ -122,21 +122,34 @@ def cat_file_tree_content(
 
 if __name__ == "__main__":
     import gitbolt
+    import time
 
     git = gitbolt.get_git_command()
     # with git.session(cat_file=["cat-file", "--batch"]) as ses1, git.session(cat_file=["catfile", "--batch"]) as ses2:
     #     for mode_, sha_, name_ in cat_file_tree_content(ses1.commands.cat_file, b"HEAD^{tree}"):
     #         print(mode_, sha_, name_)
+    start = time.perf_counter()
     with git.session(
-        cat_file1=["catfile", "--batch"],
+        cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
-        cat_file3=["cat-file", "--batch"],
-        mktree=lambda: git.subcmd_unchecked.popen(["mktree"]),
     ) as ses:
-        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}"):
             print(mode_, sha_, name_)
         print("+" * 40)
-        print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
+        print(cat_file_blob_content(ses.commands.cat_file2, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
+    end = time.perf_counter()
+    print(f"Session Elapsed time: {end - start:0.4f} seconds")
+
+    print("="*40)
+    start = time.perf_counter()
+    head_tree_out = git.subcmd_unchecked.run(["cat-file", "-p", "HEAD^{tree}"], text=False).stdout.splitlines()
+    for head_tree in head_tree_out:
+        print(head_tree)
+    print("+" * 40)
+    print(git.subcmd_unchecked.run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
+    end = time.perf_counter()
+    print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
+
     # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
     # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
     # for mode_, sha_, name_ in cat_file_tree_content(cf_p_1, b"HEAD^{tree}"):
