@@ -12,6 +12,10 @@ Much faster that subprocess creation for each input/output pair.
 import subprocess
 from typing import Iterable, IO, cast
 
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE
+
+from gitbolt.exceptions import GitExitingException
+
 
 def cat_file_blob_content(
     cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes
@@ -110,8 +114,12 @@ def cat_file_tree_content(
     :param recursive: recursively query the full tree.
     :param prefix: prefix, useful when doing recursive tree query.
     :return: iterable of (mode, sha, filename).
+    :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
-    tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
+    _, typ, _, tree_content = cat_file_data(cat_file_popen, tree_hash)
+    if typ != b"tree":
+        raise GitExitingException(f"{tree_hash} is not a valid git tree.", exit_code=ERR_INVALID_USAGE) \
+            from ValueError(tree_hash)
     if not recursive:
         for mode, sha, name in parse_cat_file_tree(tree_content):
             # leaf node (blob, symlink, submodule)
