@@ -806,7 +806,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         stdin = popen_kwargs.pop("stdin", PIPE)
         stdout = popen_kwargs.pop("stdout", PIPE)
         stderr = popen_kwargs.pop("stderr", PIPE)
-        bufsize = popen_kwargs.pop("bufsize", 0)
         # Popen the git command
         result = self.git.runner.popen_git_command(
             main_cmd_args,
@@ -818,7 +817,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
-            bufsize=bufsize,
             **popen_kwargs,
         )
         return result

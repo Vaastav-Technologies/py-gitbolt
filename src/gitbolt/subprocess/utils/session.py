@@ -36,8 +36,8 @@ def cat_file_blob_content(
     cat_file_popen_stdin.flush()
     header = cat_file_popen_stdout.readline()
     obj, typ, size = header.split()
-    blob_content: bytes = read_exact(cat_file_popen_stdout, int(size))
-    cat_file_popen_stdout.readline()
+    blob_content: bytes = cat_file_popen_stdout.read(int(size))
+    cat_file_popen_stdout.flush()
     return blob_content
 
 def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
