@@ -27,15 +27,32 @@ def cat_file_blob_content(
     :param blob_hash: hash to be read from cat-file.
     :return: contents of blob hash in bytes.
     """
+    _, _, _, blob_content = cat_file_data(cat_file_popen, blob_hash)
+    return blob_content
+
+
+def cat_file_data(cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes) -> tuple[bytes, bytes, bytes, bytes]:
+    """
+    Read git contents using a long-running batched cat-file process.
+
+    Spawning new ``git show`` processes can be slower and resource consuming.
+
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
+    :param blob_hash: hash to be read from cat-file.
+    :return: (hash, type, size, content) of the read stream.
+    """
     write_obj = blob_hash + b"\n"
-    cat_file_popen_stdin: IO[bytes] = cast(IO[bytes], cat_file_popen.stdin) # stdin is assumed to be piped
-    cat_file_popen_stdout: IO[bytes] = cast(IO[bytes], cat_file_popen.stdout) # stdout is assumed to be piped
+    cat_file_popen_stdin: IO[bytes] = cast(IO[bytes], cat_file_popen.stdin)  # stdin is assumed to be piped
+    cat_file_popen_stdout: IO[bytes] = cast(IO[bytes], cat_file_popen.stdout)  # stdout is assumed to be piped
     cat_file_popen_stdin.write(write_obj)
     cat_file_popen_stdin.flush()
     header = cat_file_popen_stdout.readline()
     obj, typ, size, blob_content = cat_file_read(cat_file_popen_stdout, header)
     cat_file_popen_stdout.read(1)
-    return blob_content
+    return obj, typ, size, blob_content
+
 
 def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes, bytes]:
     """
