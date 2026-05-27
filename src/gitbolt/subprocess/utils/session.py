@@ -102,7 +102,7 @@ def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes
 
 def cat_file_tree_data(
     cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
-    prefix: bytes = b"",
+    _prefix: bytes = b"",
 ) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Get tree data from the stdout of a long-running cat-file query for tree hash.
@@ -112,7 +112,7 @@ def cat_file_tree_data(
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
-    :param prefix: prefix, useful when doing recursive tree query.
+    :param _prefix: prefix, useful when doing recursive tree query (only for internal use).
     :return: iterable of (mode, sha, filename).
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
@@ -126,7 +126,7 @@ def cat_file_tree_data(
             yield mode, sha, name
     else:
         for mode, sha, name in parse_cat_file_tree(tree_content):
-            full_name = prefix + name
+            full_name = _prefix + name
 
             if mode == b"40000":  # directory (tree)
                 # recurse into subtree
@@ -134,7 +134,7 @@ def cat_file_tree_data(
                     cat_file_popen,
                     sha,
                     recursive=True,
-                    prefix=full_name + b"/",
+                    _prefix=full_name + b"/",
                 )
             else:
                 # leaf node (blob, symlink, submodule)
