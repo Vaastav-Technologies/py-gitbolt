@@ -33,10 +33,25 @@ def cat_file_blob_content(
     cat_file_popen_stdin.write(write_obj)
     cat_file_popen_stdin.flush()
     header = cat_file_popen_stdout.readline()
-    obj, typ, size = header.split()
-    blob_content: bytes = cat_file_popen_stdout.read(int(size))
+    obj, typ, size, blob_content = cat_file_read(cat_file_popen_stdout, header)
     cat_file_popen_stdout.read(1)
     return blob_content
+
+def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes, bytes]:
+    """
+    ``git cat-file`` produces contents by first giving a header that contains:
+
+    - object hash.
+    - type (commit, tree, blob, ..., etc.).
+    - size - the actual content is next ``size`` bytes long.
+
+    :param stream: stream to read ``git cat-file --batch`` bytes from.
+    :param header: the header line of ``git cat-file --batch``.
+    :returns: (hash, type, size, content) of the read stream.
+    """
+    obj, typ, size = header.split()
+    blob_content: bytes = stream.read(int(size))
+    return obj, typ, size, blob_content
 
 
 def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
