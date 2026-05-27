@@ -1912,6 +1912,30 @@ class TestGitSession:
                     pass
                 assert session.done
 
+    class TestMultiCommand:
+        """
+        Test multiple commands behavior in one git session.
+        """
+        def test_multi_commands_run(self):
+            """
+            Multiple commands run without failure.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(cat_file=["cat-file", "--batch"], ls_tree=["ls-tree", "HEAD"]) as ses:
+                cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+                ses.commands.ls_tree.communicate()
+
+        def test_one_wrong_command_does_not_affect_others(self):
+            """
+            Multiple commands with many wrong command must not affect others.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(cat_file=["cat-file", "--batch"], cat_file_faulty=["catfile", "HEAD"],
+                             unknown_git_cmd=["unknown"], mktree=["mktree", "--batch"]) as ses:
+                cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+                with pytest.raises(Exception):
+                    cat_file_tree_content(ses.commands.cat_file_faulty, b"HEAD^{tree}")
+
     def test_reentrance(self):
         """
         Test all the states of reentrant ``GitSession``.
