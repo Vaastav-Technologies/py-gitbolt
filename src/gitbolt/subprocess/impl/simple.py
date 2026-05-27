@@ -249,10 +249,12 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     def session(self, **commands: list[str] | Callable[[], Popen[bytes]]) -> GitSession:
         cmds: dict[str, Callable[[], Popen[bytes]]] = {}
+
         # curb the lambda-late-binding-trap
         # resource: https://medium.com/skiller-whale/late-binding-variables-its-a-trap-c17af980164f
         def lambda_for_subcmd_popen(_runnable_cmd: list[str]):
             return lambda: self.subcmd_unchecked.popen(_runnable_cmd)
+
         for cmd_name, runnable_cmd in commands.items():
             if callable(runnable_cmd):
                 cmds[cmd_name] = runnable_cmd

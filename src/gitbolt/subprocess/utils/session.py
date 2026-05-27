@@ -38,6 +38,7 @@ def cat_file_blob_content(
     cat_file_popen_stdout.read(1)
     return blob_content
 
+
 def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Parse bytes tree data.
@@ -51,16 +52,17 @@ def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     n = len(data)
     while i < n:
         # mode
-        j = data.find(b' ', i)
+        j = data.find(b" ", i)
         mode = data[i:j]
         # filename
-        k = data.find(b'\x00', j)
-        name = data[j + 1:k]
+        k = data.find(b"\x00", j)
+        name = data[j + 1 : k]
         # sha (20 bytes binary)
-        sha = data[k + 1:k + 21]
+        sha = data[k + 1 : k + 21]
 
         yield mode, sha.hex().encode(), name
         i = k + 21
+
 
 def cat_file_tree_content(
     cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
@@ -105,15 +107,20 @@ def cat_file_tree_content(
 
 if __name__ == "__main__":
     import gitbolt
+
     git = gitbolt.get_git_command()
     # with git.session(cat_file=["cat-file", "--batch"]) as ses1, git.session(cat_file=["catfile", "--batch"]) as ses2:
     #     for mode_, sha_, name_ in cat_file_tree_content(ses1.commands.cat_file, b"HEAD^{tree}"):
     #         print(mode_, sha_, name_)
-    with git.session(cat_file1=["catfile", "--batch"], cat_file2=["cat-file", "--batch"], cat_file3=["cat-file", "--batch"],
-                     mktree=lambda: git.subcmd_unchecked.popen(["mktree"])) as ses:
+    with git.session(
+        cat_file1=["catfile", "--batch"],
+        cat_file2=["cat-file", "--batch"],
+        cat_file3=["cat-file", "--batch"],
+        mktree=lambda: git.subcmd_unchecked.popen(["mktree"]),
+    ) as ses:
         for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
             print(mode_, sha_, name_)
-        print("+"*40)
+        print("+" * 40)
         print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
     # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
     # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
