@@ -1945,7 +1945,7 @@ class TestGitSession:
             ) as ses:
                 cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
                 with pytest.raises(Exception):
-                    cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}")
+                    list(cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}"))
 
     def test_reentrance(self):
         """
