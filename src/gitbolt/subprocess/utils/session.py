@@ -100,7 +100,7 @@ def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes
         i = k + 21
 
 
-def cat_file_tree_content(
+def cat_file_tree_data(
     cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
     prefix: bytes = b"",
 ) -> Iterable[tuple[bytes, bytes, bytes]]:
@@ -130,7 +130,7 @@ def cat_file_tree_content(
 
             if mode == b"40000":  # directory (tree)
                 # recurse into subtree
-                yield from cat_file_tree_content(
+                yield from cat_file_tree_data(
                     cat_file_popen,
                     sha,
                     recursive=True,
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
     ) as ses:
-        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}", True):
+        for mode_, sha_, name_ in cat_file_tree_data(ses.commands.cat_file1, b"HEAD^{tree}", True):
             print(mode_, sha_, name_)
         print("+" * 40)
         print(cat_file_blob_content(ses.commands.cat_file2, b"9854cb4d432a881f59d38582791cf2636e7819d9"))

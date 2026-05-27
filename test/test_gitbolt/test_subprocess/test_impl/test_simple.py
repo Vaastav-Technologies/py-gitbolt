@@ -15,7 +15,7 @@ import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
-from gitbolt.subprocess.utils.session import cat_file_tree_content
+from gitbolt.subprocess.utils.session import cat_file_tree_data
 
 
 def test_exec_path():
@@ -1929,7 +1929,7 @@ class TestGitSession:
             """
             git = gitbolt.get_git_command()
             with git.session(cat_file=["cat-file", "--batch"], ls_tree=["ls-tree", "HEAD"]) as ses:
-                cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
                 ses.commands.ls_tree.communicate()
 
         def test_one_wrong_command_does_not_affect_others(self):
@@ -1943,9 +1943,9 @@ class TestGitSession:
                 unknown_git_cmd=["unknown"],
                 mktree=["mktree", "--batch"],
             ) as ses:
-                cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
                 with pytest.raises(Exception):
-                    cat_file_tree_content(ses.commands.cat_file_faulty, b"HEAD^{tree}")
+                    cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}")
 
     def test_reentrance(self):
         """
@@ -2003,7 +2003,7 @@ class TestGitSession:
     def test_commands_accessible_when_session_active(self):
         git = gitbolt.get_git_command()
         with git.session(cat_file=["cat-file", "--batch"]) as ses:
-            cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
             assert ses.active
         assert not ses.active
 
@@ -2017,7 +2017,7 @@ class TestGitSession:
             assert ses.started
             assert not ses.done
             with ses:
-                cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}")
+                cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}")
                 assert ses.active
             assert ses.active
         assert not ses.active
@@ -2025,10 +2025,10 @@ class TestGitSession:
     def test_commands_inaccessible_when_session_inactive(self):
         git = gitbolt.get_git_command()
         with git.session(cat_file=["cat-file", "--batch"]) as ses:
-            cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
             assert ses.active
         assert not ses.active
         with pytest.raises(RuntimeError, match="GitSession not active"):
-            cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}")
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
         assert ses.done
         assert ses.depth == 0
