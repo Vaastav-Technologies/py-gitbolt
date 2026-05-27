@@ -330,6 +330,38 @@ with git.subcmd_unchecked.popen(["cat-file", "--batch-command"]) as cf:
 
 Error handling and I/O management is left to the client/caller.
 
+#### 🏃 Communicate with long-running git sessions
+
+Introduced in `0.0.0.dev17` to:
+- Make long-running git command sessions.
+- Have reentrant sessions.
+- Communicate with long-running git command session using their `stdin` and `stdout`.
+
+Get long-running process sessions and communicate with them for batching and faster operations.
+
+```python
+import gitbolt
+from gitbolt.subprocess.utils.session import cat_file_blob_content, cat_file_tree_content
+
+git = gitbolt.get_git_command()
+with git.session(
+    cat_file1=["cat-file", "--batch"],
+    cat_file2=["cat-file", "--batch"],
+    cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
+    mktree=["mktree"]
+) as ses:
+    for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+        print(mode_, sha_, name_)
+    print("+" * 40)
+    print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
+    with ses:   # is reentrant, if you want
+        ses.commands.mktree.stdin.write(b"100644 blob <some-blob-hash> <some-filename>\n")
+        ses.commands.mktree.stdin.flush()
+        tree_hash = ses.commands.mktree.stdout.read()
+
+assert not ses.active # session no long active
+```
+
 #### 💻 Run commands received from CLI
 
 Introduced in `0.0.0.dev11` is the ability to take commands from CLI and run it inside `gitbolt`.

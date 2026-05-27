@@ -7,6 +7,7 @@ Git command interfaces with default implementation using subprocess calls.
 
 from __future__ import annotations
 
+import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -326,32 +327,48 @@ class GitCommand(Git, ABC):
         >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
 
+
+       Note: All commands/processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
+
         :param commands: list of string git commands suppliable to ``subprocess.Popen`` or ``subprocess.Popen`` lambdas.
         :returns: A (not yet started) long-running ``GitSession`` context manager.
         """
         ...
 
 
+# TODO: extract a base session class from this
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
     def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
         """
-        Context Manager to start a git long-running session. Useful when a command is to be held in open state and be
-        communicated with its stdin and stdout. This is way faster that spawning multiple processes each time.
+        Reusable and reentrant context Manager to start a git long-running session. Useful when a command is to be
+        held in open state and be communicated with its stdin and stdout. This is way faster that spawning multiple
+        processes each time.
 
         Examples:
 
         Obtain a session:
 
         >>> import gitbolt
+        >>> from gitbolt.subprocess.base import GitSession
         >>> _git = gitbolt.get_git_command()
-        >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"], cat_file=["cat-file", "--batch"])
+        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked.popen(["ls-tree", "HEAD"], text=False),
+        ...                 cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
         Start the session in one go:
 
-        >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
+        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
+
+
+       Note: All processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
 
         :param git: ``gitbolt.subprocess.GitCommand`` instance.
         :param commands: commands in kwargs fashion.
@@ -359,32 +376,86 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         self._git = git
         self.unstarted_commands: dict[str, Callable[[], Popen[bytes]]] = commands
         self.started_commands: dict[str, Popen[bytes]] = dict()
-        self.commands: SimpleNamespace | None = None
+        self._commands: SimpleNamespace | None = None
+        self.__started = False
+        self.__done = False
+        self.__depth = 0
 
+    @override
     def __enter__(self) -> Self:
-        processes_started_keys: list[str] = []
-        for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
-            self.started_commands[unstarted_command_key] = (
-                unstarted_command().__enter__()
-            )
-            processes_started_keys.append(unstarted_command_key)
-        self.commands = SimpleNamespace(**self.started_commands)
-        for pk in processes_started_keys:
-            del self.unstarted_commands[pk]
+        if self.depth == 0:
+            processes_started_keys: list[str] = []
+            for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
+                try:
+                    self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+                except Exception:
+                    for k in reversed(processes_started_keys):
+                        self.started_commands[k].__exit__(*sys.exc_info())
+                    raise
+                processes_started_keys.append(unstarted_command_key)
+            self._commands = SimpleNamespace(**self.started_commands)
+            for pk in processes_started_keys:
+                del self.unstarted_commands[pk]
+            self.__started = True
+        self.__depth += 1
+        return self
 
+    @override
     @property
     def git(self) -> GitCommand:
         return self._git
 
-    def __exit__(self, exc_type, exc_value, traceback, /):
-        process_done_keys: list[str] = []
-        for started_popen_key, started_popen in self.started_commands.items():
-            started_popen.__exit__(exc_type, exc_value, traceback)
-            process_done_keys.append(started_popen_key)
-        self.commands = None
-        for pk in process_done_keys:
-            del self.started_commands[pk]
+    @override
+    def __exit__(self, exc_type, exc_value, traceback, /) -> Literal[False]:
+        self.__depth -= 1
+        if self.__depth == 0:
+            process_done_keys: list[str] = []
+            for started_popen_key, started_popen in self.started_commands.items():
+                started_popen.__exit__(exc_type, exc_value, traceback)
+                process_done_keys.append(started_popen_key)
+            self._commands = None
+            for pk in process_done_keys:
+                del self.started_commands[pk]
+            self.__done = True
         return False
+
+    @property
+    def started(self) -> bool:
+        """
+        :returns: Whether the session has started.
+        """
+        return self.__started
+
+    @property
+    def done(self) -> bool:
+        """
+        :returns: Whether the session has completed and thus exited/closed.
+        """
+        return self.__done
+
+    @property
+    def active(self) -> bool:
+        """
+        :returns: Whether the session is currently actively running.
+        """
+        return self.started and not self.done
+
+    @property
+    def commands(self) -> SimpleNamespace:
+        """
+        :returns: All the registered commands and these can be accessed by member notations.
+        :raises RuntimeError: if commands are queried when the session is inactive.
+        """
+        if self._commands is None or not self.active:
+            raise RuntimeError("GitSession not active")
+        return self._commands
+
+    @property
+    def depth(self) -> int:
+        """
+        :returns: The current session depth. Multilevel context managers increment the depth each y one.
+        """
+        return self.__depth
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
@@ -697,30 +768,30 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[True] = True,
+        text: Literal[False] = False,
         **popen_kwargs: Any,
-    ) -> Popen[str]: ...
+    ) -> Popen[bytes]: ...
 
     @overload
     def popen(
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[False] = False,
+        text: Literal[True] = True,
         **popen_kwargs: Any,
-    ) -> Popen[bytes]: ...
+    ) -> Popen[str]: ...
 
     def popen(
         self,
         subcommand_args: list[str],
         *popen_args: Any,
-        text: Literal[True, False] = False,
+        text: Literal[False, True] = False,
         **popen_kwargs: Any,
     ) -> Popen[str] | Popen[bytes]:
         """
         Open unchecked git subcommand communicable process, using ``subprocess.Popen``.
 
-        All the arguments are congruent to ``subprocess.Popen`` and mostly passes as-is.
+        All the arguments are congruent to ``subprocess.Popen`` and mostly pass as-is.
 
         :param subcommand_args: the full subcommand argument list.
         :param popen_args: additional subprocess positionals.
@@ -735,7 +806,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         stdin = popen_kwargs.pop("stdin", PIPE)
         stdout = popen_kwargs.pop("stdout", PIPE)
         stderr = popen_kwargs.pop("stderr", PIPE)
-        bufsize = popen_kwargs.pop("bufsize", 0)
         # Popen the git command
         result = self.git.runner.popen_git_command(
             main_cmd_args,
@@ -747,7 +817,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
-            bufsize=bufsize,
             **popen_kwargs,
         )
         return result
