@@ -111,10 +111,12 @@ if __name__ == "__main__":
     # with git.session(cat_file=["cat-file", "--batch"]) as ses1, git.session(cat_file=["catfile", "--batch"]) as ses2:
     #     for mode_, sha_, name_ in cat_file_tree_content(ses1.commands.cat_file, b"HEAD^{tree}"):
     #         print(mode_, sha_, name_)
-    with git.session(cat_file1=["catfile", "--batch"], cat_file2=["cat-file", "--batch"],
+    with git.session(cat_file1=["catfile", "--batch"], cat_file2=["cat-file", "--batch"], cat_file3=["cat-file", "--batch"],
                      mktree=lambda: git.subcmd_unchecked.popen(["mktree"])) as ses:
         for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
             print(mode_, sha_, name_)
+        print("+"*40)
+        print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
     # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
     # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
     # for mode_, sha_, name_ in cat_file_tree_content(cf_p_1, b"HEAD^{tree}"):
