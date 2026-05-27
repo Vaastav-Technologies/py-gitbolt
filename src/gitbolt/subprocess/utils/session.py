@@ -82,7 +82,7 @@ def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes
 def cat_file_tree_content(
     cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
     prefix: bytes = b"",
-) -> list[tuple[bytes, bytes, bytes]]:
+) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Get tree data from the stdout of a long-running cat-file query for tree hash.
 
@@ -92,32 +92,28 @@ def cat_file_tree_content(
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
     :param prefix: prefix, useful when doing recursive tree query.
-    :return: list of (mode, sha, filename).
+    :return: iterable of (mode, sha, filename).
     """
     tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
-    output: list[tuple[bytes, bytes, bytes]] = []
     if not recursive:
         for mode, sha, name in parse_cat_file_tree(tree_content):
             # leaf node (blob, symlink, submodule)
-            output.append((mode, sha, name,))
+            yield mode, sha, name
     else:
         for mode, sha, name in parse_cat_file_tree(tree_content):
             full_name = prefix + name
 
             if mode == b"40000":  # directory (tree)
                 # recurse into subtree
-                sub_tree = cat_file_tree_content(
+                yield from cat_file_tree_content(
                     cat_file_popen,
                     sha,
                     recursive=True,
                     prefix=full_name + b"/",
                 )
-                output.extend(sub_tree)
             else:
                 # leaf node (blob, symlink, submodule)
-                output.append((mode, sha, full_name,))
-
-    return output
+                yield mode, sha, full_name
 
 
 if __name__ == "__main__":
@@ -133,7 +129,7 @@ if __name__ == "__main__":
         cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
     ) as ses:
-        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}"):
+        for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}", True):
             print(mode_, sha_, name_)
         print("+" * 40)
         print(cat_file_blob_content(ses.commands.cat_file2, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
