@@ -142,7 +142,7 @@ def cat_file_tree_data(
 
 
 def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: bytes, recursive: bool = False,
-                          format_: str = "{objmode:06o} {objtype} {objhash}\x09{objpath}") -> Iterable[bytes]:
+                          format_: bytes = b"%(objmode)06o %(objtype)s %(objhash)s\x09%(objpath)s") -> Iterable[bytes]:
     """
     Get tree data from the stdout of a long-running cat-file query for tree hash in the format specified.
 
@@ -154,6 +154,10 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
     - objtype: `blob`, `tree`, `commit`.
     - objhash: sha hash of the object.
     - objpath: full path of the object from repo root.
+
+    Default format usage and explanation:
+
+    - %(objmode)06o: 06-show six-chars left-padding with 0s, o - octal number.
 
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param tree_hash: tree hash to be read from cat-file.
@@ -177,7 +181,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
         objmode = int(mode, 8)
         objhash = sha
         objpath = filename
-        yield (format_.format(objmode=objmode, objtype=objtype, objhash=objhash, objpath=objpath)).encode()
+        yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": objhash, b"objpath": objpath}
 
 if __name__ == "__main__":
     import gitbolt
@@ -212,7 +216,7 @@ if __name__ == "__main__":
     print("*"*40)
     with git.session(cat_file=["cat-file", "--batch"]) as ses:
         for tree_line in cat_file_tree_content(ses.commands.cat_file, b"HEAD^{tree}"):
-            print(tree_line)
+            print(tree_line.decode())
 
     # cf_p_2 = git.subcmd_unchecked.popen(["catfile", "--batch"])
     # cf_p_1 = git.subcmd_unchecked.popen(["cat-file", "--batch"])
