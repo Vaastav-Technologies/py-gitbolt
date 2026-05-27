@@ -54,26 +54,26 @@ def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes
     return obj, typ, size, blob_content
 
 
-def parse_tree(data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
+def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Parse bytes tree data.
 
     Typically best for parsing tree data from the stdout of a long-running cat-file query for tree.
 
-    :param data: tree data in bytes format.
+    :param git_cat_file_data: tree data in bytes format as given by ``git cat-file --batch`` for a tree query.
     :returns: iterable of (mode, sha, filename/filepath).
     """
     i = 0
-    n = len(data)
+    n = len(git_cat_file_data)
     while i < n:
         # mode
-        j = data.find(b" ", i)
-        mode = data[i:j]
+        j = git_cat_file_data.find(b" ", i)
+        mode = git_cat_file_data[i:j]
         # filename
-        k = data.find(b"\x00", j)
-        name = data[j + 1 : k]
+        k = git_cat_file_data.find(b"\x00", j)
+        name = git_cat_file_data[j + 1: k]
         # sha (20 bytes binary)
-        sha = data[k + 1 : k + 21]
+        sha = git_cat_file_data[k + 1: k + 21]
 
         yield mode, sha.hex().encode(), name
         i = k + 21
@@ -97,11 +97,11 @@ def cat_file_tree_content(
     tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
     output: list[tuple[bytes, bytes, bytes]] = []
     if not recursive:
-        for mode, sha, name in parse_tree(tree_content):
+        for mode, sha, name in parse_cat_file_tree(tree_content):
             # leaf node (blob, symlink, submodule)
             output.append((mode, sha, name,))
     else:
-        for mode, sha, name in parse_tree(tree_content):
+        for mode, sha, name in parse_cat_file_tree(tree_content):
             full_name = prefix + name
 
             if mode == b"40000":  # directory (tree)
