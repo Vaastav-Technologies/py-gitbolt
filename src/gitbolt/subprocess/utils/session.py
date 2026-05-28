@@ -164,7 +164,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
     :param recursive: recursively query the full tree.
     :param format_: the format in which the queried tree data will be formatted. Follows bytes ``%`` operator
         interpolation.
-    :return: iterable of tree data in the queried mode.
+    :return: iterable of tree data in the queried ``format_``.
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
     for mode, sha, filename in cat_file_tree_data(cat_file_popen, tree_hash, recursive):
