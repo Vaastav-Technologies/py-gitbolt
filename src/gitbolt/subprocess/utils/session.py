@@ -166,7 +166,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
     :param tree_hash: tree hash to be read from cat-file.
     :param recursive: recursively query the full tree.
     :param format_: the format in which the queried tree data will be formatted. Follows bytes ``%`` operator
-        interpolation.
+        interpolation. Defaults to the typical ``git ls-tree`` format.
     :return: iterable of tree data in the queried ``format_``.
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
