@@ -180,9 +180,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
         else:
             raise GitExitingException(f"Invalid object mode: {mode}") from ValueError(mode)
         objmode = int(mode, 8)
-        objhash = sha
-        objpath = filename
-        yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": objhash, b"objpath": objpath}
+        yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": sha, b"objpath": filename}
 
 if __name__ == "__main__":
     import gitbolt
