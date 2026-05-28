@@ -17,6 +17,7 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 from gitbolt.exceptions import GitExitingException
 
 
+# region blob
 def cat_file_blob_content(
     cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes
 ) -> bytes:
@@ -37,7 +38,7 @@ def cat_file_blob_content(
 
 def cat_file_data(cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes) -> tuple[bytes, bytes, bytes, bytes]:
     """
-    Read git contents using a long-running batched cat-file process.
+    Read git contents using a long-running batched cat-file process. Best for programmatic use.
 
     Spawning new ``git show`` processes can be slower and resource consuming.
 
@@ -73,8 +74,10 @@ def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes
     obj, typ, size = header.split()
     blob_content: bytes = stream.read(int(size))
     return obj, typ, size, blob_content
+# endregion
 
 
+# region tree
 def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Parse bytes tree data.
@@ -181,6 +184,8 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
             raise GitExitingException(f"Invalid object mode: {mode}") from ValueError(mode)
         objmode = int(mode, 8)
         yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": sha, b"objpath": filename}
+# endregion
+
 
 if __name__ == "__main__":
     import gitbolt
