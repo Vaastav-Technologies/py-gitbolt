@@ -186,6 +186,114 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
         yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": sha, b"objpath": filename}
 # endregion
 
+# region commit
+def cat_file_commit_content(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes) -> bytes:
+    """
+    Get commit data as produced on stdout of a ``git cat-file --batch`` process for the querying of a particular
+    commit hash.
+
+    Spawning new ``git show`` processes can be slower and resource consuming.
+
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
+    :param commit_hash: commit hash to be read from cat-file.
+    :return: contents of blob hash in bytes.
+    """
+    return cat_file_blob_content(cat_file_popen, commit_hash)
+
+
+def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes):
+    """
+    Get commit programmatic data as produced on stdout of a ``git cat-file --batch`` process for the querying
+    of a particular commit hash.
+
+    Spawning new ``git show`` processes can be slower and resource consuming.
+
+    Note: ``cat_file_popen`` must pipe its ``stdin`` and ``stdout`` and run in ``bytes`` mode.
+
+    :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
+    :param commit_hash: commit hash to be read from cat-file.
+    :return: contents of blob hash in bytes.
+    """
+    commit_cat_file_content = cat_file_commit_content(cat_file_popen, commit_hash)
+    query_aggregate: dict[bytes, bool] = {  # python3 dicts maintain order and cat-file maintains this order in
+        # its output
+        b"tree": False,
+        b"parent": True,
+        b"author": False,
+        b"committer": False,
+        # b"gpgsig": False,
+    }
+    commit_parents: list[bytes] = []
+    curr_bytes_ptr = 0
+    query_dict: dict[bytes, bytes | list[bytes]] = {}
+    lines = commit_cat_file_content.splitlines()
+    i = 0
+    kv_delim = b" "
+    while i < len(lines):
+        for key, aggregate in query_aggregate.items():
+            found, value = query_line(key, lines[i], kv_delim)
+            if found:
+                if aggregate:
+                    if key in query_dict:
+                        query_dict[key].append(value)
+                    else:
+                        query_dict[key] = [value]
+                else:
+                    query_dict[key] = value
+                curr_bytes_ptr += len(key)
+                curr_bytes_ptr += len(kv_delim)
+                curr_bytes_ptr += len(lines[i])
+                i += 1
+            else:
+                continue
+    tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b"", b"\n", False)
+    parent_found: bool = True   # trying a do-while
+    while parent_found:
+        parent_found, parent_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b"", b"\n", False)
+        commit_parents.append(parent_val)
+    author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author", b"", b"\n", False)
+    committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"committer", b"", b"\n", False)
+    sig_found, sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
+                                               b"-----BEGIN PGP SIGNATURE-----", b"-----END PGP SIGNATURE-----")
+    curr_bytes_ptr += 1 # include \n as commit message starts after that.
+    commit_message = commit_cat_file_content[curr_bytes_ptr:]
+
+
+
+
+def query_bytes_range(commit_cat_file_content: bytes, curr_bytes_ptr: int, key_to_query: bytes,
+                      val_begin: bytes, val_end: bytes, keep_ends: bool = True) -> tuple[bool, bytes | None, int]:
+    interest_bytes = commit_cat_file_content[curr_bytes_ptr:]
+    if not interest_bytes.startswith(key_to_query):
+        return False, None, curr_bytes_ptr
+    val_start_index = interest_bytes.find(val_begin) # including val start
+    val_end_index = interest_bytes.find(val_end)    # including val end
+    if not keep_ends:
+        val_start_index += len(val_begin)   # excluding val start
+        val_end_index += len(val_end)       # excluding val end
+    value = interest_bytes[val_start_index: val_end_index]
+
+
+
+
+def query_line(key: bytes, line: bytes, kv_delim: bytes = b" ") -> tuple[bool, bytes]:
+    """
+    Query a line from stream for a particular key and return the found value till the line ends.
+
+    :param key: key to query.
+    :param line: line to search key into.
+    :param kv_delim: delimiter between the key and the value.
+    :returns: (found, found-value) or (not-found, line)
+    """
+    if line.startswith(key):
+        _, value = line.split(kv_delim, 1)
+        return True, value
+    else:
+        return False, line
+# endregion
+
 
 if __name__ == "__main__":
     import gitbolt
