@@ -8,9 +8,10 @@ Create sessions for long-running commands and communicate with them using their 
 
 Much faster that subprocess creation for each input/output pair.
 """
-
+import dataclasses
+import datetime
 import subprocess
-from typing import Iterable, IO, cast
+from typing import Iterable, IO, cast, Self
 
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
@@ -203,7 +204,40 @@ def cat_file_commit_content(cat_file_popen: subprocess.Popen[bytes], commit_hash
     return cat_file_blob_content(cat_file_popen, commit_hash)
 
 
-def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes):
+@dataclasses.dataclass
+class Actor:
+    name: bytes
+    email: bytes
+    time: datetime.datetime
+
+    @classmethod
+    def from_commit_bytes(cls, commit_bytes: bytes, email_start_pattern: bytes = b" <",
+                          email_end_pattern: bytes = b"> ") -> Self:
+        email_pattern_start_index = commit_bytes.find(email_start_pattern)
+        email_pattern_end_index = commit_bytes.rfind(email_end_pattern)
+        email_start_index = email_pattern_start_index+len(email_start_pattern)
+        email_end_index = email_pattern_end_index
+        name = commit_bytes[:email_pattern_start_index]
+        email = commit_bytes[email_start_index:email_end_index]
+        time_bytes = commit_bytes[email_end_index+len(email_end_pattern):]
+        time_main, time_zone = time_bytes.split()
+        date_time_for_iso_str = datetime.datetime.fromtimestamp(int(time_main))
+        date_time = datetime.datetime.fromisoformat(f"{date_time_for_iso_str.date()}T{date_time_for_iso_str.time()}{time_zone.decode()}")
+        return Actor(name, email, date_time)
+
+
+@dataclasses.dataclass
+class CommitObj:
+    commit_hash: bytes
+    tree_hash: bytes
+    parents: list[bytes]
+    author: Actor
+    committer: Actor
+    signature: bytes | None
+    message: bytes
+
+
+def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes) -> CommitObj:
     """
     Get commit programmatic data as produced on stdout of a ``git cat-file --batch`` process for the querying
     of a particular commit hash.
@@ -217,65 +251,56 @@ def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: b
     :return: contents of blob hash in bytes.
     """
     commit_cat_file_content = cat_file_commit_content(cat_file_popen, commit_hash)
-    query_aggregate: dict[bytes, bool] = {  # python3 dicts maintain order and cat-file maintains this order in
-        # its output
-        b"tree": False,
-        b"parent": True,
-        b"author": False,
-        b"committer": False,
-        # b"gpgsig": False,
-    }
     commit_parents: list[bytes] = []
     curr_bytes_ptr = 0
-    query_dict: dict[bytes, bytes | list[bytes]] = {}
-    lines = commit_cat_file_content.splitlines()
-    i = 0
-    kv_delim = b" "
-    while i < len(lines):
-        for key, aggregate in query_aggregate.items():
-            found, value = query_line(key, lines[i], kv_delim)
-            if found:
-                if aggregate:
-                    if key in query_dict:
-                        query_dict[key].append(value)
-                    else:
-                        query_dict[key] = [value]
-                else:
-                    query_dict[key] = value
-                curr_bytes_ptr += len(key)
-                curr_bytes_ptr += len(kv_delim)
-                curr_bytes_ptr += len(lines[i])
-                i += 1
-            else:
-                continue
-    tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b"", b"\n", False)
-    parent_found: bool = True   # trying a do-while
+    tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b" ", b"\n", False)
+    parent_found: bool = True   # emulating a do-while
     while parent_found:
-        parent_found, parent_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b"", b"\n", False)
-        commit_parents.append(parent_val)
-    author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author", b"", b"\n", False)
-    committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"committer", b"", b"\n", False)
+        parent_found, parent_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"parent", b" ", b"\n", False)
+        if parent_found:
+            commit_parents.append(parent_val)
+    author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author", b" ", b"\n", False)
+    committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"committer", b" ", b"\n", False)
     sig_found, sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
-                                               b"-----BEGIN PGP SIGNATURE-----", b"-----END PGP SIGNATURE-----")
-    curr_bytes_ptr += 1 # include \n as commit message starts after that.
+                                               b" -----BEGIN PGP SIGNATURE-----", b"-----END PGP SIGNATURE-----", True)
+    sigval = sanitize_gpg_signature(sig_val) if sig_found else None
+    curr_bytes_ptr += 2 if sig_found else 1 # include \n as commit message starts after that.
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
+    author = Actor.from_commit_bytes(author_val)
+    committer = Actor.from_commit_bytes(committer_val)
+    return CommitObj(commit_hash, tree_val, commit_parents, author, committer, sigval, commit_message)
 
 
+def sanitize_gpg_signature(gpg_signature: bytes) -> bytes:
+    return b"\n".join(line.strip() for line in gpg_signature.splitlines())
 
 
-def query_bytes_range(commit_cat_file_content: bytes, curr_bytes_ptr: int, key_to_query: bytes,
-                      val_begin: bytes, val_end: bytes, keep_ends: bool = True) -> tuple[bool, bytes | None, int]:
-    interest_bytes = commit_cat_file_content[curr_bytes_ptr:]
+def query_bytes_range(bytes_content: bytes, curr_bytes_ptr: int, key_to_query: bytes,
+                      val_begin: bytes, val_end: bytes, keep_ends: bool) -> tuple[bool, bytes | None, int]:
+    """
+    Query the bytes content for value to a specific key. Is helpful to the caller either when key is found or when
+    not found by returning the next-pointer to look for.
+
+    :param bytes_content: contents to search keys into.
+    :param key_to_query: the key to query in the bytes content.
+    :param curr_bytes_ptr: integer index (or pointer) to start looking for the ``key_to_query``.
+    :param val_begin: the beginning bytes of the value.
+    :param val_end: the ending bytes of the value.
+    :param keep_ends: include the ``val_begin`` and ``val_end`` bytes in the returned and found value.
+    :returns: (found, value, pointer-after-value-ends) or (not-found, null, unchanged-passed-current-bytes-pointer)
+    """
+    interest_bytes = bytes_content[curr_bytes_ptr:]
     if not interest_bytes.startswith(key_to_query):
         return False, None, curr_bytes_ptr
+    interest_bytes = interest_bytes[len(key_to_query):]
     val_start_index = interest_bytes.find(val_begin) # including val start
-    val_end_index = interest_bytes.find(val_end)    # including val end
+    val_end_index = interest_bytes.find(val_end) + len(val_end)    # including val end
+    curr_bytes_ptr += len(key_to_query)+val_end_index
     if not keep_ends:
         val_start_index += len(val_begin)   # excluding val start
-        val_end_index += len(val_end)       # excluding val end
+        val_end_index -= len(val_end)       # excluding val end
     value = interest_bytes[val_start_index: val_end_index]
-
-
+    return True, value, curr_bytes_ptr
 
 
 def query_line(key: bytes, line: bytes, kv_delim: bytes = b" ") -> tuple[bool, bytes]:
@@ -328,4 +353,10 @@ if __name__ == "__main__":
     print(git.subcmd_unchecked.run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
     end = time.perf_counter()
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
+
+    with git.session(
+        cat_file=["cat-file", "--batch"]
+    ) as ses:
+        print(cat_file_commit_data(ses.commands.cat_file, b"d7d8d6f79017c5d574e3c4ac519c855b7cec33e2"))
+        print(cat_file_commit_data(ses.commands.cat_file, b"HEAD"))
     # endregion
