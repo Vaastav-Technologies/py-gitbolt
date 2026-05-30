@@ -227,13 +227,26 @@ class Actor:
 
 
 @dataclasses.dataclass
+class Signature:
+    signature: bytes
+
+@dataclasses.dataclass
+class GPGSignature(Signature):
+    pass
+
+@dataclasses.dataclass
+class SSHSignature(Signature):
+    pass
+
+
+@dataclasses.dataclass
 class CommitObj:
     commit_hash: bytes
     tree_hash: bytes
     parents: list[bytes]
     author: Actor
     committer: Actor
-    signature: bytes | None
+    signature: Signature | None
     message: bytes
 
 
@@ -261,18 +274,28 @@ def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: b
             commit_parents.append(parent_val)
     author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author", b" ", b"\n", False)
     committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"committer", b" ", b"\n", False)
-    sig_found, sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
+    gpg_sig_found, gpg_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
                                                b" -----BEGIN PGP SIGNATURE-----", b"-----END PGP SIGNATURE-----", True)
-    sigval = sanitize_gpg_signature(sig_val) if sig_found else None
+    gpg_sigval = sanitize_gpg_signature(gpg_sig_val) if gpg_sig_found else None
+    ssh_sig_found, ssh_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
+                                               b" -----BEGIN SSH SIGNATURE-----", b"-----END SSH SIGNATURE-----", True)
+    ssh_sigval = sanitize_ssh_signature(ssh_sig_val) if ssh_sig_found else None
+    sig_found = gpg_sig_found or ssh_sig_found
     curr_bytes_ptr += 2 if sig_found else 1 # include \n as commit message starts after that.
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
     author = Actor.from_commit_bytes(author_val)
     committer = Actor.from_commit_bytes(committer_val)
-    return CommitObj(commit_hash, tree_val, commit_parents, author, committer, sigval, commit_message)
+    return CommitObj(commit_hash, tree_val, commit_parents, author, committer, gpg_sigval or ssh_sigval, commit_message)
 
 
-def sanitize_gpg_signature(gpg_signature: bytes) -> bytes:
-    return b"\n".join(line.strip() for line in gpg_signature.splitlines())
+def sanitize_sig_bytes(signature: bytes) -> bytes:
+    return b"\n".join(line.strip() for line in signature.splitlines())
+
+def sanitize_gpg_signature(gpg_signature: bytes) -> GPGSignature:
+    return GPGSignature(sanitize_sig_bytes(gpg_signature))
+
+def sanitize_ssh_signature(ssh_signature: bytes) -> SSHSignature:
+    return SSHSignature(sanitize_sig_bytes(ssh_signature))
 
 
 def query_bytes_range(bytes_content: bytes, curr_bytes_ptr: int, key_to_query: bytes,
