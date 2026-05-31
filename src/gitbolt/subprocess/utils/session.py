@@ -20,7 +20,7 @@ from gitbolt.exceptions import GitExitingException
 
 # region blob
 def cat_file_blob_content(
-    cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes
+    cat_file_popen: subprocess.Popen[bytes], blob_hash: bytes, require_type: bytes | None = None
 ) -> bytes:
     """
     Read git blob contents using a long-running batched cat-file process.
@@ -31,9 +31,13 @@ def cat_file_blob_content(
 
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param blob_hash: hash to be read from cat-file.
+    :param require_type: Optional git object type for validation.
     :return: contents of blob hash in bytes.
     """
-    _, _, _, blob_content = cat_file_data(cat_file_popen, blob_hash)
+    obj_hash, typ, _, blob_content = cat_file_data(cat_file_popen, blob_hash)
+    if require_type and typ != require_type:
+        raise GitExitingException(f"Required Git object type: '{require_type.decode()}', found: '{typ.decode()}'",
+                                  exit_code=ERR_INVALID_USAGE) from ValueError(obj_hash)
     return blob_content
 
 
@@ -120,10 +124,7 @@ def cat_file_tree_data(
     :return: iterable of (mode, sha, filename).
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
-    _, typ, _, tree_content = cat_file_data(cat_file_popen, tree_hash)
-    if typ != b"tree":
-        raise GitExitingException(f"{tree_hash} is not a valid git tree.", exit_code=ERR_INVALID_USAGE) \
-            from ValueError(tree_hash)
+    tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
     if not recursive:
         for mode, sha, name in parse_cat_file_tree(tree_content):
             # leaf node (blob, symlink, submodule)
@@ -182,7 +183,7 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
             # symlnk, executable, regular files
             objtype = b"blob"
         else:
-            raise GitExitingException(f"Invalid object mode: {mode}") from ValueError(mode)
+            raise GitExitingException(f"Invalid object mode: {mode.decode()}") from ValueError(tree_hash)
         objmode = int(mode, 8)
         yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": sha, b"objpath": filename}
 # endregion
@@ -201,7 +202,7 @@ def cat_file_commit_content(cat_file_popen: subprocess.Popen[bytes], commit_hash
     :param commit_hash: commit hash to be read from cat-file.
     :return: contents of blob hash in bytes.
     """
-    return cat_file_blob_content(cat_file_popen, commit_hash)
+    return cat_file_blob_content(cat_file_popen, commit_hash, b"commit")
 
 
 @dataclasses.dataclass
