@@ -290,14 +290,26 @@ def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: b
 
     :param cat_file_popen: long-running ``git cat-file --batch`` process in bytes mode and pipes its stdin and stdout.
     :param commit_hash: commit hash to be read from cat-file.
-    :return: contents of blob hash in bytes.
+    :return: ``RawCommitBytesObj`` for programmatic use.
     """
     commit_cat_file_content = cat_file_commit_content(cat_file_popen, commit_hash)
-    tree_val, commit_parents, author_val, committer_val, signature, commit_message, = parse_cat_file_commit_content(
-        commit_cat_file_content)
-    author = Actor.from_commit_bytes(author_val)
-    committer = Actor.from_commit_bytes(committer_val)
-    return RawCommitBytesObj(commit_hash, tree_val, commit_parents, author, committer, signature, commit_message)
+    return parse_cat_file_commit_data(commit_hash, commit_cat_file_content)
+
+
+def parse_cat_file_commit_data(commit_hash, commit_cat_file_content) -> RawCommitBytesObj:
+    """
+    Parser for a commit contents as presented by ``git cat-file --batch`` query for a commit hash.
+
+    :param commit_hash: hash of the commit to get parsed ``cat-file`` data for.
+    :param commit_cat_file_content: the ``cat-file`` commit content.
+    :returns: parsed and programmatic ``RawCommitBytesObj``.
+    """
+    r = parse_cat_file_commit_content(commit_cat_file_content)
+    author = Actor.from_commit_bytes(r.author_val)
+    committer = Actor.from_commit_bytes(r.committer_val)
+    signature = Signature(r.signature_val)
+    return RawCommitBytesObj(commit_hash, r.tree_val, r.commit_parents_vals, author, committer, signature,
+                             r.commit_message)
 
 @dataclasses.dataclass
 class RawBytesValsOfCommit:
