@@ -329,7 +329,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_simple_commit_content.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1780213058 +0530"
     >>> assert _parsed_simple_commit_content.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1780213152 +0530"
     >>> assert _parsed_simple_commit_content.signature_val is None
-    >>> assert _parsed_simple_commit_content.commit_message == b"session: add doctests to `Actor.from_commit_bytes()`\\n"
+    >>> assert _parsed_simple_commit_content.commit_message == b"session: add doctests to `Actor.from_commit_bytes()`"
 
     Multiple parents:
 
@@ -353,7 +353,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_multi_parent_commit.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779643218 +0530"
     >>> assert _parsed_multi_parent_commit.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779643218 +0530"
     >>> assert _parsed_multi_parent_commit.signature_val is None
-    >>> assert _parsed_multi_parent_commit.commit_message == b"Introduce `Popen`\\n\\nMerge branch 'feat/run-and-popen/main' into develop\\n\\n- Introduced `Popen` interface in runner.\\n- Introduced `Popen` interface in UncheckedSubcmd.\\n"
+    >>> assert _parsed_multi_parent_commit.commit_message == b"Introduce `Popen`\\n\\nMerge branch 'feat/run-and-popen/main' into develop\\n\\n- Introduced `Popen` interface in runner.\\n- Introduced `Popen` interface in UncheckedSubcmd."
 
     GPG Signed commit:
 
@@ -387,7 +387,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_gpg_sig_commit.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_gpg_sig_commit.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_gpg_sig_commit.signature_val == b"-----BEGIN PGP SIGNATURE-----\\n\\niHUEABYKAB0WIQRBZelV8q2CQXy8Vg8vtl2qydHBMAUCahbHsAAKCRAvtl2qydHB\\nMNrAAP9ZYoOfzSHJsnNsocCxqdf0K5Dh0mWbo9hUAYtsKlv/HQEAi8J/jYBqY9lz\\ns6M7/A1YuKWMigDLTbMmjRg6uUgHOAM=\\n=5rmu\\n-----END PGP SIGNATURE-----"
-    >>> assert _parsed_gpg_sig_commit.commit_message == b"Releasing `0.0.0.dev18`\\n\\n- `GitSession` improved.\\n- `GitSession` reexported in `gitbolt`.\\n- Popen no longer unbuffered.\\n- Sessions by default are in `bytes` mode and pipe their `stdin` and `stdout`.\\n\\n- `GitSession` now returns `Self` on `__enter__()`. Glad caught early.\\n- Utilities for git subprocess commands and Popen(s).\\n\\nSigned-off-by: Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech>\\n"
+    >>> assert _parsed_gpg_sig_commit.commit_message == b"Releasing `0.0.0.dev18`\\n\\n- `GitSession` improved.\\n- `GitSession` reexported in `gitbolt`.\\n- Popen no longer unbuffered.\\n- Sessions by default are in `bytes` mode and pipe their `stdin` and `stdout`.\\n\\n- `GitSession` now returns `Self` on `__enter__()`. Glad caught early.\\n- Utilities for git subprocess commands and Popen(s).\\n\\nSigned-off-by: Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech>"
 
     No message commit:
 
@@ -404,7 +404,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_no_msg_commit.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_no_msg_commit.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_no_msg_commit.signature_val is None
-    >>> assert _parsed_no_msg_commit.commit_message == b"\\n"
+    >>> assert _parsed_no_msg_commit.commit_message == b""
 
     No parent commit:
 
@@ -429,15 +429,16 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     ...  -----END PGP SIGNATURE-----
     ...
     ...
-    ... Initial commit
-    ... \"\"\"
+    ... Initial commit\"\"\"
     >>> _parsed_no_parent_commit = parse_cat_file_commit_content(_no_parent_commit)
     >>> assert _parsed_no_parent_commit.tree_val == b"28f8877d1952f06b6e22c2d57522796dfa62e145"
     >>> assert _parsed_no_parent_commit.commit_parents_vals == []
     >>> assert _parsed_no_parent_commit.author_val == b"Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech> 1747405354 +0530"
     >>> assert _parsed_no_parent_commit.committer_val == b"GitHub <noreply@github.com> 1747405354 +0530"
-    >>> _parsed_no_parent_commit.commit_message
     >>> assert _parsed_no_parent_commit.commit_message == b"Initial commit"
+    >>> assert _parsed_no_parent_commit.signature_val == b"-----BEGIN PGP SIGNATURE-----\\n\\nwsFcBAABCAAQBQJoJ0oqCRC1aQ7uu5UhlAAABbQQAKnq3HAThX2whGmo4+u5Czg/\\nAybUlY396eoUd9JMoPF+E8+BVWe4ulVmbnWkPBW4iEUtqJzeNA9ULPNnMYMa1Dtu\\niu+IbMt3hh5FuLVtpA+92V9U+0RwpwYjX48dDeVfAWMz9QsI1z4SMUPZmyb7cV2J\\noAcStdGLPhZGa0RSRxFm+KuoZRCWSJ65a8HYpR0zI8sKvTZaFrS+ItxtvALkMBL7\\ndsbdbTNtyPrdqYFhA7BNe7cisd5Avob01CMkV3aPwLFKtFdtS7WPLwwR0fXhOLZV\\nDiYe7Tu+NrVcQJe1QLjkek4DnaN0ph4Xyi/K0CW4FJZ4vXIUI99Z9FP0QKiEX7bN\\nXWyBchwwqFiE17PcSkLOLX0VUCIYdF0w6pj4AzNpSn8PY0jEg0FLbnfj+ZDfBhxl\\ncUvh0obhnxdd4BafqzWSJPpzhCwx3NjkuNA1464BcerCTy7XkNxPtYyTDfLWD12x\\nPVRKAqhm/z2yHyP93maRYY9R/Qvx7n5XJBFh+5w66e3Gvb+RaQQ8HcyJKbz+I/PJ\\ntSRRAm1ROTnCLdWzjzimbOT4agKgwG53HqeaRLzqteu+lTr64LH5ZZZkAUd9v+C9\\ncJb41OV3hHdP0+evTn471JU7YQlCYiQK+Ps04TsUX1MwRgoNq1+znk27PK7B1XUF\\n21sfF75JL4q7VsU/dpCU\\n=0m4k\\n-----END PGP SIGNATURE-----"
+
+    Note: strips commit message.
 
     :param commit_cat_file_content: commit content as presented by ``git cat-file -p <commit-hash>``.
     :returns: (tree-hash, commit-parents, author-info, committer-info, commit-signature, commit-message).
@@ -460,15 +461,15 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
                                                                        b"committer", b" ", b"\n", False)
     gpg_sig_found, gpg_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
                                                                    b" -----BEGIN PGP SIGNATURE-----",
-                                                                   b"-----END PGP SIGNATURE-----", True)
+                                                                   b"-----END PGP SIGNATURE-----\n", True)
     gpg_sigval = sanitize_sig_bytes(gpg_sig_val) if gpg_sig_found else None
     ssh_sig_found, ssh_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
                                                                    b" -----BEGIN SSH SIGNATURE-----",
-                                                                   b"-----END SSH SIGNATURE-----", True)
+                                                                   b"-----END SSH SIGNATURE-----\n", True)
     ssh_sigval = sanitize_sig_bytes(ssh_sig_val) if ssh_sig_found else None
-    sig_found = gpg_sig_found or ssh_sig_found
-    curr_bytes_ptr += 2 if sig_found else 1  # include \n as commit message starts after that.
+    curr_bytes_ptr += 1  # include \n as commit message starts after that.
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
+    commit_message = commit_message.strip()
     return RawBytesValsOfCommit(tree_val, commit_parents, author_val, committer_val, gpg_sigval or ssh_sigval,
                             commit_message,)
 
