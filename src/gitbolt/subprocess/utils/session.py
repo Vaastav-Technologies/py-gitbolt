@@ -443,6 +443,8 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     :param commit_cat_file_content: commit content as presented by ``git cat-file -p <commit-hash>``.
     :returns: (tree-hash, commit-parents, author-info, committer-info, commit-signature, commit-message).
     """
+    # TODO: Make sure commit message and signature new-lines match the original commits.
+    #  This can be achieved by deliberately creating commits and matching their commit hashes.
     commit_parents: list[bytes] = []
     curr_bytes_ptr = 0
     tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b" ",
