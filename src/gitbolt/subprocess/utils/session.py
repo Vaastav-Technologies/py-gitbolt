@@ -240,7 +240,10 @@ class SSHSignature(Signature):
 
 
 @dataclasses.dataclass
-class CommitObj:
+class RawCommitBytesObj:
+    """
+    Commit info all in bytes as read from ``git cat-file --batch``.
+    """
     commit_hash: bytes
     tree_hash: bytes
     parents: list[bytes]
@@ -250,7 +253,7 @@ class CommitObj:
     message: bytes
 
 
-def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes) -> CommitObj:
+def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes) -> RawCommitBytesObj:
     """
     Get commit programmatic data as produced on stdout of a ``git cat-file --batch`` process for the querying
     of a particular commit hash.
@@ -267,11 +270,13 @@ def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: b
     commit_parents: list[bytes] = []
     curr_bytes_ptr = 0
     tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b" ", b"\n", False)
-    parent_found: bool = True   # emulating a do-while
-    while parent_found:
+    # region collect parent commit id(s)
+    while True:
         parent_found, parent_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"parent", b" ", b"\n", False)
-        if parent_found:
-            commit_parents.append(parent_val)
+        if not parent_found:
+            break
+        commit_parents.append(parent_val)
+    # endregion
     author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author", b" ", b"\n", False)
     committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"committer", b" ", b"\n", False)
     gpg_sig_found, gpg_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
@@ -285,7 +290,7 @@ def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: b
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
     author = Actor.from_commit_bytes(author_val)
     committer = Actor.from_commit_bytes(committer_val)
-    return CommitObj(commit_hash, tree_val, commit_parents, author, committer, gpg_sigval or ssh_sigval, commit_message)
+    return RawCommitBytesObj(commit_hash, tree_val, commit_parents, author, committer, gpg_sigval or ssh_sigval, commit_message)
 
 
 def sanitize_sig_bytes(signature: bytes) -> bytes:
