@@ -110,7 +110,7 @@ print(version_stdout)
 
 #### 🧑‍💻 Modular at the programmatic level
 
-Commands are designed to be passed around as objects. This makes them modular and thus users can opt to use only 
+Commands are designed to be passed around as objects. This makes them modular and thus users can opt to use only
 particular commands.
 
 ```python
@@ -291,7 +291,7 @@ no_advice_reset_git = overridden_git.git_opts_override(no_advice=False)
 
 At last, run unchecked commands in git.
 
-Introduced in `0.0.0.dev4` to 
+Introduced in `0.0.0.dev4` to
 - experiment.
 - have consistent interfaced commands run until all subcommands are provided by the library.
 
@@ -341,32 +341,36 @@ Get long-running process sessions and communicate with them for batching and fas
 
 ```python
 import gitbolt
-from gitbolt.subprocess.utils.session import cat_file_blob_content, cat_file_tree_content
+from gitbolt.subprocess.utils.session import cat_file_blob_content, cat_file_tree_data, cat_file_tree_content, \
+    mktree_tree_make
 
 git = gitbolt.get_git_command()
 with git.session(
-    cat_file1=["cat-file", "--batch"],
-    cat_file2=["cat-file", "--batch"],
-    cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
-    mktree=["mktree"]
+        cat_file1=["cat-file", "--batch"],
+        cat_file2=["cat-file", "--batch"],
+        cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
+        mktree=["mktree", "--batch", "-z"]
 ) as ses:
-    for mode_, sha_, name_ in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+    tree_data: list[bytes] = []
+    for mode_, sha_, name_ in cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}"):
         print(mode_, sha_, name_)
+    for tree_entry in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+        tree_data.append(tree_entry)
     print("+" * 40)
     print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
-    with ses:   # is reentrant, if you want
-        ses.commands.mktree.stdin.write(b"100644 blob <some-blob-hash> <some-filename>\n")
-        ses.commands.mktree.stdin.flush()
-        tree_hash = ses.commands.mktree.stdout.read()
+    print("~" * 40)
+    with ses:  # is reentrant, if you want
+        tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_data))    # make tree
+        print("Obtained tree: ", tree_hash)
 
-assert not ses.active # session no long active
+assert not ses.active  # session no long active
 ```
 
 #### 💻 Run commands received from CLI
 
 Introduced in `0.0.0.dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
 
-While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example 
+While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example
 would be to make a system that receives CLI commands and does certain modifications/additions inside `gitbolt` before
 actually running them. An example:
 
