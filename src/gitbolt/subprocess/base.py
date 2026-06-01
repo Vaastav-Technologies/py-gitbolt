@@ -307,8 +307,7 @@ class GitCommand(Git, ABC):
     @abstractmethod
     def session(self, **commands: list[str] | Callable[[], Popen[bytes]]) -> GitSession:
         """
-        Run long-running git session with multiple unchecked subcommands using ``subprocess.Popen`` and
-        communicate with them.
+        Run long-running git session with multiple unchecked subcommands using ``subprocess.Popen`` and communicate with them.
 
         Client/Caller can communicate with ``GitSession``'s processes with their stdin and stdout.
 
@@ -325,6 +324,25 @@ class GitCommand(Git, ABC):
         Start the session in one go:
 
         >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Run special Popen:
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"],
+        ...                     cat_file=lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], env=None))
+        >>> with ses:   # start the session by ctx mgr
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Is reentrant:
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = _git.session(cat_file=["cat-file", "--batch-check"])
+        >>> with ses:   # start the session by ctx mgr
+        ...     with ses:   # reentrant
+        ...         pass
         ...     pass    # any communication can be done by Popen semantics.
 
 
