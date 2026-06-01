@@ -8,14 +8,14 @@ Create sessions for long-running commands and communicate with them using their 
 
 Much faster that subprocess creation for each input/output pair.
 """
-import dataclasses
-import datetime
 import subprocess
-from typing import Iterable, IO, cast, Self, NamedTuple
+from typing import Iterable, IO, cast
 
-from vt.utils.errors.error_specs import ERR_INVALID_USAGE
+from vt.utils.errors.error_specs import ERR_INVALID_USAGE, ERR_DATA_FORMAT_ERR
 
 from gitbolt.exceptions import GitExitingException
+from gitbolt.subprocess.utils.models import GitRawActor, GitRawSignature, GPGGitRawSignature, SSHGitRawSignature, \
+    RawCommitBytesObj, RawBytesValsOfCommit
 
 
 # region blob
@@ -33,6 +33,7 @@ def cat_file_blob_content(
     :param blob_hash: hash to be read from cat-file.
     :param require_type: Optional git object type for validation.
     :return: contents of blob hash in bytes.
+    :raises GitExitingException: when the found object type is not the required type.
     """
     obj_hash, typ, _, blob_content = cat_file_data(cat_file_popen, blob_hash)
     if require_type and typ != require_type:
@@ -205,81 +206,6 @@ def cat_file_commit_content(cat_file_popen: subprocess.Popen[bytes], commit_hash
     return cat_file_blob_content(cat_file_popen, commit_hash, b"commit")
 
 
-@dataclasses.dataclass
-class Actor:
-    name: bytes
-    email: bytes
-    time: datetime.datetime
-
-    @classmethod
-    def from_commit_bytes(cls, commit_bytes: bytes, email_start_pattern: bytes = b" <",
-                          email_end_pattern: bytes = b"> ") -> Self:
-        """
-        Obtain ``Actor`` object from the author/committer bytes.
-
-        Examples:
-
-        Simple timestamp without timezone:
-
-        >>> _ss_actor1 = Actor.from_commit_bytes(b"Suhas <sss@ss.ss> 1780211249")
-        >>> assert _ss_actor1.name == b"Suhas"
-        >>> assert _ss_actor1.email == b"sss@ss.ss"
-        >>> assert _ss_actor1.time.timestamp() == 1780211249.0
-
-        Simple timestamp with timezone:
-
-        >>> _ss_actor2 = Actor.from_commit_bytes(b"Suhas Srivastava <sss@vaastav.tech> 1780211249 +0530")
-        >>> assert _ss_actor2.name == b"Suhas Srivastava"
-        >>> assert _ss_actor2.email == b"sss@vaastav.tech"
-        >>> assert _ss_actor2.time.timestamp() == 1780211249.0
-
-        :param commit_bytes: author/committer information in bytes form.
-        :param email_start_pattern: email spearates name and timestamp. Thus is required as a separator.
-            Marks email beginning.
-        :param email_end_pattern: email spearates name and timestamp. Thus is required as a separator.
-            Marks email ending.
-        :returns: ``Actor`` object with all the parsed and set values.
-        """
-        email_pattern_start_index = commit_bytes.find(email_start_pattern)
-        email_pattern_end_index = commit_bytes.rfind(email_end_pattern)
-        email_start_index = email_pattern_start_index+len(email_start_pattern)
-        email_end_index = email_pattern_end_index
-        name = commit_bytes[:email_pattern_start_index]
-        email = commit_bytes[email_start_index:email_end_index]
-        time_bytes = commit_bytes[email_end_index+len(email_end_pattern):]
-        time_main, time_zone = time_bytes.split() if b" " in time_bytes else (time_bytes, b"")
-        date_time_for_iso_str = datetime.datetime.fromtimestamp(int(time_main))
-        date_time = datetime.datetime.fromisoformat(f"{date_time_for_iso_str.date()}T{date_time_for_iso_str.time()}{time_zone.decode()}")
-        return Actor(name, email, date_time)
-
-
-@dataclasses.dataclass
-class Signature:
-    signature: bytes
-
-@dataclasses.dataclass
-class GPGSignature(Signature):
-    pass
-
-@dataclasses.dataclass
-class SSHSignature(Signature):
-    pass
-
-
-@dataclasses.dataclass
-class RawCommitBytesObj:
-    """
-    Commit info all in bytes as read from ``git cat-file --batch``.
-    """
-    commit_hash: bytes
-    tree_hash: bytes
-    parents: list[bytes]
-    author: Actor
-    committer: Actor
-    signature: Signature | None
-    message: bytes
-
-
 def cat_file_commit_data(cat_file_popen: subprocess.Popen[bytes], commit_hash: bytes) -> RawCommitBytesObj:
     """
     Get commit programmatic data as produced on stdout of a ``git cat-file --batch`` process for the querying
@@ -306,20 +232,12 @@ def parse_cat_file_commit_data(commit_hash, commit_cat_file_content) -> RawCommi
     :returns: parsed and programmatic ``RawCommitBytesObj``.
     """
     r = parse_cat_file_commit_content(commit_cat_file_content)
-    author = Actor.from_commit_bytes(r.author_val)
-    committer = Actor.from_commit_bytes(r.committer_val)
-    signature = Signature(r.signature_val)
+    author = GitRawActor.from_commit_bytes(r.author_val)
+    committer = GitRawActor.from_commit_bytes(r.committer_val)
+    signature = GitRawSignature(r.signature_val) if r.signature_val else None
     return RawCommitBytesObj(commit_hash, r.tree_val, r.commit_parents_vals, author, committer, signature,
                              r.commit_message)
 
-@dataclasses.dataclass
-class RawBytesValsOfCommit:
-    tree_val: bytes
-    commit_parents_vals: list[bytes]
-    author_val: bytes
-    committer_val: bytes
-    signature_val: bytes | None
-    commit_message: bytes
 
 def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfCommit:
     """
@@ -455,6 +373,8 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
 
     :param commit_cat_file_content: commit content as presented by ``git cat-file -p <commit-hash>``.
     :returns: (tree-hash, commit-parents, author-info, committer-info, commit-signature, commit-message).
+    :raises GitExitingException: if required fields like ``tree``, ``author`` and ``committer`` are not found in the
+        commit contents.
     """
     # TODO: Make sure commit message and signature new-lines match the original commits.
     #  This can be achieved by deliberately creating commits and matching their commit hashes.
@@ -462,41 +382,49 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     curr_bytes_ptr = 0
     tree_found, tree_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"tree", b" ",
                                                              b"\n", False)
+    if not tree_val:
+        raise GitExitingException("No tree found on commit", exit_code=ERR_DATA_FORMAT_ERR) from KeyError("tree")
     # region collect parent commit id(s)
     while True:
         parent_found, parent_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"parent",
                                                                      b" ", b"\n", False)
-        if not parent_found:
+        if not parent_found or not parent_val:
             break
         commit_parents.append(parent_val)
     # endregion
     author_found, author_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"author",
                                                                  b" ", b"\n", False)
+    if not author_val:
+        raise GitExitingException("No author data found in commit", exit_code=ERR_DATA_FORMAT_ERR) \
+            from KeyError("author")
     committer_found, committer_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr,
                                                                        b"committer", b" ", b"\n", False)
+    if not committer_val:
+        raise GitExitingException("No committer data found in commit", exit_code=ERR_DATA_FORMAT_ERR) \
+            from KeyError("committer")
     gpg_sig_found, gpg_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
                                                                    b" -----BEGIN PGP SIGNATURE-----",
                                                                    b"-----END PGP SIGNATURE-----\n", True)
-    gpg_sigval = sanitize_sig_bytes(gpg_sig_val) if gpg_sig_found else None
+    gpg_sigval = sanitize_sig_bytes(gpg_sig_val) if gpg_sig_val else None
     ssh_sig_found, ssh_sig_val, curr_bytes_ptr = query_bytes_range(commit_cat_file_content, curr_bytes_ptr, b"gpgsig",
                                                                    b" -----BEGIN SSH SIGNATURE-----",
                                                                    b"-----END SSH SIGNATURE-----\n", True)
-    ssh_sigval = sanitize_sig_bytes(ssh_sig_val) if ssh_sig_found else None
+    ssh_sigval = sanitize_sig_bytes(ssh_sig_val) if ssh_sig_val else None
     curr_bytes_ptr += 1  # include \n as commit message starts after that.
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
     commit_message = commit_message.strip()
     return RawBytesValsOfCommit(tree_val, commit_parents, author_val, committer_val, gpg_sigval or ssh_sigval,
-                            commit_message,)
+                                commit_message, )
 
 
 def sanitize_sig_bytes(signature: bytes) -> bytes:
     return b"\n".join(line.strip() for line in signature.splitlines())
 
-def sanitize_gpg_signature(gpg_signature: bytes) -> GPGSignature:
-    return GPGSignature(sanitize_sig_bytes(gpg_signature))
+def sanitize_gpg_signature(gpg_signature: bytes) -> GPGGitRawSignature:
+    return GPGGitRawSignature(sanitize_sig_bytes(gpg_signature))
 
-def sanitize_ssh_signature(ssh_signature: bytes) -> SSHSignature:
-    return SSHSignature(sanitize_sig_bytes(ssh_signature))
+def sanitize_ssh_signature(ssh_signature: bytes) -> SSHGitRawSignature:
+    return SSHGitRawSignature(sanitize_sig_bytes(ssh_signature))
 
 
 def query_bytes_range(bytes_content: bytes, curr_bytes_ptr: int, key_to_query: bytes,
