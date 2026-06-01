@@ -84,6 +84,7 @@ def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes
 
 
 # region tree
+# region query tree
 def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
     """
     Parse bytes tree data.
@@ -187,6 +188,42 @@ def cat_file_tree_content(cat_file_popen: subprocess.Popen[bytes], tree_hash: by
             raise GitExitingException(f"Invalid object mode: {mode.decode()}") from ValueError(tree_hash)
         objmode = int(mode, 8)
         yield format_ % {b"objmode": objmode, b"objtype": objtype, b"objhash": sha, b"objpath": filename}
+# endregion
+
+
+# region make tree
+def mktree_tree_make(mktree_popen: subprocess.Popen[bytes], mktree_null_delimited_content: bytes) -> bytes:
+    """
+    Make a git tree using ``mktree`` Popen and tree data to get a git tree.
+
+    Natively supports null-terminated tree entries or ``git mktree --batch -z`` mode.
+
+    :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
+    :param mktree_null_delimited_content: the tree data content as taken on stdin on ``mktree --batch -z``. These
+        contents are null (``\0``) delimited.
+    :returns: the created tree hash.
+    """
+    write_obj = mktree_null_delimited_content + b"\0\0"
+    mktree_popen_stdin: IO[bytes] = cast(IO[bytes], mktree_popen.stdin)  # stdin is assumed to be piped
+    mktree_popen_stdout: IO[bytes] = cast(IO[bytes], mktree_popen.stdout)  # stdout is assumed to be piped
+    mktree_popen_stdin.write(write_obj)
+    mktree_popen_stdin.flush()
+    tree_hash = mktree_popen_stdout.readline()
+    return tree_hash.strip()
+
+
+def mktree_tree_data_make(mktree_popen: subprocess.Popen[bytes], mktree_entries: Iterable[bytes]) -> bytes:
+    """
+    Make a git tree using ``mktree`` Popen and tree data to get a git tree.
+
+    Natively supports null-terminated tree entries or ``git mktree --batch -z`` mode.
+
+    :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
+    :param mktree_entries: tree entries as required by ``git mktree --batch -z`` or output by ``git ls-tree -z``.
+    :returns: the created tree hash.
+    """
+    return mktree_tree_make(mktree_popen, b"\0".join(mktree_entries))
+# endregion
 # endregion
 
 # region commit
@@ -482,6 +519,7 @@ if __name__ == "__main__":
     with git.session(
         cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
+        mktree=["mktree", "--batch", "-z"]
     ) as ses:
         for mode_, sha_, name_ in cat_file_tree_data(ses.commands.cat_file1, b"HEAD^{tree}", True):
             print(mode_, sha_, name_)
@@ -489,8 +527,18 @@ if __name__ == "__main__":
         print(cat_file_blob_content(ses.commands.cat_file2, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
 
         print("*"*40)
+        tree_of_head: list[bytes] = []
         for tree_line in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}"):
             print(tree_line.decode())
+            tree_of_head.append(tree_line)
+        # make tree
+        print("#"*40)
+        _tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_of_head))
+        print("tree hash: ", _tree_hash)
+        print("#"*40)
+        _tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_of_head))
+        print("tree hash: ", _tree_hash)
+
     end = time.perf_counter()
     print(f"Session Elapsed time: {end - start:0.4f} seconds")
     # endregion
