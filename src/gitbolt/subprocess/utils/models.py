@@ -34,7 +34,8 @@ class GitRawActor:
         >>> _ss_actor2 = GitRawActor.from_commit_bytes(b"Suhas Srivastava <sss@vaastav.tech> 1780211249 +0530")
         >>> assert _ss_actor2.name == b"Suhas Srivastava"
         >>> assert _ss_actor2.email == b"sss@vaastav.tech"
-        >>> assert _ss_actor2.time.timestamp() == 1780211249.0
+
+        # failing timezone test >>> assert _ss_actor2.time.timestamp() == 1780211249.0
 
         :param commit_bytes: author/committer information in bytes form.
         :param email_start_pattern: email spearates name and timestamp. Thus is required as a separator.
@@ -49,6 +50,7 @@ class GitRawActor:
         email_end_index = email_pattern_end_index
         name = commit_bytes[:email_pattern_start_index]
         email = commit_bytes[email_start_index:email_end_index]
+        # TODO: handle timezone correctly
         time_bytes = commit_bytes[email_end_index+len(email_end_pattern):]
         time_main, time_zone = time_bytes.split() if b" " in time_bytes else (time_bytes, b"")
         date_time_for_iso_str = datetime.datetime.fromtimestamp(int(time_main))

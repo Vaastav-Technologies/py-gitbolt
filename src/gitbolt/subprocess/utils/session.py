@@ -204,12 +204,27 @@ def mktree_tree_make(mktree_popen: subprocess.Popen[bytes], mktree_null_delimite
     :returns: the created tree hash.
     """
     write_obj = mktree_null_delimited_content + b"\0\0"
-    mktree_popen_stdin: IO[bytes] = cast(IO[bytes], mktree_popen.stdin)  # stdin is assumed to be piped
-    mktree_popen_stdout: IO[bytes] = cast(IO[bytes], mktree_popen.stdout)  # stdout is assumed to be piped
-    mktree_popen_stdin.write(write_obj)
-    mktree_popen_stdin.flush()
-    tree_hash = mktree_popen_stdout.readline()
+    tree_hash = single_shot_command(mktree_popen, write_obj, True)
     return tree_hash.strip()
+
+
+def single_shot_command(long_running_popen: subprocess.Popen[bytes], write_obj: bytes, readline: bool) -> bytes:
+    """
+    Make a git tree using ``mktree`` Popen and tree data to get a git tree.
+
+    Natively supports null-terminated tree entries or ``git mktree --batch -z`` mode.
+
+    :param long_running_popen: long-running subprocess.Popen.
+    :param write_obj: object to write to the stdin of the long-running process.
+    :param readline: stop at readline or read the whole stdout.
+    :returns: the created tree hash.
+    """
+    _popen_stdin: IO[bytes] = cast(IO[bytes], long_running_popen.stdin)  # stdin is assumed to be piped
+    _popen_stdout: IO[bytes] = cast(IO[bytes], long_running_popen.stdout)  # stdout is assumed to be piped
+    _popen_stdin.write(write_obj)
+    _popen_stdin.flush()
+    _popen_out = _popen_stdout.readline() if readline else _popen_stdout.read()
+    return _popen_out
 
 
 def mktree_tree_data_make(mktree_popen: subprocess.Popen[bytes], mktree_entries: Iterable[bytes]) -> bytes:
@@ -297,7 +312,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_simple_commit_content.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1780213058 +0530"
     >>> assert _parsed_simple_commit_content.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1780213152 +0530"
     >>> assert _parsed_simple_commit_content.signature_val is None
-    >>> assert _parsed_simple_commit_content.commit_message == b"session: add doctests to `Actor.from_commit_bytes()`"
+    >>> assert _parsed_simple_commit_content.commit_message == b"session: add doctests to `Actor.from_commit_bytes()`\\n"
 
     Multiple parents:
 
@@ -321,7 +336,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_multi_parent_commit.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779643218 +0530"
     >>> assert _parsed_multi_parent_commit.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779643218 +0530"
     >>> assert _parsed_multi_parent_commit.signature_val is None
-    >>> assert _parsed_multi_parent_commit.commit_message == b"Introduce `Popen`\\n\\nMerge branch 'feat/run-and-popen/main' into develop\\n\\n- Introduced `Popen` interface in runner.\\n- Introduced `Popen` interface in UncheckedSubcmd."
+    >>> assert _parsed_multi_parent_commit.commit_message == b"Introduce `Popen`\\n\\nMerge branch 'feat/run-and-popen/main' into develop\\n\\n- Introduced `Popen` interface in runner.\\n- Introduced `Popen` interface in UncheckedSubcmd.\\n"
 
     GPG Signed commit:
 
@@ -355,7 +370,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_gpg_sig_commit.author_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_gpg_sig_commit.committer_val == b"Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530"
     >>> assert _parsed_gpg_sig_commit.signature_val == b"-----BEGIN PGP SIGNATURE-----\\n\\niHUEABYKAB0WIQRBZelV8q2CQXy8Vg8vtl2qydHBMAUCahbHsAAKCRAvtl2qydHB\\nMNrAAP9ZYoOfzSHJsnNsocCxqdf0K5Dh0mWbo9hUAYtsKlv/HQEAi8J/jYBqY9lz\\ns6M7/A1YuKWMigDLTbMmjRg6uUgHOAM=\\n=5rmu\\n-----END PGP SIGNATURE-----"
-    >>> assert _parsed_gpg_sig_commit.commit_message == b"Releasing `0.0.0.dev18`\\n\\n- `GitSession` improved.\\n- `GitSession` reexported in `gitbolt`.\\n- Popen no longer unbuffered.\\n- Sessions by default are in `bytes` mode and pipe their `stdin` and `stdout`.\\n\\n- `GitSession` now returns `Self` on `__enter__()`. Glad caught early.\\n- Utilities for git subprocess commands and Popen(s).\\n\\nSigned-off-by: Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech>"
+    >>> assert _parsed_gpg_sig_commit.commit_message == b"Releasing `0.0.0.dev18`\\n\\n- `GitSession` improved.\\n- `GitSession` reexported in `gitbolt`.\\n- Popen no longer unbuffered.\\n- Sessions by default are in `bytes` mode and pipe their `stdin` and `stdout`.\\n\\n- `GitSession` now returns `Self` on `__enter__()`. Glad caught early.\\n- Utilities for git subprocess commands and Popen(s).\\n\\nSigned-off-by: Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech>\\n"
 
     No message commit:
 
@@ -363,7 +378,6 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     ... parent d7d8d6f79017c5d574e3c4ac519c855b7cec33e2
     ... author Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530
     ... committer Suhas Krishna Srivastava <suhasCanDoSo@gmail.com> 1779877779 +0530
-    ...
     ...
     ... \"\"\"
     >>> _parsed_no_msg_commit = parse_cat_file_commit_content(_no_msg_commit)
@@ -403,7 +417,7 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     >>> assert _parsed_no_parent_commit.commit_parents_vals == []
     >>> assert _parsed_no_parent_commit.author_val == b"Suhas Krishna Srivastava <suhas.srivastava@vaastav.tech> 1747405354 +0530"
     >>> assert _parsed_no_parent_commit.committer_val == b"GitHub <noreply@github.com> 1747405354 +0530"
-    >>> assert _parsed_no_parent_commit.commit_message == b"Initial commit"
+    >>> assert _parsed_no_parent_commit.commit_message == b"\\nInitial commit"
     >>> assert _parsed_no_parent_commit.signature_val == b"-----BEGIN PGP SIGNATURE-----\\n\\nwsFcBAABCAAQBQJoJ0oqCRC1aQ7uu5UhlAAABbQQAKnq3HAThX2whGmo4+u5Czg/\\nAybUlY396eoUd9JMoPF+E8+BVWe4ulVmbnWkPBW4iEUtqJzeNA9ULPNnMYMa1Dtu\\niu+IbMt3hh5FuLVtpA+92V9U+0RwpwYjX48dDeVfAWMz9QsI1z4SMUPZmyb7cV2J\\noAcStdGLPhZGa0RSRxFm+KuoZRCWSJ65a8HYpR0zI8sKvTZaFrS+ItxtvALkMBL7\\ndsbdbTNtyPrdqYFhA7BNe7cisd5Avob01CMkV3aPwLFKtFdtS7WPLwwR0fXhOLZV\\nDiYe7Tu+NrVcQJe1QLjkek4DnaN0ph4Xyi/K0CW4FJZ4vXIUI99Z9FP0QKiEX7bN\\nXWyBchwwqFiE17PcSkLOLX0VUCIYdF0w6pj4AzNpSn8PY0jEg0FLbnfj+ZDfBhxl\\ncUvh0obhnxdd4BafqzWSJPpzhCwx3NjkuNA1464BcerCTy7XkNxPtYyTDfLWD12x\\nPVRKAqhm/z2yHyP93maRYY9R/Qvx7n5XJBFh+5w66e3Gvb+RaQQ8HcyJKbz+I/PJ\\ntSRRAm1ROTnCLdWzjzimbOT4agKgwG53HqeaRLzqteu+lTr64LH5ZZZkAUd9v+C9\\ncJb41OV3hHdP0+evTn471JU7YQlCYiQK+Ps04TsUX1MwRgoNq1+znk27PK7B1XUF\\n21sfF75JL4q7VsU/dpCU\\n=0m4k\\n-----END PGP SIGNATURE-----"
 
     Note: strips commit message.
@@ -449,7 +463,6 @@ def parse_cat_file_commit_content(commit_cat_file_content) -> RawBytesValsOfComm
     ssh_sigval = sanitize_sig_bytes(ssh_sig_val) if ssh_sig_val else None
     curr_bytes_ptr += 1  # include \n as commit message starts after that.
     commit_message = commit_cat_file_content[curr_bytes_ptr:]
-    commit_message = commit_message.strip()
     return RawBytesValsOfCommit(tree_val, commit_parents, author_val, committer_val, gpg_sigval or ssh_sigval,
                                 commit_message, )
 
@@ -531,13 +544,16 @@ if __name__ == "__main__":
         for tree_line in cat_file_tree_content(ses.commands.cat_file1, b"HEAD^{tree}"):
             print(tree_line.decode())
             tree_of_head.append(tree_line)
+        tree_of_head_1: list[bytes] = []
+        for tree_line in cat_file_tree_content(ses.commands.cat_file1, b"HEAD~1^{tree}"):
+            tree_of_head_1.append(tree_line)
         # make tree
         print("#"*40)
         _tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_of_head))
-        print("tree hash: ", _tree_hash)
+        print("head tree hash: ", _tree_hash)
         print("#"*40)
-        _tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_of_head))
-        print("tree hash: ", _tree_hash)
+        _tree_hash_1 = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_of_head_1))
+        print("head~1 tree hash: ", _tree_hash_1)
 
     end = time.perf_counter()
     print(f"Session Elapsed time: {end - start:0.4f} seconds")
@@ -555,8 +571,13 @@ if __name__ == "__main__":
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
 
     with git.session(
-        cat_file=["cat-file", "--batch"]
+        cat_file=["cat-file", "--batch"],
+        for_each_ref_contains=["for-each-ref", "--stdin"],
+        rev_list_contains=["rev-list", "--stdin"],
     ) as ses:
         print(cat_file_commit_data(ses.commands.cat_file, b"d7d8d6f79017c5d574e3c4ac519c855b7cec33e2"))
         print(cat_file_commit_data(ses.commands.cat_file, b"HEAD"))
+        print(cat_file_commit_data(ses.commands.cat_file, b"a744fefd4eaf1a0139ae3c85f713a1a963563cc3"))
+        print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
+        # print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
     # endregion
