@@ -350,7 +350,7 @@ with git.session(
         cat_file2=["cat-file", "--batch"],
         cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
         mktree=["mktree", "--batch", "-z"]
-) as ses:
+) as ses:   # reusable and reentrant session
     tree_data: list[bytes] = []
     for mode_, sha_, name_ in cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}"):
         print(mode_, sha_, name_)
