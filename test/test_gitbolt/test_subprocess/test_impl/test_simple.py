@@ -15,7 +15,7 @@ import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
-from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_blob_content, cat_file_commit_content
+from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
 
 def test_exec_path():
@@ -2013,14 +2013,14 @@ class TestGitSession:
             assert ses.active
             assert not ses.done
             with ses:
-                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD~1")
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
                 assert ses.depth == 2
                 assert len(ses.started_commands) == 3
                 assert ses.started
                 assert ses.active
                 assert not ses.done
                 with git_session as sess1:
-                    cat_file_commit_content(sess1.commands.cat_file_2, b"HEAD~1")
+                    cat_file_commit_content(sess1.commands.cat_file_2, b"HEAD")
                     assert sess1.depth == 3
                     assert len(sess1.started_commands) == 3
                     assert sess1.started
@@ -2043,7 +2043,7 @@ class TestGitSession:
             assert ses.active
             assert not ses.done
             with ses:
-                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD~1")
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
                 assert ses.depth == 2
                 assert len(ses.started_commands) == 3
                 assert ses.started
