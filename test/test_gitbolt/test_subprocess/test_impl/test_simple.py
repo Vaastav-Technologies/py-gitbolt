@@ -15,7 +15,7 @@ import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
-from gitbolt.subprocess.utils.session import cat_file_tree_data
+from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_blob_content, cat_file_commit_content
 
 
 def test_exec_path():
@@ -1999,6 +1999,64 @@ class TestGitSession:
         assert session.started
         assert not session.active
         assert session.done
+
+    def test_reuse(self):
+        git = gitbolt.get_git_command()
+        git_session = git.session(cat_file_1=["cat-file", "--batch"],
+                                  mktree=["mktree", "--batch"],
+                                  cat_file_2=["cat-file", "--batch"])
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD~1")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+                with git_session as sess1:
+                    cat_file_commit_content(sess1.commands.cat_file_2, b"HEAD~1")
+                    assert sess1.depth == 3
+                    assert len(sess1.started_commands) == 3
+                    assert sess1.started
+                    assert sess1.active
+                    assert not sess1.done
+        # session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert not ses.is_reused()
+
+        # new session started
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD~1")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+        # new session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert ses.is_reused()
+        assert ses.times_reused == 1
 
     def test_commands_accessible_when_session_active(self):
         git = gitbolt.get_git_command()

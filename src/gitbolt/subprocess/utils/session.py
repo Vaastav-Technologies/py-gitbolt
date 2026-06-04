@@ -570,14 +570,21 @@ if __name__ == "__main__":
     end = time.perf_counter()
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
 
-    with git.session(
+    session = git.session(
         cat_file=["cat-file", "--batch"],
         for_each_ref_contains=["for-each-ref", "--stdin"],
         rev_list_contains=["rev-list", "--stdin"],
-    ) as ses:
+    )
+    with session as ses:
+        print(cat_file_commit_data(ses.commands.cat_file, b"d7d8d6f79017c5d574e3c4ac519c855b7cec33e2"))
+        print(cat_file_commit_data(ses.commands.cat_file, b"HEAD"))
+        print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
+        # print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
+    print(cat_file_commit_data(ses.commands.cat_file, b"a744fefd4eaf1a0139ae3c85f713a1a963563cc3"))
+    print("$"*40)
+    with session as ses:
         print(cat_file_commit_data(ses.commands.cat_file, b"d7d8d6f79017c5d574e3c4ac519c855b7cec33e2"))
         print(cat_file_commit_data(ses.commands.cat_file, b"HEAD"))
         print(cat_file_commit_data(ses.commands.cat_file, b"a744fefd4eaf1a0139ae3c85f713a1a963563cc3"))
         print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
-        # print(single_shot_command(ses.commands.rev_list_contains, b"develop\n\n", False))
     # endregion

@@ -392,18 +392,20 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         :param commands: commands in kwargs fashion.
         """
         self._git = git
-        self.unstarted_commands: dict[str, Callable[[], Popen[bytes]]] = commands
+        self.all_supplied_commands: dict[str, Callable[[], Popen[bytes]]] = commands.copy()
         self.started_commands: dict[str, Popen[bytes]] = dict()
         self._commands: SimpleNamespace | None = None
         self.__started = False
         self.__done = False
         self.__depth = 0
+        self.__times_reused = -1
 
     @override
     def __enter__(self) -> Self:
         if self.depth == 0:
+            self.__done = False
             processes_started_keys: list[str] = []
-            for unstarted_command_key, unstarted_command in self.unstarted_commands.items():
+            for unstarted_command_key, unstarted_command in self.all_supplied_commands.items():
                 try:
                     self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
                 except Exception:
@@ -412,9 +414,8 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
                     raise
                 processes_started_keys.append(unstarted_command_key)
             self._commands = SimpleNamespace(**self.started_commands)
-            for pk in processes_started_keys:
-                del self.unstarted_commands[pk]
             self.__started = True
+            self.__times_reused += 1
         self.__depth += 1
         return self
 
@@ -474,6 +475,16 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         :returns: The current session depth. Multilevel context managers increment the depth each y one.
         """
         return self.__depth
+
+    def is_reused(self) -> bool:
+        """
+        :returns: The session is reused after being closed once.
+        """
+        return self.__times_reused > 0
+
+    @property
+    def times_reused(self) -> int:
+        return self.__times_reused
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
