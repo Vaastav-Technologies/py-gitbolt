@@ -376,7 +376,8 @@ class Worktree(GitSubCommand, Protocol):
         """
 
         @abstractmethod
-        def move(self, worktree: Path, new_path: Path, force: bool = False, relative_paths: bool = True) -> None:
+        def move(self, worktree: Path, new_path: Path, *, relative_paths: bool = True, force: bool = False,
+                 reforce: bool = False) -> None:
             """
             Move the worktree. Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-move
 
@@ -384,8 +385,9 @@ class Worktree(GitSubCommand, Protocol):
 
             :param worktree: Path to the worktree that is to be moved.
             :param new_path: Path where the worktree is to be moved.
-            :param force: `force move a worktree even when it is locked <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
             :param relative_paths: `use relative paths for worktree <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---no-relative-paths>`_.
+            :param force: `force move a worktree even when it is locked <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: multiple force arguments for moving a locked worktree.
             """
 
     @property
