@@ -17,6 +17,7 @@ from gitbolt.base import LsTree as LsTree
 from gitbolt.base import Version as Version
 from gitbolt.base import Add as Add
 from gitbolt.subprocess.base import GitCommand
+from gitbolt.subprocess.base import GitSession as GitSession
 # endregion
 
 

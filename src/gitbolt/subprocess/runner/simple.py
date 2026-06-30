@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pathlib
 import subprocess
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, Popen
 from typing import overload, override, Any, Literal
 
 from gitbolt.subprocess.constants import GIT_CMD
@@ -86,7 +86,7 @@ class SimpleGitCR(GitCommandRunner):
     ) -> CompletedProcess[str] | CompletedProcess[bytes]:
         try:
             return subprocess.run(
-                [str(self.git_prog), *main_cmd_args, *subcommand_args],
+                self.make_cmd(main_cmd_args, subcommand_args),
                 *subprocess_run_args,
                 input=_input,
                 text=text,
@@ -96,6 +96,53 @@ class SimpleGitCR(GitCommandRunner):
             raise GitCmdException(
                 e.stderr, called_process_error=e, exit_code=e.returncode
             ) from e
+
+    @overload
+    @override
+    def popen_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *popen_run_args: Any,
+        text: Literal[False],
+        **popen_run_kwargs: Any,
+    ) -> Popen[bytes]: ...
+
+    @overload
+    @override
+    def popen_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *popen_run_args: Any,
+        text: Literal[True],
+        **popen_run_kwargs: Any,
+    ) -> Popen[str]: ...
+
+    @override
+    def popen_git_command(
+        self,
+        main_cmd_args: list[str],
+        subcommand_args: list[str],
+        *popen_run_args: Any,
+        text: Literal[True, False],
+        **popen_run_kwargs: Any,
+    ) -> Popen[str] | Popen[bytes]:
+        try:
+            return subprocess.Popen(
+                self.make_cmd(main_cmd_args, subcommand_args),
+                *popen_run_args,
+                text=text,
+                **popen_run_kwargs,
+            )
+        except subprocess.CalledProcessError as e:
+            raise GitCmdException(
+                e.stderr, called_process_error=e, exit_code=e.returncode
+            ) from e
+
+    @override
+    def make_cmd(self, main_cmd_args: list[str], sub_cmd_args: list[str]) -> list[str]:
+        return [str(self.git_prog), *main_cmd_args, *sub_cmd_args]
 
     @override
     @property

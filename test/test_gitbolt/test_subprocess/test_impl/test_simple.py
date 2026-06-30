@@ -11,9 +11,11 @@ import pytest
 from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
+import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
+from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
 
 def test_exec_path():
@@ -1814,3 +1816,277 @@ class TestUncheckedSubcmd:
             assert (
                 git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
             )
+
+
+class TestGitSession:
+    """
+    Test the long-running ``GitSession``.
+    """
+
+    class TestSessionObtained:
+        """
+        Test the properties of an obtained ``GitSession``.
+        """
+
+        def test_session_in_ctx_mgr(self):
+            """
+            Obtain a session directly in the context manager.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(mktree=["mktree"]) as ses:
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+
+        def test_session_after_ctx_mgr(self):
+            """
+            Obtain a session directly in the context manager.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(mktree=["mktree", "--batch"]) as ses:
+                pass
+            assert ses.started
+            assert not ses.active
+            assert ses.done
+
+        class TestStarted:
+            """
+            Test ``started`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_started_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.started
+
+            def test_started_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert session.started
+
+            def test_started_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert session.started
+
+        class TestActive:
+            """
+            Test ``active`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_active_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.active
+
+            def test_active_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert session.active
+
+            def test_not_active_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert not session.active
+
+        class TestDone:
+            """
+            Test ``done`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_done_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.done
+
+            def test_not_done_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert not session.done
+
+            def test_done_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert session.done
+
+    class TestMultiCommand:
+        """
+        Test multiple commands behavior in one git session.
+        """
+
+        def test_multi_commands_run(self):
+            """
+            Multiple commands run without failure.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(cat_file=["cat-file", "--batch"], ls_tree=["ls-tree", "HEAD"]) as ses:
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+                ses.commands.ls_tree.communicate()
+
+        def test_one_wrong_command_does_not_affect_others(self):
+            """
+            Multiple commands with many wrong command must not affect others.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(
+                cat_file=["cat-file", "--batch"],
+                cat_file_faulty=["catfile", "HEAD"],
+                unknown_git_cmd=["unknown"],
+                mktree=["mktree", "--batch"],
+            ) as ses:
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+                with pytest.raises(Exception):
+                    list(cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}"))
+
+    def test_reentrance(self):
+        """
+        Test all the states of reentrant ``GitSession``.
+        """
+        git = gitbolt.get_git_command()
+        with git.session(
+            cat_file=["cat-file", "--batch"],
+            mktree=["mktree", "--batch"]
+        ) as session:
+            assert session.depth == 1
+            assert session.started
+            assert session.active
+            assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+                with session:
+                    assert session.depth == 3
+                    assert session.started
+                    assert session.active
+                    assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+            assert session.depth == 1
+            assert session.started
+            assert session.active
+            assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+                with session:
+                    assert session.depth == 3
+                    assert session.started
+                    assert session.active
+                    assert not session.done
+                    with session:
+                        assert session.depth == 4
+                        assert session.started
+                        assert session.active
+                        assert not session.done
+        # session ended
+        assert session.depth == 0
+        assert session.started
+        assert not session.active
+        assert session.done
+
+    def test_reuse(self):
+        git = gitbolt.get_git_command()
+        git_session = git.session(cat_file_1=["cat-file", "--batch"],
+                                  mktree=["mktree", "--batch"],
+                                  cat_file_2=["cat-file", "--batch"])
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+                with git_session as sess1:
+                    cat_file_commit_content(sess1.commands.cat_file_2, b"HEAD")
+                    assert sess1.depth == 3
+                    assert len(sess1.started_commands) == 3
+                    assert sess1.started
+                    assert sess1.active
+                    assert not sess1.done
+        # session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert not ses.is_reused()
+
+        # new session started
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+        # new session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert ses.is_reused()
+        assert ses.times_reused == 1
+
+    def test_commands_accessible_when_session_active(self):
+        git = gitbolt.get_git_command()
+        with git.session(cat_file=["cat-file", "--batch"]) as ses:
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+            assert ses.active
+        assert not ses.active
+
+    def test_commands_accessible_when_session_reentrant_active(self):
+        git = gitbolt.get_git_command()
+        with git.session(
+            cat_file=["cat-file", "--batch"],
+            cat_file2=["cat-file", "--batch"]
+        ) as ses:
+            assert ses.active
+            assert ses.started
+            assert not ses.done
+            with ses:
+                cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}")
+                assert ses.active
+            assert ses.active
+        assert not ses.active
+
+    def test_commands_inaccessible_when_session_inactive(self):
+        git = gitbolt.get_git_command()
+        with git.session(cat_file=["cat-file", "--batch"]) as ses:
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+            assert ses.active
+        assert not ses.active
+        with pytest.raises(RuntimeError, match="GitSession not active"):
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+        assert ses.done
+        assert ses.depth == 0
