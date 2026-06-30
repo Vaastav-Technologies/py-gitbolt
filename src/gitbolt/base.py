@@ -432,6 +432,36 @@ class Worktree(GitSubCommand, Protocol):
         ...
     # endregion
 
+    # region worktree remove subcommands
+    class Remove(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree remove`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-remove
+        """
+
+        @abstractmethod
+        def remove(self, worktree: Path, *, force: bool = False, reforce: bool = False) -> str:
+            """
+            Remove worktree.
+
+            :param worktree: path of the worktree to remove.
+            :param force: `force remove this worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: unclean but locked worktree needs multiple force arguments for worktree removal.
+            :returns: remove output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def remove_subcmd(self) -> Worktree.Remove:
+        """
+        :returns: ``git worktree remove`` subcommand.
+        """
+        ...
+    # endregion
+
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
