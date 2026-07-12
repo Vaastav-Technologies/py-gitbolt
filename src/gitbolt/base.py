@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Protocol, override, Unpack, Self, overload, Literal
 
+from vt.utils.commons.commons.core_py import UNSET, Unset
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
@@ -458,6 +459,66 @@ class Worktree(GitSubCommand, Protocol):
     def remove_subcmd(self) -> Worktree.Remove:
         """
         :returns: ``git worktree remove`` subcommand.
+        """
+        ...
+    # endregion
+
+    # region worktree add subcommand
+    class Add(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree add`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-add
+        """
+
+        def add(self, worktree: Path, commit_ish: str | None = None, *, force: bool | Unset = UNSET,
+                reforce: bool = False, new_branch: str | None = None, new_branch_force: str | None = None,
+                orphan: bool | Unset = UNSET, detach: bool | Unset = UNSET, checkout: bool | Unset = UNSET,
+                lock: bool | Unset = UNSET, reason: str | Unset = UNSET, quiet: bool | Unset = UNSET,
+                track: bool | Unset = UNSET, guess_remote: bool | Unset = UNSET,
+                relative_paths: bool | Unset = UNSET) -> str:
+            """
+            Add worktree.
+
+            :param worktree: path of the worktree to add.
+            :param commit_ish: `add a worktree by checking out commit-ish
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param force: `force remove this worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: add a missing but locked worktree path.
+            :param new_branch: `add a new branch for worktree.
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param new_branch_force: `add a new branch for worktree. Creates a branch at commit_ish even if it
+                exists already
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param orphan: `orphan unborn branch worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param detach: `create a detached worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---detach>`_.
+            :param checkout: `checkout the branch in worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---checkout>`_.
+            :param lock: `keep the worktree locked after creation
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---lock>`_.
+            :param reason: `explanation of why a worktree is locked
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---reasonstring>`_.
+            :param quiet: `suppress add feedback messages
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---quiet>`_.
+            :param track: `track certain upstream branch
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---track>`_.
+            :param guess_remote: `check if a branch already exists on remote that matches this one
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---guess-remote>`_.
+            :param relative_paths: `link worktrees using relative paths instead of absolute path (the default)
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---relative-paths>`_.
+            :returns: add output in string format.
+            """
+            ...
+
+
+    @property
+    @abstractmethod
+    def add_subcmd(self) -> Worktree.Add:
+        """
+        :returns: ``git worktree add`` subcommand.
         """
         ...
     # endregion
