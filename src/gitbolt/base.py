@@ -505,6 +505,35 @@ class Worktree(GitSubCommand, Protocol):
         ...
     # endregion
 
+    # region worktree repair subcommands
+    class Repair(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree repair`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-repair
+        """
+
+        @abstractmethod
+        def repair(self, *worktrees: Path, relative_paths: Unset | bool = UNSET) -> str:
+            """
+            Repair worktree(s).
+
+            :param worktrees: paths of the worktree to repair.
+            :param relative_paths: `use relative paths for worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---relative-paths>`_.
+            :returns: remove output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def repair_subcmd(self) -> Worktree.Repair:
+        """
+        :returns: ``git worktree repair`` subcommand.
+        """
+        ...
+    # endregion
+
     # region worktree add subcommand
     class Add(WorktreeSubcmd, Protocol):
         """
