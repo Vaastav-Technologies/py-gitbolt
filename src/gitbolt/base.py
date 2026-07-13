@@ -358,6 +358,17 @@ class Worktree(GitSubCommand, Protocol):
 
         @abstractmethod
         def lock(self, worktree: Path, reason: str | None = None) -> str:
+            """
+            Lock a worktree to prevent administrative files form being pruned automatically.
+
+            `git worktree lock documentation
+            <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-lock>`_.
+
+            :param worktree: Path to the worktree that is to be locked.
+            :param reason: `a reason for why a worktree is locked
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-lock>`_.
+            :return: git worktree lock output.
+            """
             ...
 
     @property
@@ -365,6 +376,35 @@ class Worktree(GitSubCommand, Protocol):
     def lock_subcmd(self) -> Worktree.Lock:
         """
         :returns: ``git worktree lock`` subcommand.
+        """
+        ...
+
+    # endregion
+
+    # region worktree unlock subcommands
+    class UnLock(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree unlock`` subcommand.
+        """
+
+        @abstractmethod
+        def unlock(self, worktree: Path) -> str:
+            """
+            Unlock a locked worktree for pruning or deletion.
+
+            `git worktree unlock documentation
+            <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-unlock>`_.
+
+            :param worktree: Path to the worktree that is to be unlocked.
+            :return: git worktree unlock output.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def unlock_subcmd(self) -> Worktree.Lock:
+        """
+        :returns: ``git worktree unlock`` subcommand.
         """
         ...
 
