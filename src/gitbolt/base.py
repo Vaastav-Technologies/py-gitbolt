@@ -483,7 +483,7 @@ class Worktree(GitSubCommand, Protocol):
         """
 
         @abstractmethod
-        def remove(self, worktree: Path, *, force: bool = False, reforce: bool = False) -> str:
+        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool = False) -> str:
             """
             Remove worktree.
 
