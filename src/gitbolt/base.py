@@ -326,7 +326,8 @@ class Worktree(GitSubCommand, Protocol):
             ...
 
         @abstractmethod
-        def list(self, *, verbose: bool = False, porcelain: Literal[True, False] = False, z: bool = False) -> str:
+        def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
+                 z: bool | Unset = UNSET) -> str:
             """
             List all the worktrees.
 

@@ -7,6 +7,7 @@ Git command interfaces with default implementation using subprocess calls.
 
 from __future__ import annotations
 
+import abc
 import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
@@ -16,11 +17,12 @@ from subprocess import CompletedProcess, Popen, PIPE
 from types import SimpleNamespace
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
-from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
+from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset, UNSET, Unset
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from gitbolt.base import Worktree
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.ls_tree import (
@@ -29,6 +31,7 @@ from gitbolt.subprocess.ls_tree import (
 )
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
+from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
 
 
@@ -292,6 +295,11 @@ class GitCommand(Git, ABC):
     @property
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
+
+    @override
+    @property
+    @abstractmethod
+    def worktree_subcmd(self) -> WorktreeCommand: ...
 
     @property
     @abstractmethod
@@ -700,6 +708,84 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git add`` subprocess.
         """
         return IndividuallyOverridableACAB()
+
+
+class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
+    """
+    Subprocess command running worktree abstract implementation.
+    """
+
+    class WorktreeSubcmdCommand(Worktree.WorktreeSubcmd, HasGitUnderneath[GitCommand], Protocol):
+        """
+        Subprocess worktree subcommand.
+        """
+
+        @override
+        @property
+        @abstractmethod
+        def underlying_worktree(self) -> WorktreeCommand:
+            ...
+
+        @property
+        @abstractmethod
+        def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+            ...
+
+    class ListCommand(Worktree.List, WorktreeSubcmdCommand, abc.ABC):
+        """
+        Subprocess worktree list subcommand.
+        """
+
+        @override
+        @abstractmethod
+        @overload
+        def list(self, *, verbose: bool = False) -> str:
+            ...
+
+        @override
+        @abstractmethod
+        @overload
+        def list(self, *, porcelain: Literal[False]) -> str:
+            ...
+
+        @override
+        @abstractmethod
+        @overload
+        def list(self, *, z: bool = False, porcelain: Literal[True]) -> str:
+            ...
+
+        @override
+        @abstractmethod
+        def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
+                 z: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_list_cli_args(
+                verbose=verbose,
+                porcelain=porcelain,
+                z=z,
+            )
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    @property
+    def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+        """
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git worktree`` subprocess.
+        """
+        return WorktreeCLIArgsBuilder()
+
 
 
 class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
