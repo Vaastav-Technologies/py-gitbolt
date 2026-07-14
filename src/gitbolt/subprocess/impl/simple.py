@@ -153,6 +153,8 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 
     def clone(self) -> "AddCommandImpl":
         return AddCommandImpl(self.root_dir, self.git)
+        return AddCommandImpl(self.root_dir, self.git, args_validator=self.args_validator,
+                              cli_args_builder=self.cli_args_builder)
 
 
 class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
