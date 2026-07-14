@@ -23,11 +23,33 @@ WORKTREE_LOCK_SUBCMD_NAME = "lock"
 WORKTREE_UNLOCK_SUBCMD_NAME = "unlock"
 
 def build_non_none_list(*vals: str | Unset | Iterable[str] | None) -> list[str]:
+    """
+    Build a list of strings from supplied params ``vals``.
+
+    Examples:
+
+    >>> assert len(build_non_none_list()) == 0
+
+    >>> assert len(build_non_none_list(UNSET)) == 0
+
+    >>> assert len(build_non_none_list(UNSET, UNSET)) == 0
+
+    >>> assert build_non_none_list(UNSET, ["-b", "-c"]) == ["-b", "-c"]
+
+    >>> assert build_non_none_list(UNSET, ["-b", "-c"], UNSET) == ["-b", "-c"]
+
+    >>> assert build_non_none_list(UNSET, ["-b", "-c"], UNSET, "--detach", "--my-opt") == ["-b", "-c", "--detach", "--my-opt"]
+
+    >>> assert build_non_none_list([]) == []
+
+    :param vals: values to include in the options building list.
+    :returns: list of strings representing cli options.
+    """
     ret_list: list[str] = []
     for val in vals:
         if val is not None:
             if not isinstance(val, Unset):
-                if isinstance(val, Iterable):
+                if not isinstance(val, str) and isinstance(val, Iterable):
                     ret_list.extend(val)
                 else:
                     ret_list.append(val)
@@ -35,25 +57,61 @@ def build_non_none_list(*vals: str | Unset | Iterable[str] | None) -> list[str]:
 
 
 def handle_bool_opt(arg: bool | Unset, opt_str: str) -> str | Unset:
-        if arg is True:
-            return f"--{opt_str}"
-        elif arg is False:
-            return f"--no-{opt_str}"
-        elif arg == UNSET:
-            return arg
-        else:
-            raise ValueError(f"{opt_str} must either be a bool or remain Unset.")
+    """
+    Examples:
+
+    >>> assert handle_bool_opt(UNSET, "") == UNSET
+
+    >>> assert handle_bool_opt(True, "my-opt") == "--my-opt"
+
+    >>> assert handle_bool_opt(False, "my-opt") == "--no-my-opt"
+
+    >>> handle_bool_opt("garbage", "my-opt") # type: ignore[arg-type]
+    Traceback (most recent call last):
+    ValueError: my-opt must either be a bool or remain Unset.
+
+    """
+    if arg is True:
+        return f"--{opt_str}"
+    elif arg is False:
+        return f"--no-{opt_str}"
+    elif arg == UNSET:
+        return arg
+    else:
+        raise ValueError(f"{opt_str} must either be a bool or remain Unset.")
 
 
-def handle_true_opt(arg: Literal[True] | Unset, opt_str: str, single_dash: bool = True) -> str | Unset:
-        if arg is True:
-            if single_dash:
-                return f"-{opt_str}"
-            return f"--{opt_str}"
-        elif isinstance(arg, Unset):
-            return arg
-        else:
-            raise ValueError(f"{opt_str} must either be true or remain Unset.")
+def handle_true_opt(arg: Literal[True] | Unset, opt_str: str, single_dash: bool = False) -> str | Unset:
+    """
+    Examples:
+
+    >>> assert handle_true_opt(UNSET, "") == UNSET
+
+    >>> assert handle_true_opt(UNSET, "my-opt") == UNSET
+
+    >>> assert handle_true_opt(True, "my-opt") == "--my-opt"
+
+    >>> assert handle_true_opt(True, "a", True) == "-a"
+
+    >>> assert handle_true_opt(UNSET, "a", True) == UNSET
+
+    >>> handle_true_opt(False, "my-opt") # type: ignore[arg-type]
+    Traceback (most recent call last):
+    ValueError: my-opt must either be true or remain Unset.
+
+    >>> handle_true_opt("garbage", "my-opt") # type: ignore[arg-type]
+    Traceback (most recent call last):
+    ValueError: my-opt must either be true or remain Unset.
+
+    """
+    if arg is True:
+        if single_dash:
+            return f"-{opt_str}"
+        return f"--{opt_str}"
+    elif isinstance(arg, Unset):
+        return arg
+    else:
+        raise ValueError(f"{opt_str} must either be true or remain Unset.")
 
 
 def handle_str_bool_opt(arg: bool | Unset | str, opt_str: str) -> list[str] | Unset:
@@ -119,8 +177,11 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                 reason: str | Literal[False] | Unset, quiet: bool | Unset,
                 track: bool | Unset, guess_remote: bool | Unset,
                 relative_paths: bool | Unset) -> list[str]:
-        return [WORKTREE_SUBCMD_NAME, WORKTREE_ADD_SUBCMD_NAME, str(worktree),
-                *build_non_none_list(
+        cmd_list = [WORKTREE_SUBCMD_NAME, WORKTREE_ADD_SUBCMD_NAME, str(worktree),]
+        if commit_ish is not None:
+            cmd_list.append(commit_ish)
+        cmd_list.extend(
+                build_non_none_list(
                     self._handle_force_option(force),
                     self._handle_reforce_option(reforce),
                     self._handle_new_branch_option(new_branch, commit_ish),
@@ -134,7 +195,8 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                     self._handle_track_option(track),
                     self._handle_guess_remote_option(guess_remote),
                     self._handle_relative_paths_option(relative_paths),
-                )]
+                ))
+        return cmd_list
 
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
         return handle_bool_opt(verbose, "verbose")
