@@ -45,8 +45,10 @@ def handle_bool_opt(arg: bool | Unset, opt_str: str) -> str | Unset:
             raise ValueError(f"{opt_str} must either be a bool or remain Unset.")
 
 
-def handle_true_opt(arg: Literal[True] | Unset, opt_str: str) -> str | Unset:
+def handle_true_opt(arg: Literal[True] | Unset, opt_str: str, single_dash: bool = True) -> str | Unset:
         if arg is True:
+            if single_dash:
+                return f"-{opt_str}"
             return f"--{opt_str}"
         elif isinstance(arg, Unset):
             return arg
@@ -67,7 +69,7 @@ def handle_str_bool_opt(arg: bool | Unset | str, opt_str: str) -> list[str] | Un
 
 class WorktreeCLIArgsBuilder(abc.ABC):
     def build_list_cli_args(self, *, verbose: bool | Unset, porcelain: Literal[True, False] | Unset,
-                            z: bool | Unset) -> list[str]:
+                            z: Literal[True] | Unset) -> list[str]:
         return [WORKTREE_SUBCMD_NAME, WORKTREE_LIST_SUBCMD_NAME,
                 *build_non_none_list(self._handle_verbose_option(verbose),
                                      self._handle_porcelain_option(porcelain),
@@ -140,8 +142,8 @@ class WorktreeCLIArgsBuilder(abc.ABC):
     def _handle_porcelain_option(self, porcelain: Literal[True, False] | Unset) -> str | Unset:
         return handle_bool_opt(porcelain, "porcelain")
 
-    def _handle_z_option(self, z: bool | Unset) -> str | Unset:
-        return handle_bool_opt(z, "z")
+    def _handle_z_option(self, z: Literal[True] | Unset) -> str | Unset:
+        return handle_true_opt(z, "z", True)
 
     def _handle_reason_option(self, reason: str | Literal[False] | Unset) -> list[str] | Unset:
         return handle_str_bool_opt(reason, "reason")

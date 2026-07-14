@@ -322,12 +322,12 @@ class Worktree(GitSubCommand, Protocol):
 
         @abstractmethod
         @overload
-        def list(self, *, z: bool = False, porcelain: Literal[True]) -> str:
+        def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
             ...
 
         @abstractmethod
         def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
-                 z: bool | Unset = UNSET) -> str:
+                 z: Literal[True] | Unset = UNSET) -> str:
             """
             List all the worktrees.
 

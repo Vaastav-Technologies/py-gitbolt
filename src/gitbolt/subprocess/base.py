@@ -752,13 +752,13 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         @override
         @abstractmethod
         @overload
-        def list(self, *, z: bool = False, porcelain: Literal[True]) -> str:
+        def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
             ...
 
         @override
         @abstractmethod
         def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
-                 z: bool | Unset = UNSET) -> str:
+                 z: Literal[True] | Unset = UNSET) -> str:
             sub_cmd_args = self.cli_args_builder.build_list_cli_args(
                 verbose=verbose,
                 porcelain=porcelain,
@@ -871,7 +871,7 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
     class RemoveCommand(Worktree.Remove, WorktreeSubcmdCommand, abc.ABC):
 
         @override
-        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool = False) -> str:
+        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET) -> str:
             sub_cmd_args = self.cli_args_builder.build_remove_cli_args(worktree, force=force, reforce=reforce)
             main_cmd_args = self.git.build_main_cmd_args()
             env_vars = self.git.build_git_envs()
