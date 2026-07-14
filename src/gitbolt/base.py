@@ -544,9 +544,10 @@ class Worktree(GitSubCommand, Protocol):
         """
 
         def add(self, worktree: Path, commit_ish: str | None = None, *, force: bool | Unset = UNSET,
-                reforce: bool = False, new_branch: str | None = None, new_branch_force: str | None = None,
-                orphan: bool | Unset = UNSET, detach: bool | Unset = UNSET, checkout: bool | Unset = UNSET,
-                lock: bool | Unset = UNSET, reason: str | Unset = UNSET, quiet: bool | Unset = UNSET,
+                reforce: bool | Unset = UNSET, new_branch: str | Unset = UNSET, new_branch_force: str | Unset = UNSET,
+                orphan: Literal[True] | Unset = UNSET, detach: Literal[True] | Unset = UNSET,
+                checkout: bool | Unset = UNSET, lock: bool | Unset = UNSET,
+                reason: str | Literal[False] | Unset = UNSET, quiet: bool | Unset = UNSET,
                 track: bool | Unset = UNSET, guess_remote: bool | Unset = UNSET,
                 relative_paths: bool | Unset = UNSET) -> str:
             """
