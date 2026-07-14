@@ -453,7 +453,7 @@ class Worktree(GitSubCommand, Protocol):
 
         @abstractmethod
         def prune(self, *, dry_run: bool | Unset = UNSET, verbose: bool | Unset = UNSET,
-                  expire: int | datetime | Unset = UNSET) -> str:
+                  expire: Literal[False] | int | datetime | Unset = UNSET) -> str:
             """
             Prune worktrees satisfying pruning conditions.
 
