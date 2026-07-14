@@ -358,7 +358,7 @@ class Worktree(GitSubCommand, Protocol):
         """
 
         @abstractmethod
-        def lock(self, worktree: Path, reason: str | None = None) -> str:
+        def lock(self, worktree: Path, reason: str | Literal[False] | Unset = UNSET) -> str:
             """
             Lock a worktree to prevent administrative files form being pruned automatically.
 

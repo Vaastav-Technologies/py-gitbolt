@@ -779,6 +779,30 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+    class LockCommand(Worktree.Lock, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def lock(self, worktree: Path, reason: str | Literal[False] | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_lock_cli_args(
+                worktree,
+                reason=reason,
+            )
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
     @property
     def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
         """
