@@ -418,8 +418,8 @@ class Worktree(GitSubCommand, Protocol):
         """
 
         @abstractmethod
-        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool = False,
-                 relative_paths: bool | Unset = UNSET) -> None:
+        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET,
+                 relative_paths: bool | Unset = UNSET) -> str:
             """
             Move the worktree. Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-move
 

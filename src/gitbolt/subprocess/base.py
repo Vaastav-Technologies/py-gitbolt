@@ -822,6 +822,29 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+    class MoveCommand(Worktree.Move, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET,
+                 relative_paths: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_move_cli_args(
+                worktree, new_path, force=force, reforce=reforce, relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
     @property
     def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
         """

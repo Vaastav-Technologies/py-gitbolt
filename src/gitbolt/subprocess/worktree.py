@@ -13,6 +13,7 @@ from vt.utils.commons.commons.core_py import Unset, UNSET
 
 WORKTREE_SUBCMD_NAME = "worktree"
 WORKTREE_LIST_SUBCMD_NAME = "list"
+WORKTREE_MOVE_SUBCMD_NAME = "move"
 WORKTREE_LOCK_SUBCMD_NAME = "lock"
 WORKTREE_UNLOCK_SUBCMD_NAME = "unlock"
 
@@ -65,6 +66,15 @@ class WorktreeCLIArgsBuilder(abc.ABC):
     def build_unlock_cli_args(self, worktree) -> list[str]:
         return [WORKTREE_SUBCMD_NAME, WORKTREE_LOCK_SUBCMD_NAME, str(worktree)]
 
+    def build_move_cli_args(self, worktree: Path, new_path: Path, *, force: bool | Unset,
+                            reforce: bool | Unset, relative_paths: bool | Unset) -> list[str]:
+        return [WORKTREE_SUBCMD_NAME, WORKTREE_MOVE_SUBCMD_NAME, str(worktree), str(new_path),
+                *build_non_none_list(
+                    self._handle_force_option(force),
+                    self._handle_reforce_option(reforce),
+                    self._handle_relative_paths_option(relative_paths),
+        )]
+
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
         return handle_bool_opt(verbose, "verbose")
 
@@ -77,3 +87,11 @@ class WorktreeCLIArgsBuilder(abc.ABC):
     def _handle_reason_option(self, reason: str | Literal[False] | Unset):
         return handle_str_bool_opt(reason, "reason")
 
+    def _handle_force_option(self, force: bool | Unset):
+        return handle_bool_opt(force, "force")
+
+    def _handle_reforce_option(self, reforce: bool | Unset):
+        return handle_bool_opt(reforce, "force")
+
+    def _handle_relative_paths_option(self, relative_paths: bool | Unset):
+        return handle_bool_opt(relative_paths, "relative-paths")
