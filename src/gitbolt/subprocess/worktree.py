@@ -15,6 +15,7 @@ from vt.utils.commons.commons.core_py import Unset, UNSET
 WORKTREE_SUBCMD_NAME = "worktree"
 WORKTREE_LIST_SUBCMD_NAME = "list"
 WORKTREE_MOVE_SUBCMD_NAME = "move"
+WORKTREE_REMOVE_SUBCMD_NAME = "remove"
 WORKTREE_PRUNE_SUBCMD_NAME = "prune"
 WORKTREE_LOCK_SUBCMD_NAME = "lock"
 WORKTREE_UNLOCK_SUBCMD_NAME = "unlock"
@@ -84,6 +85,13 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                     self._handle_dry_run(dry_run),
                     self._handle_verbose_option(verbose),
                     self._handle_expire_option(expire))]
+
+    def build_remove_cli_args(self, worktree: Path, *, force: bool | Unset, reforce: bool | Unset):
+        return [WORKTREE_SUBCMD_NAME, WORKTREE_REMOVE_SUBCMD_NAME, str(worktree),
+                *build_non_none_list(
+                    self._handle_force_option(force),
+                    self._handle_reforce_option(reforce)
+                )]
 
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
         return handle_bool_opt(verbose, "verbose")
