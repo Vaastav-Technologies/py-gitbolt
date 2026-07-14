@@ -738,25 +738,21 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         """
 
         @override
-        @abstractmethod
         @overload
         def list(self, *, verbose: bool = False) -> str:
             ...
 
         @override
-        @abstractmethod
         @overload
         def list(self, *, porcelain: Literal[False]) -> str:
             ...
 
         @override
-        @abstractmethod
         @overload
         def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
             ...
 
         @override
-        @abstractmethod
         def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
                  z: Literal[True] | Unset = UNSET) -> str:
             sub_cmd_args = self.cli_args_builder.build_list_cli_args(
@@ -893,7 +889,8 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
         @override
         def repair(self, *worktrees: Path, relative_paths: Unset | bool = UNSET) -> str:
-            sub_cmd_args = self.cli_args_builder.build_repair_cli_args(*worktrees, relative_paths=relative_paths)
+            sub_cmd_args = self.cli_args_builder.build_repair_cli_args(*worktrees,
+                                                                       relative_paths=relative_paths)
             main_cmd_args = self.git.build_main_cmd_args()
             env_vars = self.git.build_git_envs()
 

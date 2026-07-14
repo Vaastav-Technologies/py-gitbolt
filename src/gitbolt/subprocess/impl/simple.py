@@ -14,7 +14,7 @@ from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from gitbolt.base import Version
+from gitbolt.base import Version, Worktree
 from gitbolt.add import AddArgsValidator
 from gitbolt.subprocess import (
     GitCommand,
@@ -25,12 +25,13 @@ from gitbolt.subprocess import (
     UncheckedSubcmd,
 )
 from gitbolt.subprocess.add import AddCLIArgsBuilder
-from gitbolt.subprocess.base import GitSession
+from gitbolt.subprocess.base import GitSession, WorktreeCommand
 from gitbolt.subprocess.constants import VERSION_CMD
 from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.subprocess.runner.simple import SimpleGitCR
 from gitbolt.ls_tree import LsTreeArgsValidator
+from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 
 
 class GitSubcmdCommandImpl(GitSubcmdCommand, ABC):
@@ -152,9 +153,144 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
         return self._cli_args_builder
 
     def clone(self) -> "AddCommandImpl":
-        return AddCommandImpl(self.root_dir, self.git)
         return AddCommandImpl(self.root_dir, self.git, args_validator=self.args_validator,
                               cli_args_builder=self.cli_args_builder)
+
+
+class WorktreeSubcmdCommandImpl(WorktreeCommand.WorktreeSubcmdCommand):
+    def __init__(self, worktree: WorktreeCommand,):
+        self._underlying_worktree = worktree
+        self._root_dir = self.underlying_worktree.root_dir
+        self._underlying_git = worktree.git
+        self._cli_args_builder = self.underlying_worktree.cli_args_builder
+
+    @override
+    @property
+    def git(self) -> GitCommand:
+        return self._underlying_git
+
+    @override
+    @property
+    def underlying_worktree(self) -> WorktreeCommand:
+        return self._underlying_worktree
+
+    def _set_underlying_git(self, git: "GitCommand") -> None:
+        self._underlying_git = git
+
+    @property
+    def root_dir(self) -> Path:
+        return self._root_dir
+
+    @property
+    def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+        return self._cli_args_builder
+
+
+class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
+
+    def __init__(
+        self,
+        root_dir: Path,
+        git: GitCommand,
+        *,
+        list_subcmd: WorktreeCommand.ListCommand | None = None,
+        lock_subcmd: WorktreeCommand.LockCommand | None = None,
+        unlock_subcmd: WorktreeCommand.UnLockCommand | None = None,
+        add_subcmd: WorktreeCommand.AddCommand | None = None,
+        remove_subcmd: WorktreeCommand.RemoveCommand | None = None,
+        move_subcmd: WorktreeCommand.MoveCommand | None = None,
+        prune_subcmd: WorktreeCommand.PruneCommand | None = None,
+        repair_subcmd: WorktreeCommand.RepairCommand | None = None,
+        cli_args_builder: WorktreeCLIArgsBuilder | None = None,
+    ):
+        super().__init__(git)
+        self._root_dir = root_dir
+        self._cli_args_builder = cli_args_builder or super().cli_args_builder
+        self._list_subcmd = list_subcmd or WorktreeCommandImpl.ListCommandImpl(self)
+        self._lock_subcmd = lock_subcmd or WorktreeCommandImpl.LockCommandImpl(self)
+        self._unlock_subcmd = unlock_subcmd or WorktreeCommandImpl.UnLockCommandImpl(self)
+        self._add_subcmd = add_subcmd or WorktreeCommandImpl.AddCommandImpl(self)
+        self._remove_subcmd = remove_subcmd or WorktreeCommandImpl.RemoveCommandImpl(self)
+        self._move_subcmd = move_subcmd or WorktreeCommandImpl.MoveCommandImpl(self)
+        self._prune_subcmd = prune_subcmd or WorktreeCommandImpl.PruneCommandImpl(self)
+        self._repair_subcmd = repair_subcmd or WorktreeCommandImpl.RepairCommandImpl(self)
+
+    class ListCommandImpl(WorktreeCommand.ListCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class LockCommandImpl(WorktreeCommand.LockCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class UnLockCommandImpl(WorktreeCommand.UnLockCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class AddCommandImpl(WorktreeCommand.AddCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class RemoveCommandImpl(WorktreeCommand.RemoveCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class MoveCommandImpl(WorktreeCommand.MoveCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class PruneCommandImpl(WorktreeCommand.PruneCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    class RepairCommandImpl(WorktreeCommand.RepairCommand, WorktreeSubcmdCommandImpl):
+        pass
+
+    @override
+    @property
+    def list_subcmd(self) -> WorktreeCommand.ListCommand:
+        return self._list_subcmd
+
+    @override
+    @property
+    def lock_subcmd(self) -> WorktreeCommand.LockCommand:
+        return self._lock_subcmd
+
+    @override
+    @property
+    def unlock_subcmd(self) -> WorktreeCommand.UnLockCommand:
+        return self._unlock_subcmd
+
+    @override
+    @property
+    def move_subcmd(self) -> WorktreeCommand.MoveCommand:
+        return self._move_subcmd
+
+    @override
+    @property
+    def prune_subcmd(self) -> WorktreeCommand.PruneCommand:
+        return self._prune_subcmd
+
+    @override
+    @property
+    def remove_subcmd(self) -> WorktreeCommand.RemoveCommand:
+        return self._remove_subcmd
+
+    @override
+    @property
+    def repair_subcmd(self) -> WorktreeCommand.RepairCommand:
+        return self._repair_subcmd
+
+    @override
+    @property
+    def add_subcmd(self) -> WorktreeCommand.AddCommand:
+        return self._add_subcmd
+
+    @override
+    @property
+    def root_dir(self) -> Path:
+        return self._root_dir
+
+    @override
+    @property
+    def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+        return self._cli_args_builder
+
+    def clone(self) -> "WorktreeCommandImpl":
+        return WorktreeCommandImpl(self.root_dir, self.git)
 
 
 class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
@@ -172,6 +308,7 @@ class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
 
 
 class SimpleGitCommand(GitCommand, RootDirOp):
+
     def __init__(
         self,
         git_root_dir: Path = Path.cwd(),
@@ -180,6 +317,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         version_subcmd: VersionCommand | None = None,
         ls_tree_subcmd: LsTreeCommand | None = None,
         add_subcmd: AddCommand | None = None,
+        worktree_subcmd: WorktreeCommand | None = None,
         subcmd_unchecked: UncheckedSubcmd | None = None,
     ):
         super().__init__(runner)
@@ -187,9 +325,8 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
         self._ls_tree = ls_tree_subcmd or LsTreeCommandImpl(self.root_dir, self)
         self._add_subcmd = add_subcmd or AddCommandImpl(self.root_dir, self)
-        self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(
-            self.root_dir, self
-        )
+        self._worktree_subcmd = worktree_subcmd or WorktreeCommandImpl(self.root_dir, self)
+        self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)
 
     @override
     @property
@@ -215,6 +352,13 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return add_subcmd
 
     @override
+    @property
+    def worktree_subcmd(self) -> WorktreeCommand:
+        worktree_subcmd = self._worktree_subcmd.clone()
+        worktree_subcmd._set_underlying_git(self)
+        return worktree_subcmd
+
+    @override
     def clone(self) -> SimpleGitCommand:
         # region obtain class instance
         cloned = self._subclass_clone()
@@ -235,6 +379,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             version_subcmd=self.version_subcmd,
             ls_tree_subcmd=self.ls_tree_subcmd,
             add_subcmd=self.add_subcmd,
+            worktree_subcmd=self.worktree_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )
 
@@ -281,6 +426,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
         version_subcmd: VersionCommand | None = None,
         ls_tree_subcmd: LsTreeCommand | None = None,
         add_subcmd: AddCommand | None = None,
+        worktree_subcmd: WorktreeCommand | None = None,
         subcmd_unchecked: UncheckedSubcmd | None = None,
     ):
         """
@@ -297,6 +443,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             version_subcmd=version_subcmd,
             ls_tree_subcmd=ls_tree_subcmd,
             add_subcmd=add_subcmd,
+            worktree_subcmd=worktree_subcmd,
             subcmd_unchecked=subcmd_unchecked,
         )
         self._main_cmd_cli_opts = opts
@@ -332,5 +479,6 @@ class CLISimpleGitCommand(SimpleGitCommand):
             version_subcmd=self.version_subcmd,
             ls_tree_subcmd=self.ls_tree_subcmd,
             add_subcmd=self.add_subcmd,
+            worktree_subcmd=self.worktree_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )

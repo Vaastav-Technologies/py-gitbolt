@@ -286,12 +286,12 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
-class Worktree(GitSubCommand, Protocol):
+class Worktree(GitSubCommand, RootDirOp, Protocol):
     """
     Interface for ``git worktree`` subcommand.
     """
 
-    class WorktreeSubcmd(Protocol):
+    class WorktreeSubcmd(RootDirOp, Protocol):
         """
         Interface for the worktree subcommands.
         """
@@ -403,7 +403,7 @@ class Worktree(GitSubCommand, Protocol):
 
     @property
     @abstractmethod
-    def unlock_subcmd(self) -> Worktree.Lock:
+    def unlock_subcmd(self) -> Worktree.UnLock:
         """
         :returns: ``git worktree unlock`` subcommand.
         """
@@ -595,6 +595,10 @@ class Worktree(GitSubCommand, Protocol):
         """
         ...
     # endregion
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> "Worktree":
+        return git.worktree_subcmd
 
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
