@@ -16,6 +16,7 @@ WORKTREE_SUBCMD_NAME = "worktree"
 WORKTREE_LIST_SUBCMD_NAME = "list"
 WORKTREE_MOVE_SUBCMD_NAME = "move"
 WORKTREE_REMOVE_SUBCMD_NAME = "remove"
+WORKTREE_REPAIR_SUBCMD_NAME = "repair"
 WORKTREE_PRUNE_SUBCMD_NAME = "prune"
 WORKTREE_LOCK_SUBCMD_NAME = "lock"
 WORKTREE_UNLOCK_SUBCMD_NAME = "unlock"
@@ -91,6 +92,12 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                 *build_non_none_list(
                     self._handle_force_option(force),
                     self._handle_reforce_option(reforce)
+                )]
+
+    def build_repair_cli_args(self, *worktrees: Path, relative_paths: bool | Unset):
+        return [WORKTREE_SUBCMD_NAME, WORKTREE_REMOVE_SUBCMD_NAME, *[str(worktree) for worktree in worktrees],
+                *build_non_none_list(
+                    self._handle_relative_paths_option(relative_paths)
                 )]
 
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
