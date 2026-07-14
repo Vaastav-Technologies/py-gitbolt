@@ -805,10 +805,7 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
         @override
         def unlock(self, worktree: Path) -> str:
-            sub_cmd_args = self.cli_args_builder.build_lock_cli_args(
-                worktree,
-                reason=reason,
-            )
+            sub_cmd_args = self.cli_args_builder.build_unlock_cli_args(worktree)
             main_cmd_args = self.git.build_main_cmd_args()
             env_vars = self.git.build_git_envs()
 

@@ -14,6 +14,7 @@ from vt.utils.commons.commons.core_py import Unset, UNSET
 WORKTREE_SUBCMD_NAME = "worktree"
 WORKTREE_LIST_SUBCMD_NAME = "list"
 WORKTREE_LOCK_SUBCMD_NAME = "lock"
+WORKTREE_UNLOCK_SUBCMD_NAME = "unlock"
 
 def build_non_none_list(*vals: str | Unset | Iterable[str] | None) -> list[str]:
     ret_list = []
@@ -60,6 +61,9 @@ class WorktreeCLIArgsBuilder(abc.ABC):
     def build_lock_cli_args(self, worktree: Path, reason: str | Literal[False] | Unset) -> list[str]:
          return [WORKTREE_SUBCMD_NAME, WORKTREE_LOCK_SUBCMD_NAME, str(worktree),
                  *build_non_none_list(self._handle_reason_option(reason))]
+
+    def build_unlock_cli_args(self, worktree) -> list[str]:
+        return [WORKTREE_SUBCMD_NAME, WORKTREE_LOCK_SUBCMD_NAME, str(worktree)]
 
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
         return handle_bool_opt(verbose, "verbose")
