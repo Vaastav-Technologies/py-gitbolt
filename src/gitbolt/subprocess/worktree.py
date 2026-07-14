@@ -15,7 +15,7 @@ WORKTREE_SUBCMD_NAME = "worktree"
 WORKTREE_LIST_SUBCMD_NAME = "list"
 WORKTREE_LOCK_SUBCMD_NAME = "lock"
 
-def build_non_none_list(*vals: str | Unset | None) -> list[str]:
+def build_non_none_list(*vals: str | Unset | Iterable[str] | None) -> list[str]:
     ret_list = []
     for val in vals:
         if val is not None:
