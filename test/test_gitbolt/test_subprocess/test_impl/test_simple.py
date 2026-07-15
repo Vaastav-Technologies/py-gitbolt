@@ -4,7 +4,7 @@
 """
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
-
+import sys
 from pathlib import Path
 
 import pytest
@@ -2090,3 +2090,11 @@ class TestGitSession:
             cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
         assert ses.done
         assert ses.depth == 0
+
+def test_list_worktree():
+    git = gitbolt.get_git_command()
+    git.worktree_subcmd.add_subcmd.add(Path(".git", ".main-worktree"), "main", checkout=False)
+    worktree_str = git.worktree_subcmd.list_subcmd.list()
+    assert ".git/.main-worktree" in  worktree_str
+    assert " [main]" in worktree_str
+    git.worktree_subcmd.remove_subcmd.remove(Path(".git", ".main-worktree"), force=True)

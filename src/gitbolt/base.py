@@ -8,9 +8,11 @@ interfaces related to processors specific to git commands.
 from __future__ import annotations
 
 from abc import abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol, override, Unpack, Self, overload, Literal
 
+from vt.utils.commons.commons.core_py import UNSET, Unset
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR
 
@@ -284,6 +286,321 @@ class Version(GitSubCommand, Protocol):
         return git.version_subcmd
 
 
+class Worktree(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git worktree`` subcommand.
+    """
+
+    class WorktreeSubcmd(RootDirOp, Protocol):
+        """
+        Interface for the worktree subcommands.
+        """
+
+        @property
+        @abstractmethod
+        def underlying_worktree(self) -> Worktree:
+            """
+            :return: underlying worktree for this subcommand.
+            """
+            ...
+
+    # region worktree list subcommands
+    class List(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree list`` subcommand.
+        """
+
+        @abstractmethod
+        @overload
+        def list(self, *, verbose: bool = False) -> str:
+            ...
+
+        @abstractmethod
+        @overload
+        def list(self, *, porcelain: Literal[False]) -> str:
+            ...
+
+        @abstractmethod
+        @overload
+        def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
+            ...
+
+        @abstractmethod
+        def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
+                 z: Literal[True] | Unset = UNSET) -> str:
+            """
+            List all the worktrees.
+
+            ``git worktree list`` documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-list
+
+            :param verbose: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---verbose
+            :param porcelain: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---porcelain
+            :param z: This option can only be used if porcelain is enabled. See
+                https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt--z for more details.
+            :returns: stdout of the command run.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def list_subcmd(self) -> Worktree.List:
+        """
+        :returns: ``git worktree list`` subcommand.
+        """
+        ...
+
+    # endregion
+
+    # region worktree lock subcommands
+    class Lock(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree lock`` subcommand.
+        """
+
+        @abstractmethod
+        def lock(self, worktree: Path, reason: str | Literal[False] | Unset = UNSET) -> str:
+            """
+            Lock a worktree to prevent administrative files form being pruned automatically.
+
+            `git worktree lock documentation
+            <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-lock>`_.
+
+            :param worktree: Path to the worktree that is to be locked.
+            :param reason: `a reason for why a worktree is locked
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-lock>`_.
+            :return: git worktree lock output.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def lock_subcmd(self) -> Worktree.Lock:
+        """
+        :returns: ``git worktree lock`` subcommand.
+        """
+        ...
+
+    # endregion
+
+    # region worktree unlock subcommands
+    class UnLock(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree unlock`` subcommand.
+        """
+
+        @abstractmethod
+        def unlock(self, worktree: Path) -> str:
+            """
+            Unlock a locked worktree for pruning or deletion.
+
+            `git worktree unlock documentation
+            <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-unlock>`_.
+
+            :param worktree: Path to the worktree that is to be unlocked.
+            :return: git worktree unlock output.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def unlock_subcmd(self) -> Worktree.UnLock:
+        """
+        :returns: ``git worktree unlock`` subcommand.
+        """
+        ...
+
+    # endregion
+
+    # region worktree move subcommands
+    class Move(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree move`` subcommand.
+        """
+
+        @abstractmethod
+        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET,
+                 relative_paths: bool | Unset = UNSET) -> str:
+            """
+            Move the worktree. Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-move
+
+            Also, info on ``git worktree move -h``.
+
+            :param worktree: Path to the worktree that is to be moved.
+            :param new_path: Path where the worktree is to be moved.
+            :param force: `force move a worktree even when it is locked <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: multiple force arguments for moving a locked worktree.
+            :param relative_paths: `use relative paths for worktree <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---no-relative-paths>`_.
+            :return: output of ``git worktree move``.
+            """
+
+    @property
+    @abstractmethod
+    def move_subcmd(self) -> Worktree.Move:
+        """
+        :returns: ``git worktree move`` subcommand.
+        """
+        ...
+
+    # endregion
+
+    # region worktree prune subcommands
+    class Prune(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree prune`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-prune
+        """
+
+        @abstractmethod
+        def prune(self, *, dry_run: bool | Unset = UNSET, verbose: bool | Unset = UNSET,
+                  expire: Literal[False] | int | datetime | Unset = UNSET) -> str:
+            """
+            Prune worktrees satisfying pruning conditions.
+
+            :param dry_run: `Just dry run the operation and do not actually prune anything.
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---dry-run>`_.
+            :param verbose: `be verbose while pruning
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---verbose>`_.
+            :param expire: `prune worktrees older than this expiration time
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---expiretime>`_.
+            :returns: prune output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def prune_subcmd(self) -> Worktree.Prune:
+        """
+        :returns: ``git worktree prune`` subcommand.
+        """
+        ...
+    # endregion
+
+    # region worktree remove subcommands
+    class Remove(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree remove`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-remove
+        """
+
+        @abstractmethod
+        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET) -> str:
+            """
+            Remove worktree.
+
+            :param worktree: path of the worktree to remove.
+            :param force: `force remove this worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: unclean but locked worktree needs multiple force arguments for worktree removal.
+            :returns: remove output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def remove_subcmd(self) -> Worktree.Remove:
+        """
+        :returns: ``git worktree remove`` subcommand.
+        """
+        ...
+    # endregion
+
+    # region worktree repair subcommands
+    class Repair(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree repair`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-repair
+        """
+
+        @abstractmethod
+        def repair(self, *worktrees: Path, relative_paths: Unset | bool = UNSET) -> str:
+            """
+            Repair worktree(s).
+
+            :param worktrees: paths of the worktree to repair.
+            :param relative_paths: `use relative paths for worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---relative-paths>`_.
+            :returns: remove output in string format.
+            """
+            ...
+
+    @property
+    @abstractmethod
+    def repair_subcmd(self) -> Worktree.Repair:
+        """
+        :returns: ``git worktree repair`` subcommand.
+        """
+        ...
+    # endregion
+
+    # region worktree add subcommand
+    class Add(WorktreeSubcmd, Protocol):
+        """
+        Interface for ``git worktree add`` subcommand.
+
+        Documentation: https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-add
+        """
+
+        def add(self, worktree: Path, commit_ish: str | None = None, *, force: bool | Unset = UNSET,
+                reforce: bool | Unset = UNSET, new_branch: str | Unset = UNSET, new_branch_force: str | Unset = UNSET,
+                orphan: Literal[True] | Unset = UNSET, detach: Literal[True] | Unset = UNSET,
+                checkout: bool | Unset = UNSET, lock: bool | Unset = UNSET,
+                reason: str | Literal[False] | Unset = UNSET, quiet: bool | Unset = UNSET,
+                track: bool | Unset = UNSET, guess_remote: bool | Unset = UNSET,
+                relative_paths: bool | Unset = UNSET) -> str:
+            """
+            Add worktree.
+
+            :param worktree: path of the worktree to add.
+            :param commit_ish: `add a worktree by checking out commit-ish
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param force: `force remove this worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---force>`_.
+            :param reforce: add a missing but locked worktree path.
+            :param new_branch: `add a new branch for worktree.
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param new_branch_force: `add a new branch for worktree. Creates a branch at commit_ish even if it
+                exists already
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param orphan: `orphan unborn branch worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt-addpathcommit-ish>`_.
+            :param detach: `create a detached worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---detach>`_.
+            :param checkout: `checkout the branch in worktree
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---checkout>`_.
+            :param lock: `keep the worktree locked after creation
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---lock>`_.
+            :param reason: `explanation of why a worktree is locked
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---reasonstring>`_.
+            :param quiet: `suppress add feedback messages
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---quiet>`_.
+            :param track: `track certain upstream branch
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---track>`_.
+            :param guess_remote: `check if a branch already exists on remote that matches this one
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---guess-remote>`_.
+            :param relative_paths: `link worktrees using relative paths instead of absolute path (the default)
+                <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---relative-paths>`_.
+            :returns: add output in string format.
+            """
+            ...
+
+
+    @property
+    @abstractmethod
+    def add_subcmd(self) -> Worktree.Add:
+        """
+        :returns: ``git worktree add`` subcommand.
+        """
+        ...
+    # endregion
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> "Worktree":
+        return git.worktree_subcmd
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -344,6 +661,14 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def add_subcmd(self) -> Add:
         """
         :return: ``git add`` subcommand.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def worktree_subcmd(self) -> Worktree:
+        """
+        :return: ``git worktree`` subcommand.
         """
         ...
 

@@ -7,20 +7,23 @@ Git command interfaces with default implementation using subprocess calls.
 
 from __future__ import annotations
 
+import abc
 import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from datetime import datetime
 from pathlib import Path
 from subprocess import CompletedProcess, Popen, PIPE
 from types import SimpleNamespace
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
-from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
+from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset, UNSET, Unset
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from gitbolt.base import Worktree
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.ls_tree import (
@@ -29,6 +32,7 @@ from gitbolt.subprocess.ls_tree import (
 )
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
+from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
 
 
@@ -292,6 +296,11 @@ class GitCommand(Git, ABC):
     @property
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
+
+    @override
+    @property
+    @abstractmethod
+    def worktree_subcmd(self) -> WorktreeCommand: ...
 
     @property
     @abstractmethod
@@ -700,6 +709,241 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git add`` subprocess.
         """
         return IndividuallyOverridableACAB()
+
+
+class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
+    """
+    Subprocess command running worktree abstract implementation.
+    """
+
+    class WorktreeSubcmdCommand(Worktree.WorktreeSubcmd, HasGitUnderneath[GitCommand], Protocol):
+        """
+        Subprocess worktree subcommand.
+        """
+
+        @override
+        @property
+        @abstractmethod
+        def underlying_worktree(self) -> WorktreeCommand:
+            ...
+
+        @property
+        @abstractmethod
+        def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+            ...
+
+    class ListCommand(Worktree.List, WorktreeSubcmdCommand, abc.ABC):
+        """
+        Subprocess worktree list subcommand.
+        """
+
+        @override
+        @overload
+        def list(self, *, verbose: bool = False) -> str:
+            ...
+
+        @override
+        @overload
+        def list(self, *, porcelain: Literal[False]) -> str:
+            ...
+
+        @override
+        @overload
+        def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
+            ...
+
+        @override
+        def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
+                 z: Literal[True] | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_list_cli_args(
+                verbose=verbose,
+                porcelain=porcelain,
+                z=z,
+            )
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class LockCommand(Worktree.Lock, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def lock(self, worktree: Path, reason: str | Literal[False] | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_lock_cli_args(
+                worktree, reason,)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class UnLockCommand(Worktree.UnLock, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def unlock(self, worktree: Path) -> str:
+            sub_cmd_args = self.cli_args_builder.build_unlock_cli_args(worktree)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class MoveCommand(Worktree.Move, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET,
+                 relative_paths: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_move_cli_args(
+                worktree, new_path, force=force, reforce=reforce, relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class PruneCommand(Worktree.Prune, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def prune(self, *, dry_run: bool | Unset = UNSET, verbose: bool | Unset = UNSET,
+                  expire: Literal[False] | int | datetime | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_prune_cli_args(dry_run, verbose, expire)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class RemoveCommand(Worktree.Remove, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_remove_cli_args(worktree, force=force, reforce=reforce)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class RepairCommand(Worktree.Repair, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def repair(self, *worktrees: Path, relative_paths: Unset | bool = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_repair_cli_args(*worktrees,
+                                                                       relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    class AddCommand(Worktree.Add, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def add(self, worktree: Path, commit_ish: str | None = None, *, force: bool | Unset = UNSET,
+                reforce: bool | Unset = UNSET, new_branch: str | Unset = UNSET, new_branch_force: str | Unset = UNSET,
+                orphan: Literal[True] | Unset = UNSET, detach: Literal[True] | Unset = UNSET,
+                checkout: bool | Unset = UNSET, lock: bool | Unset = UNSET,
+                reason: str | Literal[False] | Unset = UNSET, quiet: bool | Unset = UNSET,
+                track: bool | Unset = UNSET, guess_remote: bool | Unset = UNSET,
+                relative_paths: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_add_cli_args(
+                worktree, commit_ish, force=force, reforce=reforce, new_branch=new_branch,
+                new_branch_force=new_branch_force, orphan=orphan, detach=detach, checkout=checkout, lock=lock,
+                reason=reason, quiet=quiet, track=track, guess_remote=guess_remote, relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+    @property
+    def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+        """
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git worktree`` subprocess.
+        """
+        return WorktreeCLIArgsBuilder()
+
 
 
 class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
