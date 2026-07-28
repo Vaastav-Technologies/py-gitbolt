@@ -454,9 +454,9 @@ class CLISimpleGitCommand(SimpleGitCommand):
     def build_main_cmd_args(self) -> list[str]:
         if self._main_cmd_cli_opts:
             if self.prefer_cli:
-                return self.clean_cap_c(super().build_main_cmd_args()) + self._main_cmd_cli_opts
+                return self.git_main_opts_clean_cap_c(super().build_main_cmd_args()) + self._main_cmd_cli_opts
             else:
-                return self._main_cmd_cli_opts + self.clean_cap_c(super().build_main_cmd_args())
+                return self._main_cmd_cli_opts + self.git_main_opts_clean_cap_c(super().build_main_cmd_args())
         return super().build_main_cmd_args()
 
     @override
@@ -483,7 +483,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             subcmd_unchecked=self.subcmd_unchecked,
         )
 
-    def clean_cap_c(self, main_opts: list[str]) -> list[str]:
+    def git_main_opts_clean_cap_c(self, main_opts: list[str]) -> list[str]:
         """
         Clean the cap C of -C CLI options from the CLI command list.
 
