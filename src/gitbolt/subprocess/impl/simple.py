@@ -454,9 +454,9 @@ class CLISimpleGitCommand(SimpleGitCommand):
     def build_main_cmd_args(self) -> list[str]:
         if self._main_cmd_cli_opts:
             if self.prefer_cli:
-                return self.git_main_opts_clean_cap_c(super().build_main_cmd_args()) + self._main_cmd_cli_opts
+                return git_main_opts_clean_cap_c(super().build_main_cmd_args()) + self._main_cmd_cli_opts
             else:
-                return self._main_cmd_cli_opts + self.git_main_opts_clean_cap_c(super().build_main_cmd_args())
+                return self._main_cmd_cli_opts + git_main_opts_clean_cap_c(super().build_main_cmd_args())
         return super().build_main_cmd_args()
 
     @override
@@ -483,21 +483,21 @@ class CLISimpleGitCommand(SimpleGitCommand):
             subcmd_unchecked=self.subcmd_unchecked,
         )
 
-    def git_main_opts_clean_cap_c(self, main_opts: list[str]) -> list[str]:
-        """
-        Clean the cap C of -C CLI options from the CLI command list.
+def git_main_opts_clean_cap_c(main_opts: list[str]) -> list[str]:
+    """
+    Clean the cap C of -C CLI options from the CLI command list.
 
-        :param main_opts: git CLI command options.
-        :returns: command line options with -C options and its values removed.
-        """
-        cap_c_indices: list[int] = []
-        try:
-            while found_index := main_opts.index("-C"):
-                cap_c_indices.append(found_index)
-            for cap_c_index in reversed(cap_c_indices):
-                del main_opts[cap_c_index+1]
-                del main_opts[cap_c_index]
-        except ValueError:
-            # didn't find -C or done finding -C
-            pass
-        return main_opts
+    :param main_opts: git CLI command options.
+    :returns: command line options with -C options and its values removed.
+    """
+    cap_c_indices: list[int] = []
+    try:
+        while found_index := main_opts.index("-C"):
+            cap_c_indices.append(found_index)
+        for cap_c_index in reversed(cap_c_indices):
+            del main_opts[cap_c_index+1]
+            del main_opts[cap_c_index]
+    except ValueError:
+        # didn't find -C or done finding -C
+        pass
+    return main_opts
