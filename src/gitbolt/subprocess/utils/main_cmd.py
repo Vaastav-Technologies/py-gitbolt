@@ -200,16 +200,17 @@ def git_main_opts_clean_cap_c(main_opts: list[str]) -> list[str]:
     :returns: command line options after removing -C options and its values.
     """
     cap_c_indices: list[int] = []
+    main_opts_copy = main_opts.copy()
     try:
         i=0
         while i<len(main_opts):
-            found_index = main_opts.index("-C", i)
+            found_index = main_opts_copy.index("-C", i)
             cap_c_indices.append(found_index)
             i=found_index+1
     except ValueError:
         # didn't find -C or done finding -C
         pass
     for cap_c_index in reversed(cap_c_indices):
-        del main_opts[cap_c_index+1]
-        del main_opts[cap_c_index]
-    return main_opts
+        del main_opts_copy[cap_c_index+1]
+        del main_opts_copy[cap_c_index]
+    return main_opts_copy
