@@ -56,6 +56,35 @@ class GitCommand(Git, ABC):
 
         For example, ``--no-pager --no-advice`` is the git main command in ``git --no-pager --no-advice log master -1``.
 
+        Examples:
+
+        - No CLI args to build
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> assert _git.build_main_cmd_args() == []
+
+        - One CLI arg to override
+
+        >>> _git = gitbolt.get_git_command()
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")])
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir"))]
+
+        - Multiple CLI args to override
+
+        >>> _git = gitbolt.get_git_command()
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")], config_env=dict(u1="user1", u2="user2"))
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir")), "--config-env", "u1=user1", "--config-env", "u2=user2"]
+
+        - Multiple CLI args to override when CLI is preferred
+
+        >>> _git = gitbolt.get_git_command(prefer_cli=True)
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")], config_env=dict(u1="user1", u2="user2"))
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir")), "--config-env", "u1=user1", "--config-env", "u2=user2"]
+
         :return: CLI args for git main cli command.
         """
         return (
