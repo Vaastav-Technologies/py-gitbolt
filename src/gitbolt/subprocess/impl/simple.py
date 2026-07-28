@@ -14,7 +14,7 @@ from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from gitbolt.base import Version, Worktree
+from gitbolt.base import Version
 from gitbolt.add import AddArgsValidator
 from gitbolt.subprocess import (
     GitCommand,
@@ -31,6 +31,7 @@ from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.subprocess.runner.simple import SimpleGitCR
 from gitbolt.ls_tree import LsTreeArgsValidator
+from gitbolt.subprocess.utils.main_cmd import git_main_opts_clean_cap_c
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 
 
@@ -482,22 +483,3 @@ class CLISimpleGitCommand(SimpleGitCommand):
             worktree_subcmd=self.worktree_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )
-
-def git_main_opts_clean_cap_c(main_opts: list[str]) -> list[str]:
-    """
-    Clean the cap C of -C CLI options from the CLI command list.
-
-    :param main_opts: git CLI command options.
-    :returns: command line options with -C options and its values removed.
-    """
-    cap_c_indices: list[int] = []
-    try:
-        while found_index := main_opts.index("-C"):
-            cap_c_indices.append(found_index)
-        for cap_c_index in reversed(cap_c_indices):
-            del main_opts[cap_c_index+1]
-            del main_opts[cap_c_index]
-    except ValueError:
-        # didn't find -C or done finding -C
-        pass
-    return main_opts

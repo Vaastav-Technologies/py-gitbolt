@@ -177,3 +177,39 @@ def git_main_cmd_pair_flag_args(val: Any, cmd_flag: str) -> list[str]:
         []
     """
     return [cmd_flag, str(val)] if not_none_not_unset(val) else []
+
+
+def git_main_opts_clean_cap_c(main_opts: list[str]) -> list[str]:
+    """
+    Clean the cap C of -C CLI options from the CLI command list. This function removes the ``-C`` CLI option and its
+    values from the supplied param list.
+
+    >>> assert git_main_opts_clean_cap_c([]) == []
+
+    >>> assert git_main_opts_clean_cap_c(["--no-pager"]) == ["--no-pager"]
+
+    >>> assert git_main_opts_clean_cap_c(["--no-pager", "-C", "/root", "-C", "dir", "-C", "file"]) == ["--no-pager"]
+
+    >>> assert git_main_opts_clean_cap_c(["-C", "/root", "-C", "dir", "-C", "file", "--no-pager"]) == ["--no-pager"]
+
+    >>> assert git_main_opts_clean_cap_c(["-C", "/root", "-C", "dir", "--no-pager", "-C", "file"]) == ["--no-pager"]
+
+    >>> assert git_main_opts_clean_cap_c(["-C", "/root", "-C", "dir", "-C", "file"]) == []
+
+    :param main_opts: git CLI command options.
+    :returns: command line options after removing -C options and its values.
+    """
+    cap_c_indices: list[int] = []
+    try:
+        i=0
+        while i<len(main_opts):
+            found_index = main_opts.index("-C", i)
+            cap_c_indices.append(found_index)
+            i=found_index+1
+    except ValueError:
+        # didn't find -C or done finding -C
+        pass
+    for cap_c_index in reversed(cap_c_indices):
+        del main_opts[cap_c_index+1]
+        del main_opts[cap_c_index]
+    return main_opts
