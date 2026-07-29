@@ -14,7 +14,7 @@ from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
-from gitbolt.base import Version, Worktree
+from gitbolt.base import Version
 from gitbolt.add import AddArgsValidator
 from gitbolt.subprocess import (
     GitCommand,
@@ -31,6 +31,7 @@ from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.subprocess.runner.simple import SimpleGitCR
 from gitbolt.ls_tree import LsTreeArgsValidator
+from gitbolt.subprocess.utils.main_cmd import git_main_opts_clean_cap_c
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 
 
@@ -452,12 +453,16 @@ class CLISimpleGitCommand(SimpleGitCommand):
 
     @override
     def build_main_cmd_args(self) -> list[str]:
+        super_cli_cmd_opts = super().build_main_cmd_args()
         if self._main_cmd_cli_opts:
+            if "-C" in self._main_cmd_cli_opts:
+                # only need to clean -C from the original CLI opts if the main CLI opts have them.
+                super_cli_cmd_opts = git_main_opts_clean_cap_c(super_cli_cmd_opts)
             if self.prefer_cli:
-                return super().build_main_cmd_args() + self._main_cmd_cli_opts
+                return super_cli_cmd_opts + self._main_cmd_cli_opts
             else:
-                return self._main_cmd_cli_opts + super().build_main_cmd_args()
-        return super().build_main_cmd_args()
+                return self._main_cmd_cli_opts + super_cli_cmd_opts
+        return super_cli_cmd_opts
 
     @override
     def build_git_envs(self) -> dict[str, str] | None:
