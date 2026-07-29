@@ -4,7 +4,6 @@
 """
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
-import sys
 from pathlib import Path
 
 import pytest
