@@ -34,7 +34,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD
 
 
 class GitCommand(Git, ABC):
@@ -1105,6 +1105,37 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git worktree`` subprocess.
         """
         return WorktreeCLIArgsBuilder()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.worktree_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.worktree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.worktree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), WORKTREE_CMD])
 
 
 
