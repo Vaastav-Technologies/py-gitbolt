@@ -34,7 +34,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD
 
 
 class GitCommand(Git, ABC):
@@ -655,6 +655,38 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
                     b_k, b_v = b_str.split(self.splitter_expr)
                     self._cache.build_options[b_k] = b_v
             return self._cache.build_options
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+        >>> from gitbolt.subprocess.constants import GIT_CMD
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.version_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.version_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.version_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), VERSION_CMD])
 
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
