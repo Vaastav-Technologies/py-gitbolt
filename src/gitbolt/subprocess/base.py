@@ -34,6 +34,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
+from gitbolt.subprocess.constants import GIT_CMD
 
 
 class GitCommand(Git, ABC):
@@ -48,6 +49,45 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars | None = None
+        self._cmd_str_repr: str | None = None
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git) == GIT_CMD
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_b_git) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_c_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        if self._cmd_str_repr:
+            return self._cmd_str_repr
+        _built_cmd_envs = self.build_git_envs()
+        _built_cmd_options = self.build_main_cmd_args()
+        envs = [f"{k}={v}" for k, v in _built_cmd_envs.items()] if _built_cmd_envs else []
+        opts = _built_cmd_options or []
+        self._cmd_str_repr = " ".join(envs+[GIT_CMD]+opts)
+        return self._cmd_str_repr
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
