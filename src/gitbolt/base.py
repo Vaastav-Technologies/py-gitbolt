@@ -307,7 +307,7 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
         @abstractmethod
         def clone(self) -> Self:
             """
-            :return: a clone of the underlying subcommand.
+            :return: a clone of the underlying worktree subcommand.
             """
             ...
 
