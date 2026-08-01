@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import ABC
 from pathlib import Path
 from subprocess import Popen
-from typing import override, Literal, overload, Callable
+from typing import override, Literal, overload, Callable, Self
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -158,11 +158,11 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
                               cli_args_builder=self.cli_args_builder)
 
 
-class WorktreeSubcmdCommandImpl(WorktreeCommand.WorktreeSubcmdCommand):
+class WorktreeSubcmdCommandImpl(WorktreeCommand.WorktreeSubcmdCommand, ABC):
     def __init__(self, worktree: WorktreeCommand,):
         self._underlying_worktree = worktree
         self._root_dir = self.underlying_worktree.root_dir
-        self._underlying_git = worktree.git
+        self._underlying_git = self.underlying_worktree.git
         self._cli_args_builder = self.underlying_worktree.cli_args_builder
 
     @override
@@ -175,8 +175,10 @@ class WorktreeSubcmdCommandImpl(WorktreeCommand.WorktreeSubcmdCommand):
     def underlying_worktree(self) -> WorktreeCommand:
         return self._underlying_worktree
 
-    def _set_underlying_git(self, git: "GitCommand") -> None:
-        self._underlying_git = git
+    @override
+    def _set_underlying_worktree(self, worktree: "WorktreeCommand") -> None:
+        self._underlying_worktree = worktree
+        self._underlying_git = self.underlying_worktree.git
 
     @property
     def root_dir(self) -> Path:
@@ -217,28 +219,44 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         self._repair_subcmd = repair_subcmd or WorktreeCommandImpl.RepairCommandImpl(self)
 
     class ListCommandImpl(WorktreeCommand.ListCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.ListCommandImpl(self)
 
     class LockCommandImpl(WorktreeCommand.LockCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.LockCommandImpl(self)
 
     class UnLockCommandImpl(WorktreeCommand.UnLockCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.UnLockCommandImpl(self)
 
     class AddCommandImpl(WorktreeCommand.AddCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.AddCommandImpl(self)
 
     class RemoveCommandImpl(WorktreeCommand.RemoveCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.RemoveCommandImpl(self)
 
     class MoveCommandImpl(WorktreeCommand.MoveCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.MoveCommandImpl(self)
 
     class PruneCommandImpl(WorktreeCommand.PruneCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.PruneCommandImpl(self)
 
     class RepairCommandImpl(WorktreeCommand.RepairCommand, WorktreeSubcmdCommandImpl):
-        pass
+        @override
+        def clone(self) -> Self:
+            return WorktreeCommandImpl.RepairCommandImpl(self)
 
     @override
     @property
