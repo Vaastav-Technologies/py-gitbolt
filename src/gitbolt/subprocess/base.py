@@ -895,6 +895,17 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
             ...
 
+        @abstractmethod
+        def _set_underlying_worktree(self, worktree: "WorktreeCommand") -> None:
+            """
+            Protected. Designed to be overridden not called publicly.
+
+            Set the `_underlying_worktree` in the derived class.
+
+            :param worktree: worktree to override current class's `underlying_worktree` to.
+            """
+            ...
+
     # region worktree subcommands
     class ListCommand(Worktree.List, WorktreeSubcmdCommand, abc.ABC):
         """
