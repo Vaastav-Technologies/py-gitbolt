@@ -243,41 +243,57 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
     @override
     @property
     def list_subcmd(self) -> WorktreeCommand.ListCommand:
+        _list_subcmd = self._list_subcmd.clone()
+        _list_subcmd._set_underlying_worktree(self)
         return self._list_subcmd
 
     @override
     @property
     def lock_subcmd(self) -> WorktreeCommand.LockCommand:
+        _lock_subcmd = self._lock_subcmd.clone()
+        _lock_subcmd._set_underlying_worktree(self)
         return self._lock_subcmd
 
     @override
     @property
     def unlock_subcmd(self) -> WorktreeCommand.UnLockCommand:
+        _unlock_subcmd = self._unlock_subcmd.clone()
+        _unlock_subcmd._set_underlying_worktree(self)
         return self._unlock_subcmd
 
     @override
     @property
     def move_subcmd(self) -> WorktreeCommand.MoveCommand:
+        _move_subcmd = self._move_subcmd.clone()
+        _move_subcmd._set_underlying_worktree(self)
         return self._move_subcmd
 
     @override
     @property
     def prune_subcmd(self) -> WorktreeCommand.PruneCommand:
+        _prune_subcmd = self._prune_subcmd.clone()
+        _prune_subcmd._set_underlying_worktree(self)
         return self._prune_subcmd
 
     @override
     @property
     def remove_subcmd(self) -> WorktreeCommand.RemoveCommand:
+        _remove_subcmd = self._remove_subcmd.clone()
+        _remove_subcmd._set_underlying_worktree(self)
         return self._remove_subcmd
 
     @override
     @property
     def repair_subcmd(self) -> WorktreeCommand.RepairCommand:
+        _repair_subcmd = self._repair_subcmd.clone()
+        _repair_subcmd._set_underlying_worktree(self)
         return self._repair_subcmd
 
     @override
     @property
     def add_subcmd(self) -> WorktreeCommand.AddCommand:
+        _add_subcmd = self._add_subcmd.clone()
+        _add_subcmd._set_underlying_worktree(self)
         return self._add_subcmd
 
     @override
