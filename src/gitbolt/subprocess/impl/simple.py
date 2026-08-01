@@ -220,43 +220,43 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
 
     class ListCommandImpl(WorktreeCommand.ListCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.ListCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.ListCommandImpl:
+            return WorktreeCommandImpl.ListCommandImpl(self.underlying_worktree)
 
     class LockCommandImpl(WorktreeCommand.LockCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.LockCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.LockCommandImpl:
+            return WorktreeCommandImpl.LockCommandImpl(self.underlying_worktree)
 
     class UnLockCommandImpl(WorktreeCommand.UnLockCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.UnLockCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.UnLockCommandImpl:
+            return WorktreeCommandImpl.UnLockCommandImpl(self.underlying_worktree)
 
     class AddCommandImpl(WorktreeCommand.AddCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.AddCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.AddCommandImpl:
+            return WorktreeCommandImpl.AddCommandImpl(self.underlying_worktree)
 
     class RemoveCommandImpl(WorktreeCommand.RemoveCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.RemoveCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.RemoveCommandImpl:
+            return WorktreeCommandImpl.RemoveCommandImpl(self.underlying_worktree)
 
     class MoveCommandImpl(WorktreeCommand.MoveCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.MoveCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.MoveCommandImpl:
+            return WorktreeCommandImpl.MoveCommandImpl(self.underlying_worktree)
 
     class PruneCommandImpl(WorktreeCommand.PruneCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.PruneCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.PruneCommandImpl:
+            return WorktreeCommandImpl.PruneCommandImpl(self.underlying_worktree)
 
     class RepairCommandImpl(WorktreeCommand.RepairCommand, WorktreeSubcmdCommandImpl):
         @override
-        def clone(self) -> Self:
-            return WorktreeCommandImpl.RepairCommandImpl(self)
+        def clone(self) -> WorktreeCommandImpl.RepairCommandImpl:
+            return WorktreeCommandImpl.RepairCommandImpl(self.underlying_worktree)
 
     @override
     @property
