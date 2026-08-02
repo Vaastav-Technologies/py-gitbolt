@@ -353,7 +353,6 @@ class GitCommand(Git, ABC):
         return Path(_path_str)
 
     @override
-    @property
     @abstractmethod
     def version_subcmd(self) -> VersionCommand: ...
 
@@ -665,22 +664,22 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
         No options and envs:
 
         >>> _a_git = gitbolt.get_git_command()
-        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"
 
         Added main command options:
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
-        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.version_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.version_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
 
         Adding git envs:
 
         >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
-        >>> assert str(_a_git.version_subcmd) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
-        >>> assert str(_c_git.version_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.version_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
+        >>> assert str(_d_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
 
         Does not affect repr:
 

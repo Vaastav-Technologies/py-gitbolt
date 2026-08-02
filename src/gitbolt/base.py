@@ -283,7 +283,7 @@ class Version(GitSubCommand, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Version":
-        return git.version_subcmd
+        return git.version_subcmd()
 
 
 class Worktree(GitSubCommand, RootDirOp, Protocol):
@@ -659,7 +659,7 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         :return: current git version.
         """
-        return self.version_subcmd.version()
+        return self.version_subcmd().version()
 
     @abstractmethod
     def exec_path(self) -> Path:
@@ -689,7 +689,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def version_subcmd(self) -> Version:
         """

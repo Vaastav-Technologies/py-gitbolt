@@ -364,7 +364,6 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)
 
     @override
-    @property
     def version_subcmd(self) -> VersionCommand:
         # TODO: in all subcommand methods, find a better way to retain envs and opts rather than cloning each time
         #   and setting the underlying git.
@@ -411,7 +410,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return SimpleGitCommand(
             self.root_dir,
             self.runner,
-            version_subcmd=self.version_subcmd,
+            version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd,
             add_subcmd=self.add_subcmd,
             worktree_subcmd=self.worktree_subcmd,
@@ -515,7 +514,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             opts=self._main_cmd_cli_opts,
             envs=self._cmd_cli_envs,
             prefer_cli=self.prefer_cli,
-            version_subcmd=self.version_subcmd,
+            version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd,
             add_subcmd=self.add_subcmd,
             worktree_subcmd=self.worktree_subcmd,
