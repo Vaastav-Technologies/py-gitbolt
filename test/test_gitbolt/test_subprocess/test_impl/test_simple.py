@@ -2093,7 +2093,7 @@ class TestGitSession:
 def test_list_worktree():
     git = gitbolt.get_git_command()
     git.worktree_subcmd.add_subcmd.add(Path(".git", ".main-worktree"), "main", checkout=False)
-    worktree_str = git.worktree_subcmd.list_subcmd.list()
+    worktree_str = git.worktree_subcmd.list_subcmd().list()
     assert ".git/.main-worktree" in  worktree_str
     assert " [main]" in worktree_str
     git.worktree_subcmd.remove_subcmd.remove(Path(".git", ".main-worktree"), force=True)

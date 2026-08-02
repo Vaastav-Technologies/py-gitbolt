@@ -259,7 +259,6 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
             return WorktreeCommandImpl.RepairCommandImpl(self.underlying_worktree)
 
     @override
-    @property
     def list_subcmd(self) -> WorktreeCommand.ListCommand:
         _list_subcmd = self._list_subcmd.clone()
         _list_subcmd._set_underlying_worktree(self)
@@ -325,7 +324,16 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         return self._cli_args_builder
 
     def clone(self) -> "WorktreeCommandImpl":
-        return WorktreeCommandImpl(self.root_dir, self.git)
+        return WorktreeCommandImpl(self.root_dir, self.git,
+                                   list_subcmd=self.list_subcmd(),
+                                   lock_subcmd=self.lock_subcmd,
+                                   unlock_subcmd=self.unlock_subcmd,
+                                   add_subcmd=self.add_subcmd,
+                                   remove_subcmd=self.remove_subcmd,
+                                   move_subcmd=self.move_subcmd,
+                                   prune_subcmd=self.prune_subcmd,
+                                   repair_subcmd=self.repair_subcmd,
+                                   cli_args_builder=self.cli_args_builder)
 
 
 class UncheckedSubcmdImpl(UncheckedSubcmd, GitSubcmdCommandImpl):
