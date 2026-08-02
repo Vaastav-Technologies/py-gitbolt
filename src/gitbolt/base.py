@@ -216,7 +216,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Add":
-        return git.add_subcmd
+        return git.add_subcmd()
 
 
 class Version(GitSubCommand, Protocol):
@@ -703,7 +703,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def add_subcmd(self) -> Add:
         """

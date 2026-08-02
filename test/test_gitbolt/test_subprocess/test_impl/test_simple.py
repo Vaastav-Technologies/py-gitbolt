@@ -1486,7 +1486,7 @@ class TestLsTreeSubcmd:
     def test_ls_tree(self, repo_local):
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
-        git.add_subcmd.add(".")
+        git.add_subcmd().add(".")
         git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
         git.subcmd_unchecked.run(
             ["config", "--local", "user.email", "suhas@example.com"]
@@ -1521,7 +1521,7 @@ class TestLsTreeSubcmd:
     def test_ls_tree_custom_fmt(self, repo_local, fmt, res):
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
-        git.add_subcmd.add(".")
+        git.add_subcmd().add(".")
         git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
         git.subcmd_unchecked.run(
             ["config", "--local", "user.email", "suhas@example.com"]
@@ -1621,7 +1621,7 @@ class TestAddSubcmd:
     def test_add(self, repo_local):
         Path(repo_local, "a-file").write_text("a-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add(".")
+        git.add_subcmd().add(".")
         assert (
             "a-file"
             in git.subcmd_unchecked.run(
@@ -1635,7 +1635,7 @@ class TestAddSubcmd:
         Path(repo_local, "a-file").write_text("a-file")
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add("*-file")
+        git.add_subcmd().add("*-file")
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],
             text=True,
@@ -1647,7 +1647,7 @@ class TestAddSubcmd:
         Path(repo_local, "a-file").write_text("a-file")
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add("a-file", "b-file")
+        git.add_subcmd().add("a-file", "b-file")
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],
             text=True,
@@ -1661,7 +1661,7 @@ class TestAddSubcmd:
         pathspec_file = Path(tmp_path, "pathspec-file.txt")
         pathspec_file.write_text("*-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add(pathspec_from_file=pathspec_file)
+        git.add_subcmd().add(pathspec_from_file=pathspec_file)
         indexed_files = git.subcmd_unchecked.run(
             ["diff", "--cached", "--name-only"],
             text=True,

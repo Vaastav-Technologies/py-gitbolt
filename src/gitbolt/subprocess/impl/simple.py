@@ -378,7 +378,6 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return ls_tree_subcmd
 
     @override
-    @property
     def add_subcmd(self) -> AddCommand:
         add_subcmd = self._add_subcmd.clone()
         add_subcmd._set_underlying_git(self)
@@ -411,7 +410,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             self.runner,
             version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd(),
-            add_subcmd=self.add_subcmd,
+            add_subcmd=self.add_subcmd(),
             worktree_subcmd=self.worktree_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )
@@ -515,7 +514,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             prefer_cli=self.prefer_cli,
             version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd(),
-            add_subcmd=self.add_subcmd,
+            add_subcmd=self.add_subcmd(),
             worktree_subcmd=self.worktree_subcmd,
             subcmd_unchecked=self.subcmd_unchecked,
         )

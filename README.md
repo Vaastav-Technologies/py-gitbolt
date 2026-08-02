@@ -81,7 +81,7 @@ import gitbolt
 
 git = gitbolt.get_git()
 version_subcmd = git.version_subcmd()
-add_subcmd = git.add_subcmd
+add_subcmd = git.add_subcmd()
 
 def method_which_only_adds_a_file(add_subcmd: gitbolt.base.Add):
     """
@@ -117,7 +117,7 @@ particular commands.
 from gitbolt import get_git
 
 git = get_git() # get git object for the current working directory
-add_subcmd = git.add_subcmd
+add_subcmd = git.add_subcmd()
 ls_tree_subcmd = git.ls_tree_subcmd()
 
 # now, functions can be written to accept only the required subcommands and nothing more than that.
