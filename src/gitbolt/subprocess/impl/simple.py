@@ -265,7 +265,6 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         return self._list_subcmd
 
     @override
-    @property
     def lock_subcmd(self) -> WorktreeCommand.LockCommand:
         _lock_subcmd = self._lock_subcmd.clone()
         _lock_subcmd._set_underlying_worktree(self)
@@ -326,7 +325,7 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
     def clone(self) -> "WorktreeCommandImpl":
         return WorktreeCommandImpl(self.root_dir, self.git,
                                    list_subcmd=self.list_subcmd(),
-                                   lock_subcmd=self.lock_subcmd,
+                                   lock_subcmd=self.lock_subcmd(),
                                    unlock_subcmd=self.unlock_subcmd,
                                    add_subcmd=self.add_subcmd,
                                    remove_subcmd=self.remove_subcmd,
