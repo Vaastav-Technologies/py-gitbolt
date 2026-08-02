@@ -1493,7 +1493,7 @@ class TestLsTreeSubcmd:
         )
         git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
         assert (
-            git.ls_tree_subcmd.ls_tree("HEAD")
+            git.ls_tree_subcmd().ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
         )
 
@@ -1527,7 +1527,7 @@ class TestLsTreeSubcmd:
             ["config", "--local", "user.email", "suhas@example.com"]
         )
         git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
-        assert git.ls_tree_subcmd.ls_tree("HEAD", format_=fmt) == res
+        assert git.ls_tree_subcmd().ls_tree("HEAD", format_=fmt) == res
 
     class TestArgValidation:
         @pytest.mark.parametrize(
@@ -1549,19 +1549,19 @@ class TestLsTreeSubcmd:
         )
         def test_tree_ish_must_be_str(self, tree_ish):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree(tree_ish)  # type: ignore[arg-type] # expects str and provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree(tree_ish)  # type: ignore[arg-type] # expects str and provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize("abbrev", ["abc", True, 5.5, [5], None])
         def test_abbrev_must_be_int(self, abbrev):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize("abbrev", [-1, 41, 100])
         def test_abbrev_must_be_in_range(self, abbrev):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", abbrev=abbrev)
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", abbrev=abbrev)
             assert e.value.exit_code == ERR_INVALID_USAGE
 
         @pytest.mark.parametrize(
@@ -1570,7 +1570,7 @@ class TestLsTreeSubcmd:
         )
         def test_format_must_be_str(self, format_):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", format_=format_)  # type: ignore[arg-type] # expects str, provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", format_=format_)  # type: ignore[arg-type] # expects str, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize(
@@ -1588,7 +1588,7 @@ class TestLsTreeSubcmd:
         )
         def test_path_must_be_list_of_strings(self, path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", path=path)  # type: ignore[arg-type] # expects list[str], provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", path=path)  # type: ignore[arg-type] # expects list[str], provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
 

@@ -357,7 +357,6 @@ class GitCommand(Git, ABC):
     def version_subcmd(self) -> VersionCommand: ...
 
     @override
-    @property
     @abstractmethod
     def ls_tree_subcmd(self) -> LsTreeCommand: ...
 
@@ -734,22 +733,22 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         No options and envs:
 
         >>> _a_git = gitbolt.get_git_command()
-        >>> assert str(_a_git.ls_tree_subcmd) == f"{GIT_CMD} {LS_TREE_CMD}"
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"
 
         Added main command options:
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
-        >>> assert str(_a_git.ls_tree_subcmd) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.ls_tree_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {LS_TREE_CMD}"
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.ls_tree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {LS_TREE_CMD}"
 
         Adding git envs:
 
         >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
-        >>> assert str(_a_git.ls_tree_subcmd) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
-        >>> assert str(_c_git.ls_tree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {LS_TREE_CMD}"
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {LS_TREE_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.ls_tree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {LS_TREE_CMD}"
+        >>> assert str(_d_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {LS_TREE_CMD}"
 
         Does not affect repr:
 

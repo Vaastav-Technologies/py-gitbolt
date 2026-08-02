@@ -131,7 +131,7 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "LsTree":
-        return git.ls_tree_subcmd
+        return git.ls_tree_subcmd()
 
     @property
     def args_validator(self) -> LsTreeArgsValidator:
@@ -696,7 +696,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def ls_tree_subcmd(self) -> LsTree:
         """

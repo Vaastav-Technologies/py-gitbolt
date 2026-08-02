@@ -118,7 +118,7 @@ from gitbolt import get_git
 
 git = get_git() # get git object for the current working directory
 add_subcmd = git.add_subcmd
-ls_tree_subcmd = git.ls_tree_subcmd
+ls_tree_subcmd = git.ls_tree_subcmd()
 
 # now, functions can be written to accept only the required subcommands and nothing more than that.
 ```
