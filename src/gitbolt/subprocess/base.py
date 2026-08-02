@@ -951,6 +951,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.ListCommand":
+            ...
+
     class LockCommand(Worktree.Lock, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -973,6 +978,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.LockCommand":
+            ...
+
     class UnLockCommand(Worktree.UnLock, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -993,6 +1003,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.UnLockCommand":
+            ...
 
     class MoveCommand(Worktree.Move, WorktreeSubcmdCommand, abc.ABC):
 
@@ -1017,6 +1032,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.MoveCommand":
+            ...
+
     class PruneCommand(Worktree.Prune, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -1039,6 +1059,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.PruneCommand":
+            ...
+
     class RemoveCommand(Worktree.Remove, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -1059,6 +1084,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RemoveCommand":
+            ...
 
     class RepairCommand(Worktree.Repair, WorktreeSubcmdCommand, abc.ABC):
 
@@ -1081,6 +1111,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RepairCommand":
+            ...
 
     class AddCommand(Worktree.Add, WorktreeSubcmdCommand, abc.ABC):
 
@@ -1149,6 +1184,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             >>> assert repr(_d_git) != str(_d_git)
             """
             return " ".join([str(self.git), WORKTREE_CMD, WORKTREE_ADD_CMD])
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.AddCommand":
+            ...
     # endregion
 
     @property

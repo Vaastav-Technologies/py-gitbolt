@@ -209,14 +209,14 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         super().__init__(git)
         self._root_dir = root_dir
         self._cli_args_builder = cli_args_builder or super().cli_args_builder
-        self._list_subcmd = list_subcmd or WorktreeCommandImpl.ListCommandImpl(self)
-        self._lock_subcmd = lock_subcmd or WorktreeCommandImpl.LockCommandImpl(self)
-        self._unlock_subcmd = unlock_subcmd or WorktreeCommandImpl.UnLockCommandImpl(self)
-        self._add_subcmd = add_subcmd or WorktreeCommandImpl.AddCommandImpl(self)
-        self._remove_subcmd = remove_subcmd or WorktreeCommandImpl.RemoveCommandImpl(self)
-        self._move_subcmd = move_subcmd or WorktreeCommandImpl.MoveCommandImpl(self)
-        self._prune_subcmd = prune_subcmd or WorktreeCommandImpl.PruneCommandImpl(self)
-        self._repair_subcmd = repair_subcmd or WorktreeCommandImpl.RepairCommandImpl(self)
+        self._list_subcmd: WorktreeCommand.ListCommand = list_subcmd or WorktreeCommandImpl.ListCommandImpl(self)
+        self._lock_subcmd: WorktreeCommand.LockCommand = lock_subcmd or WorktreeCommandImpl.LockCommandImpl(self)
+        self._unlock_subcmd: WorktreeCommand.UnLockCommand = unlock_subcmd or WorktreeCommandImpl.UnLockCommandImpl(self)
+        self._add_subcmd: WorktreeCommand.AddCommand = add_subcmd or WorktreeCommandImpl.AddCommandImpl(self)
+        self._remove_subcmd: WorktreeCommand.RemoveCommand = remove_subcmd or WorktreeCommandImpl.RemoveCommandImpl(self)
+        self._move_subcmd: WorktreeCommand.MoveCommand = move_subcmd or WorktreeCommandImpl.MoveCommandImpl(self)
+        self._prune_subcmd: WorktreeCommand.PruneCommand = prune_subcmd or WorktreeCommandImpl.PruneCommandImpl(self)
+        self._repair_subcmd: WorktreeCommand.RepairCommand = repair_subcmd or WorktreeCommandImpl.RepairCommandImpl(self)
 
     class ListCommandImpl(WorktreeCommand.ListCommand, WorktreeSubcmdCommandImpl):
         @override
