@@ -498,9 +498,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Prune:
-            return worktree.prune_subcmd
+            return worktree.prune_subcmd()
 
-    @property
     @abstractmethod
     def prune_subcmd(self) -> Worktree.Prune:
         """
