@@ -639,7 +639,7 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Worktree":
-        return git.worktree_subcmd
+        return git.worktree_subcmd()
 
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
@@ -702,7 +702,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def worktree_subcmd(self) -> Worktree:
         """

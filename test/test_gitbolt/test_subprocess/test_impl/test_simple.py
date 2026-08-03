@@ -2100,8 +2100,8 @@ def test_list_worktree(repo_local):
     git.subcmd_unchecked.run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # switch back to master
     git.subcmd_unchecked.run(["switch", "-"])
-    git.worktree_subcmd.add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
-    worktree_str = git.worktree_subcmd.list_subcmd().list()
+    git.worktree_subcmd().add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
+    worktree_str = git.worktree_subcmd().list_subcmd().list()
     assert ".git/.nb-worktree" in  worktree_str
     assert " [master]" in worktree_str
-    git.worktree_subcmd.remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)
+    git.worktree_subcmd().remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)

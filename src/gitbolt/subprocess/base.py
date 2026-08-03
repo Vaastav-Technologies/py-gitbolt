@@ -365,7 +365,6 @@ class GitCommand(Git, ABC):
     def add_subcmd(self) -> AddCommand: ...
 
     @override
-    @property
     @abstractmethod
     def worktree_subcmd(self) -> WorktreeCommand: ...
 
@@ -1152,29 +1151,29 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             No options and envs:
 
             >>> _a_git = gitbolt.get_git_command()
-            >>> assert str(_a_git.worktree_subcmd.add_subcmd) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
+            >>> assert str(_a_git.worktree_subcmd().add_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
 
             Added main command options:
 
             >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
-            >>> assert str(_a_git.worktree_subcmd.add_subcmd) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"    # _a_git never changed
-            >>> str(_b_git.worktree_subcmd.add_subcmd)
-            >>> assert str(_b_git.worktree_subcmd.add_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
+            >>> assert str(_a_git.worktree_subcmd().add_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"    # _a_git never changed
+            >>> str(_b_git.worktree_subcmd().add_subcmd())
+            >>> assert str(_b_git.worktree_subcmd().add_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
 
             Adding git envs:
 
             >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
-            >>> assert str(_a_git.worktree_subcmd.add_subcmd) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"    # _a_git never changed
-            >>> str(_c_git.worktree_subcmd.add_subcmd)
-            >>> assert str(_c_git.worktree_subcmd.add_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
+            >>> assert str(_a_git.worktree_subcmd().add_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"    # _a_git never changed
+            >>> str(_c_git.worktree_subcmd().add_subcmd())
+            >>> assert str(_c_git.worktree_subcmd().add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
 
             >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-            >>> str(_d_git.worktree_subcmd.add_subcmd)
-            >>> assert str(_d_git.worktree_subcmd.add_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
+            >>> str(_d_git.worktree_subcmd().add_subcmd())
+            >>> assert str(_d_git.worktree_subcmd().add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
 
             >>> _e_git = _d_git.git_opts_override(C=[Path("c"), Path("d")], no_advice=True, no_replace_objects=False, config_env=dict(conf1="val2", glob1="val1"))
-            >>> str(_e_git.worktree_subcmd.add_subcmd)
-            >>> assert str(_d_git.worktree_subcmd.add_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C c -C d --config-env conf1=val2 --config-env glob1=val1 {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
+            >>> str(_e_git.worktree_subcmd().add_subcmd())
+            >>> assert str(_d_git.worktree_subcmd().add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C c -C d --config-env conf1=val2 --config-env glob1=val1 {WORKTREE_CMD} {WORKTREE_ADD_CMD}"
 
             Does not affect repr:
 
@@ -1203,22 +1202,22 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         No options and envs:
 
         >>> _a_git = gitbolt.get_git_command()
-        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"
 
         Added main command options:
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
-        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.worktree_subcmd) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.worktree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
 
         Adding git envs:
 
         >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
-        >>> assert str(_a_git.worktree_subcmd) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
-        >>> assert str(_c_git.worktree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.worktree_subcmd) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
+        >>> assert str(_d_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
 
         Does not affect repr:
 
