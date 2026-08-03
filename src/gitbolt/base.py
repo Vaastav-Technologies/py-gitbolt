@@ -359,9 +359,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.List:
-            return worktree.list_subcmd
+            return worktree.list_subcmd()
 
-    @property
     @abstractmethod
     def list_subcmd(self) -> Worktree.List:
         """
@@ -394,9 +393,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Lock:
-            return worktree.lock_subcmd
+            return worktree.lock_subcmd()
 
-    @property
     @abstractmethod
     def lock_subcmd(self) -> Worktree.Lock:
         """
@@ -427,9 +425,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.UnLock:
-            return worktree.unlock_subcmd
+            return worktree.unlock_subcmd()
 
-    @property
     @abstractmethod
     def unlock_subcmd(self) -> Worktree.UnLock:
         """
@@ -464,9 +461,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Move:
-            return worktree.move_subcmd
+            return worktree.move_subcmd()
 
-    @property
     @abstractmethod
     def move_subcmd(self) -> Worktree.Move:
         """
@@ -502,9 +498,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Prune:
-            return worktree.prune_subcmd
+            return worktree.prune_subcmd()
 
-    @property
     @abstractmethod
     def prune_subcmd(self) -> Worktree.Prune:
         """
@@ -536,9 +531,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Remove:
-            return worktree.remove_subcmd
+            return worktree.remove_subcmd()
 
-    @property
     @abstractmethod
     def remove_subcmd(self) -> Worktree.Remove:
         """
@@ -569,9 +563,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Repair:
-            return worktree.repair_subcmd
+            return worktree.repair_subcmd()
 
-    @property
     @abstractmethod
     def repair_subcmd(self) -> Worktree.Repair:
         """
@@ -633,10 +626,9 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Add:
-            return worktree.add_subcmd
+            return worktree.add_subcmd()
 
 
-    @property
     @abstractmethod
     def add_subcmd(self) -> Worktree.Add:
         """
