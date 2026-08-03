@@ -461,9 +461,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Move:
-            return worktree.move_subcmd
+            return worktree.move_subcmd()
 
-    @property
     @abstractmethod
     def move_subcmd(self) -> Worktree.Move:
         """

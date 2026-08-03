@@ -277,7 +277,6 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         return self._unlock_subcmd
 
     @override
-    @property
     def move_subcmd(self) -> WorktreeCommand.MoveCommand:
         _move_subcmd = self._move_subcmd.clone()
         _move_subcmd._set_underlying_worktree(self)
@@ -328,7 +327,7 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
                                    unlock_subcmd=self.unlock_subcmd(),
                                    add_subcmd=self.add_subcmd,
                                    remove_subcmd=self.remove_subcmd,
-                                   move_subcmd=self.move_subcmd,
+                                   move_subcmd=self.move_subcmd(),
                                    prune_subcmd=self.prune_subcmd,
                                    repair_subcmd=self.repair_subcmd,
                                    cli_args_builder=self.cli_args_builder)
