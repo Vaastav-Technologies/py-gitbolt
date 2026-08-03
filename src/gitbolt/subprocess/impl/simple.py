@@ -295,7 +295,6 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
         return self._remove_subcmd
 
     @override
-    @property
     def repair_subcmd(self) -> WorktreeCommand.RepairCommand:
         _repair_subcmd = self._repair_subcmd.clone()
         _repair_subcmd._set_underlying_worktree(self)
@@ -327,7 +326,7 @@ class WorktreeCommandImpl(WorktreeCommand, GitSubcmdCommandImpl):
                                    remove_subcmd=self.remove_subcmd(),
                                    move_subcmd=self.move_subcmd(),
                                    prune_subcmd=self.prune_subcmd(),
-                                   repair_subcmd=self.repair_subcmd,
+                                   repair_subcmd=self.repair_subcmd(),
                                    cli_args_builder=self.cli_args_builder)
 
 

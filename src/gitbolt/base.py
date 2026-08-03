@@ -563,9 +563,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Repair:
-            return worktree.repair_subcmd
+            return worktree.repair_subcmd()
 
-    @property
     @abstractmethod
     def repair_subcmd(self) -> Worktree.Repair:
         """
