@@ -368,7 +368,6 @@ class GitCommand(Git, ABC):
     @abstractmethod
     def worktree_subcmd(self) -> WorktreeCommand: ...
 
-    @property
     @abstractmethod
     def subcmd_unchecked(self) -> UncheckedSubcmd:
         """
@@ -406,7 +405,7 @@ class GitCommand(Git, ABC):
         >>> import gitbolt
         >>> _git = gitbolt.get_git_command()
         >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"],
-        ...                     cat_file=lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], env=None))
+        ...                     cat_file=lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], env=None))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
@@ -447,14 +446,14 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         >>> import gitbolt
         >>> from gitbolt.subprocess.base import GitSession
         >>> _git = gitbolt.get_git_command()
-        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked.popen(["ls-tree", "HEAD"], text=False),
-        ...                 cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False))
+        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked().popen(["ls-tree", "HEAD"], text=False),
+        ...                 cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
         Start the session in one go:
 
-        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
+        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
 
 

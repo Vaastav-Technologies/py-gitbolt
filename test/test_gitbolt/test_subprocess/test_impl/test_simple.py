@@ -1487,11 +1487,11 @@ class TestLsTreeSubcmd:
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
         git.add_subcmd().add(".")
-        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
-        git.subcmd_unchecked.run(
+        git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked().run(
             ["config", "--local", "user.email", "suhas@example.com"]
         )
-        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        git.subcmd_unchecked().run(["commit", "-m", "committed a-file"])
         assert (
             git.ls_tree_subcmd().ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
@@ -1522,11 +1522,11 @@ class TestLsTreeSubcmd:
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
         git.add_subcmd().add(".")
-        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
-        git.subcmd_unchecked.run(
+        git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked().run(
             ["config", "--local", "user.email", "suhas@example.com"]
         )
-        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        git.subcmd_unchecked().run(["commit", "-m", "committed a-file"])
         assert git.ls_tree_subcmd().ls_tree("HEAD", format_=fmt) == res
 
     class TestArgValidation:
@@ -1624,7 +1624,7 @@ class TestAddSubcmd:
         git.add_subcmd().add(".")
         assert (
             "a-file"
-            in git.subcmd_unchecked.run(
+            in git.subcmd_unchecked().run(
                 ["diff", "--cached", "--name-only"],
                 cwd=repo_local,
                 text=True,
@@ -1636,7 +1636,7 @@ class TestAddSubcmd:
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
         git.add_subcmd().add("*-file")
-        indexed_files = git.subcmd_unchecked.run(
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1648,7 +1648,7 @@ class TestAddSubcmd:
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
         git.add_subcmd().add("a-file", "b-file")
-        indexed_files = git.subcmd_unchecked.run(
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1662,7 +1662,7 @@ class TestAddSubcmd:
         pathspec_file.write_text("*-file")
         git = SimpleGitCommand(repo_local)
         git.add_subcmd().add(pathspec_from_file=pathspec_file)
-        indexed_files = git.subcmd_unchecked.run(
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1688,7 +1688,7 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.git.build_git_envs()
+            == _subcmd().git.build_git_envs()
         )
 
     def test_opts_set_remain_set(self, repo_local, subcmd):
@@ -1703,7 +1703,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
     def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
@@ -1722,7 +1722,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
         assert (
             dict(
@@ -1731,14 +1731,14 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.git.build_git_envs()
+            == _subcmd().git.build_git_envs()
         )
         assert {
             "c": {"foo": True, "foo.bar": 10},
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
 
 # TODO: write exhaustive tests for unchecked subcmd
@@ -1757,7 +1757,7 @@ class TestUncheckedSubcmd:
                 GitCmdException,
                 match="fatal: your current branch 'master' does not have any commits yet",
             ):
-                git.subcmd_unchecked.run(["log"])
+                git.subcmd_unchecked().run(["log"])
 
         def test_fails_on_check_true(self, repo_local):
             git = SimpleGitCommand(repo_local)
@@ -1765,11 +1765,11 @@ class TestUncheckedSubcmd:
                 GitCmdException,
                 match="fatal: your current branch 'master' does not have any commits yet",
             ):
-                git.subcmd_unchecked.run(["log"], check=True)
+                git.subcmd_unchecked().run(["log"], check=True)
 
         def test_no_fail_on_check_false(self, repo_local):
             git = SimpleGitCommand(repo_local)
-            git.subcmd_unchecked.run(["log"], check=False)
+            git.subcmd_unchecked().run(["log"], check=False)
 
     class TestCaptureOutput:
         """
@@ -1778,7 +1778,7 @@ class TestUncheckedSubcmd:
 
         @classmethod
         def _prepare_repo(cls, git: SimpleGitCommand):
-            git.subcmd_unchecked.run(
+            git.subcmd_unchecked().run(
                 ["commit", "--allow-empty", "-m", "initial commit"]
             )
 
@@ -1790,7 +1790,7 @@ class TestUncheckedSubcmd:
                 GIT_COMMITTER_EMAIL="ss@ss.ss",
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
-            op = git.subcmd_unchecked.run(["log"]).stdout.strip()
+            op = git.subcmd_unchecked().run(["log"]).stdout.strip()
             assert b"initial commit" in op
 
         def test_captures_output_when_capture_output_true(self, repo_local):
@@ -1801,7 +1801,7 @@ class TestUncheckedSubcmd:
                 GIT_COMMITTER_EMAIL="ss@ss.ss",
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
-            op = git.subcmd_unchecked.run(["log"], capture_output=True).stdout.strip()
+            op = git.subcmd_unchecked().run(["log"], capture_output=True).stdout.strip()
             assert b"initial commit" in op
 
         def test_no_output_captured_on_capture_output_false(self, repo_local):
@@ -1813,7 +1813,7 @@ class TestUncheckedSubcmd:
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
             assert (
-                git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
+                git.subcmd_unchecked().run(["log"], capture_output=False).stdout is None
             )
 
 
@@ -2093,13 +2093,13 @@ class TestGitSession:
 def test_list_worktree(repo_local):
     git = gitbolt.get_git_command(repo_local)
     # create empty commit on master
-    git.subcmd_unchecked.run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # create and switch to new branch nb
-    git.subcmd_unchecked.run(["switch", "-c", "nb"])
+    git.subcmd_unchecked().run(["switch", "-c", "nb"])
     # create empty commit on nb
-    git.subcmd_unchecked.run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # switch back to master
-    git.subcmd_unchecked.run(["switch", "-"])
+    git.subcmd_unchecked().run(["switch", "-"])
     git.worktree_subcmd().add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
     worktree_str = git.worktree_subcmd().list_subcmd().list()
     assert ".git/.nb-worktree" in  worktree_str

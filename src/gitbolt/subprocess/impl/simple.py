@@ -412,7 +412,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             ls_tree_subcmd=self.ls_tree_subcmd(),
             add_subcmd=self.add_subcmd(),
             worktree_subcmd=self.worktree_subcmd(),
-            subcmd_unchecked=self.subcmd_unchecked,
+            subcmd_unchecked=self.subcmd_unchecked(),
         )
 
     @override
@@ -420,7 +420,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
     def root_dir(self) -> Path:
         return self.git_root_dir
 
-    @property
+    @override
     def subcmd_unchecked(self) -> UncheckedSubcmd:
         subcmd_unchecked = self._subcmd_unchecked.clone()
         subcmd_unchecked._set_underlying_git(self)
@@ -432,7 +432,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         # curb the lambda-late-binding-trap
         # resource: https://medium.com/skiller-whale/late-binding-variables-its-a-trap-c17af980164f
         def lambda_for_subcmd_popen(_runnable_cmd: list[str]):
-            return lambda: self.subcmd_unchecked.popen(_runnable_cmd)
+            return lambda: self.subcmd_unchecked().popen(_runnable_cmd)
 
         for cmd_name, runnable_cmd in commands.items():
             if callable(runnable_cmd):
@@ -516,5 +516,5 @@ class CLISimpleGitCommand(SimpleGitCommand):
             ls_tree_subcmd=self.ls_tree_subcmd(),
             add_subcmd=self.add_subcmd(),
             worktree_subcmd=self.worktree_subcmd(),
-            subcmd_unchecked=self.subcmd_unchecked,
+            subcmd_unchecked=self.subcmd_unchecked(),
         )
