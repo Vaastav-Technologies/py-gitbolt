@@ -2090,12 +2090,18 @@ class TestGitSession:
         assert ses.done
         assert ses.depth == 0
 
-def test_list_worktree():
-    git = gitbolt.get_git_command()
-    git.worktree_subcmd.add_subcmd.add(Path(".git", ".main-worktree"), "main", checkout=False)
+def test_list_worktree(repo_local):
+    git = gitbolt.get_git_command(repo_local)
+    # create empty commit on master
+    git.subcmd_unchecked.run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    # create and switch to new branch nb
+    git.subcmd_unchecked.run(["switch", "-c", "nb"])
+    # create empty commit on nb
+    git.subcmd_unchecked.run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    # switch back to master
+    git.subcmd_unchecked.run(["switch", "-"])
+    git.worktree_subcmd.add_subcmd.add(Path(".git", ".nb-worktree"), "nb", checkout=False)
     worktree_str = git.worktree_subcmd.list_subcmd().list()
-    try:
-        assert ".git/.main-worktree" in  worktree_str
-        assert " [main]" in worktree_str
-    finally:
-        git.worktree_subcmd.remove_subcmd().remove(Path(".git", ".main-worktree"), force=True)
+    assert ".git/.nb-worktree" in  worktree_str
+    assert " [master]" in worktree_str
+    git.worktree_subcmd.remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)
