@@ -2098,4 +2098,4 @@ def test_list_worktree():
         assert ".git/.main-worktree" in  worktree_str
         assert " [main]" in worktree_str
     finally:
-        git.worktree_subcmd.remove_subcmd.remove(Path(".git", ".main-worktree"), force=True)
+        git.worktree_subcmd.remove_subcmd().remove(Path(".git", ".main-worktree"), force=True)
