@@ -425,9 +425,8 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
         @override
         def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.UnLock:
-            return worktree.unlock_subcmd
+            return worktree.unlock_subcmd()
 
-    @property
     @abstractmethod
     def unlock_subcmd(self) -> Worktree.UnLock:
         """
