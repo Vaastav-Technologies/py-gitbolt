@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import ABC
 from pathlib import Path
 from subprocess import Popen
-from typing import override, Literal, overload, Callable, Self
+from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -391,21 +391,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return worktree_subcmd
 
     @override
-    def clone(self) -> SimpleGitCommand:
-        # region obtain class instance
-        cloned = self._subclass_clone()
-        # endregion
-        # region clone protected members
-        cloned._main_cmd_opts = self._main_cmd_opts
-        cloned._env_vars = self._env_vars
-        cloned._cmd_str_repr = self._cmd_str_repr
-        # endregion
-        return cloned
-
     def _subclass_clone(self) -> SimpleGitCommand:
-        """
-        :returns: clone as defined by the subclass.
-        """
         return SimpleGitCommand(
             self.root_dir,
             self.runner,

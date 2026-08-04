@@ -432,6 +432,25 @@ class GitCommand(Git, ABC):
         """
         ...
 
+    @override
+    def clone(self) -> Self:
+        # region obtain class instance
+        cloned = self._subclass_clone()
+        # endregion
+        # region clone protected members
+        cloned._main_cmd_opts = self._main_cmd_opts
+        cloned._env_vars = self._env_vars
+        cloned._cmd_str_repr = self._cmd_str_repr
+        # endregion
+        return cloned
+
+    @abstractmethod
+    def _subclass_clone(self) -> Self:
+        """
+        :returns: clone as defined by the subclass.
+        """
+        ...
+
 
 # TODO: extract a base session class from this
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
