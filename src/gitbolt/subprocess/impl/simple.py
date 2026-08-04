@@ -473,13 +473,15 @@ class CLISimpleGitCommand(SimpleGitCommand):
     def build_main_cmd_args(self) -> list[str]:
         super_cli_cmd_opts = super().build_main_cmd_args()
         if self._main_cmd_cli_opts:
-            if "-C" in self._main_cmd_cli_opts:
-                # only need to clean -C from the original CLI opts if the main CLI opts have them.
-                super_cli_cmd_opts = git_main_opts_clean_cap_c(super_cli_cmd_opts)
             if self.prefer_cli:
+                if "-C" in super_cli_cmd_opts:
+                    super_cli_cmd_opts = git_main_opts_clean_cap_c(super_cli_cmd_opts)
                 return super_cli_cmd_opts + self._main_cmd_cli_opts
             else:
-                return self._main_cmd_cli_opts + super_cli_cmd_opts
+                _main_cmd_cli_opts = self._main_cmd_cli_opts
+                if "-C" in _main_cmd_cli_opts:
+                    _main_cmd_cli_opts = git_main_opts_clean_cap_c(_main_cmd_cli_opts)
+                return _main_cmd_cli_opts + super_cli_cmd_opts
         return super_cli_cmd_opts
 
     @override
