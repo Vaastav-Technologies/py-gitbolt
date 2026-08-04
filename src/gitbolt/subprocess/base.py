@@ -156,6 +156,7 @@ class GitCommand(Git, ABC):
         _git_cmd = self.clone()
         _main_cmd_opts = merge_git_opts(overrides, self._main_cmd_opts)
         _git_cmd._main_cmd_opts = _main_cmd_opts
+        _git_cmd._cmd_str_repr = None   # make sure that the string representation is recomputed
         return _git_cmd
 
     def _main_cmd_cap_c_args(self) -> list[str]:
@@ -320,6 +321,7 @@ class GitCommand(Git, ABC):
         else:
             _env_vars = overrides
         _git_cmd._env_vars = _env_vars
+        _git_cmd._cmd_str_repr = None
         return _git_cmd
 
     # endregion
