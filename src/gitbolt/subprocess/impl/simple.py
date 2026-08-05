@@ -478,7 +478,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
                 if "-C" in _main_cmd_cli_opts:
                     # clean previous -C cli opts if -C is present in the current opts
                     super_cli_cmd_opts = git_main_opts_clean_cap_c(super_cli_cmd_opts)
-                return super_cli_cmd_opts + self._main_cmd_cli_opts
+                return super_cli_cmd_opts + _main_cmd_cli_opts
             else:
                 if "-C" in super_cli_cmd_opts:
                     # clean current -C cli opts if -C is present in the previous opts
