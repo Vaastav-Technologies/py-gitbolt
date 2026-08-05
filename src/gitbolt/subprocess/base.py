@@ -1199,7 +1199,7 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             >>> assert repr(_d_git) != str(_d_git)
             """
-            return " ".join([str(self.git), WORKTREE_CMD, WORKTREE_ADD_CMD])
+            return " ".join([str(self.underlying_worktree), WORKTREE_ADD_CMD])
 
         @override
         @abstractmethod
