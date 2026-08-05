@@ -71,7 +71,7 @@ def get_git_command(
 
     * Get git version, as a git subcommand. Runs git in subprocess:
 
-    >>> assert git.subcmd_unchecked.run(["version"], text=True).stdout.strip() == subprocess.run(['git', 'version'], capture_output=True, text=True).stdout.strip()
+    >>> assert git.subcmd_unchecked().run(["version"], text=True).stdout.strip() == subprocess.run(['git', 'version'], capture_output=True, text=True).stdout.strip()
 
     :param git_root_dir: Path to the git repo root directory. Defaults to current working directory.
     :param git_prog: git program name/location. Useful when user wants to run a separate git version/git emulator.

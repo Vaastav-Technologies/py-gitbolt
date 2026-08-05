@@ -562,11 +562,11 @@ if __name__ == "__main__":
     print("="*40)
     # region Per-process call approach
     start = time.perf_counter()
-    head_tree_out = git.subcmd_unchecked.run(["cat-file", "-p", "HEAD^{tree}"], text=False).stdout.splitlines()
+    head_tree_out = git.subcmd_unchecked().run(["cat-file", "-p", "HEAD^{tree}"], text=False).stdout.splitlines()
     for head_tree in head_tree_out:
         print(head_tree)
     print("+" * 40)
-    print(git.subcmd_unchecked.run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
+    print(git.subcmd_unchecked().run(["cat-file", "-p", "9854cb4d432a881f59d38582791cf2636e7819d9"], text=False).stdout)
     end = time.perf_counter()
     print(f"Subcmd Elapsed time: {end - start:0.4f} seconds")
 
