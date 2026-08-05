@@ -34,8 +34,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD, \
-    WORKTREE_LIST_CMD, WORKTREE_LOCK_CMD, WORKTREE_MOVE_CMD, WORKTREE_PRUNE_CMD, WORKTREE_REMOVE_CMD, WORKTREE_REPAIR_CMD, WORKTREE_UNLOCK_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 
 
 class GitCommand(Git, ABC):
