@@ -7,6 +7,7 @@ Simple and direct implementations of git commands using subprocess calls.
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC
 from pathlib import Path
 from subprocess import Popen
@@ -386,6 +387,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     @override
     def worktree_subcmd(self) -> WorktreeCommand:
+        warnings.warn("Worktree implementations are not stable.")
         worktree_subcmd = self._worktree_subcmd.clone()
         worktree_subcmd._set_underlying_git(self)
         return worktree_subcmd

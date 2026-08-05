@@ -302,8 +302,8 @@ import gitbolt
 
 git = gitbolt.get_git_command()
 git = git.git_opts_override(no_advice=True)
-git.subcmd_unchecked.run(['--version']) # run the version option for git.
-git.subcmd_unchecked.run(['version']) # run the version subcommand.
+git.subcmd_unchecked().run(['--version']) # run the version option for git.
+git.subcmd_unchecked().run(['version']) # run the version subcommand.
 ```
 
 #### 🖥️ Run one long-running process and communicate with it
@@ -318,7 +318,7 @@ import gitbolt
 import sys
 
 git = gitbolt.get_git_command()
-with git.subcmd_unchecked.popen(["cat-file", "--batch-command"]) as cf:
+with git.subcmd_unchecked().popen(["cat-file", "--batch-command"]) as cf:
     cf.stdin.write(b"contents HEAD\n")
     cf.stdin.flush()
     header = cf.stdout.readline().strip()
@@ -348,7 +348,7 @@ git = gitbolt.get_git_command()
 with git.session(
         cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
-        cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
+        cat_file3=lambda: git.subcmd_unchecked().popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
         mktree=["mktree", "--batch", "-z"]
 ) as ses:   # reusable and reentrant session
     tree_data: list[bytes] = []
@@ -391,6 +391,13 @@ git = git.git_opts_override(namespace="n2")
 
 Output of git commands is returned as-is. No transformations unless explicitly requested.
 Transformers for formatting/parsing can be added later.
+
+---
+
+## Notes
+
+
+- 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---
 
