@@ -2090,8 +2090,13 @@ class TestGitSession:
         assert ses.done
         assert ses.depth == 0
 
-def test_list_worktree(repo_local):
-    git = gitbolt.get_git_command(repo_local)
+@pytest.mark.parametrize("git_fact", [SimpleGitCommand, CLISimpleGitCommand])
+def test_list_worktree(git_fact, repo_local):
+    """
+    - Creates, lists and removes a worktree.
+    - Verifies that the user is warned of worktree usage.
+    """
+    git = git_fact(repo_local)
     # create empty commit on master
     git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # create and switch to new branch nb
@@ -2100,8 +2105,9 @@ def test_list_worktree(repo_local):
     git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # switch back to master
     git.subcmd_unchecked().run(["switch", "-"])
-    git.worktree_subcmd().add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
-    worktree_str = git.worktree_subcmd().list_subcmd().list()
-    assert ".git/.nb-worktree" in  worktree_str
-    assert " [master]" in worktree_str
-    git.worktree_subcmd().remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)
+    with pytest.warns(match="Worktree implementations are not stable. Use subcmd_unchecked instead."):
+        git.worktree_subcmd().add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
+        worktree_str = git.worktree_subcmd().list_subcmd().list()
+        assert ".git/.nb-worktree" in  worktree_str
+        assert " [master]" in worktree_str
+        git.worktree_subcmd().remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)

@@ -387,7 +387,13 @@ class SimpleGitCommand(GitCommand, RootDirOp):
 
     @override
     def worktree_subcmd(self) -> WorktreeCommand:
-        warnings.warn("Worktree implementations are not stable.")
+        warnings.warn("Worktree implementations are not stable. Use subcmd_unchecked instead.")
+        return self._worktree_subcmd_clone()
+
+    def _worktree_subcmd_clone(self) -> WorktreeCommand:
+        """
+        Non public-facing worktree clone extract.
+        """
         worktree_subcmd = self._worktree_subcmd.clone()
         worktree_subcmd._set_underlying_git(self)
         return worktree_subcmd
@@ -400,7 +406,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd(),
             add_subcmd=self.add_subcmd(),
-            worktree_subcmd=self.worktree_subcmd(),
+            worktree_subcmd=self._worktree_subcmd_clone(),
             subcmd_unchecked=self.subcmd_unchecked(),
         )
 
@@ -508,6 +514,6 @@ class CLISimpleGitCommand(SimpleGitCommand):
             version_subcmd=self.version_subcmd(),
             ls_tree_subcmd=self.ls_tree_subcmd(),
             add_subcmd=self.add_subcmd(),
-            worktree_subcmd=self.worktree_subcmd(),
+            worktree_subcmd=self._worktree_subcmd_clone(),
             subcmd_unchecked=self.subcmd_unchecked(),
         )
