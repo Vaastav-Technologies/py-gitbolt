@@ -131,7 +131,7 @@ class LsTree(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "LsTree":
-        return git.ls_tree_subcmd
+        return git.ls_tree_subcmd()
 
     @property
     def args_validator(self) -> LsTreeArgsValidator:
@@ -216,7 +216,7 @@ class Add(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Add":
-        return git.add_subcmd
+        return git.add_subcmd()
 
 
 class Version(GitSubCommand, Protocol):
@@ -283,7 +283,7 @@ class Version(GitSubCommand, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Version":
-        return git.version_subcmd
+        return git.version_subcmd()
 
 
 class Worktree(GitSubCommand, RootDirOp, Protocol):
@@ -301,6 +301,22 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
         def underlying_worktree(self) -> Worktree:
             """
             :return: underlying worktree for this subcommand.
+            """
+            ...
+
+        @abstractmethod
+        def clone(self) -> "Worktree.WorktreeSubcmd":
+            """
+            :return: a clone of the underlying worktree subcommand.
+            """
+            ...
+
+        @abstractmethod
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> "Worktree.WorktreeSubcmd":
+            """
+            Protected. Intended for inheritance only.
+
+            :return: specific implementation of subcommand from ``worktree``.
             """
             ...
 
@@ -341,7 +357,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.List:
+            return worktree.list_subcmd()
+
     @abstractmethod
     def list_subcmd(self) -> Worktree.List:
         """
@@ -372,7 +391,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Lock:
+            return worktree.lock_subcmd()
+
     @abstractmethod
     def lock_subcmd(self) -> Worktree.Lock:
         """
@@ -401,7 +423,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.UnLock:
+            return worktree.unlock_subcmd()
+
     @abstractmethod
     def unlock_subcmd(self) -> Worktree.UnLock:
         """
@@ -432,8 +457,12 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             :param relative_paths: `use relative paths for worktree <https://git-scm.com/docs/git-worktree#Documentation/git-worktree.txt---no-relative-paths>`_.
             :return: output of ``git worktree move``.
             """
+            ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Move:
+            return worktree.move_subcmd()
+
     @abstractmethod
     def move_subcmd(self) -> Worktree.Move:
         """
@@ -467,7 +496,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Prune:
+            return worktree.prune_subcmd()
+
     @abstractmethod
     def prune_subcmd(self) -> Worktree.Prune:
         """
@@ -497,7 +529,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Remove:
+            return worktree.remove_subcmd()
+
     @abstractmethod
     def remove_subcmd(self) -> Worktree.Remove:
         """
@@ -526,7 +561,10 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
-    @property
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Repair:
+            return worktree.repair_subcmd()
+
     @abstractmethod
     def repair_subcmd(self) -> Worktree.Repair:
         """
@@ -586,8 +624,11 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
             """
             ...
 
+        @override
+        def _subcmd_from_worktree(self, worktree: "Worktree") -> Worktree.Add:
+            return worktree.add_subcmd()
 
-    @property
+
     @abstractmethod
     def add_subcmd(self) -> Worktree.Add:
         """
@@ -598,7 +639,7 @@ class Worktree(GitSubCommand, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: "Git") -> "Worktree":
-        return git.worktree_subcmd
+        return git.worktree_subcmd()
 
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
@@ -610,7 +651,7 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         :return: current git version.
         """
-        return self.version_subcmd.version()
+        return self.version_subcmd().version()
 
     @abstractmethod
     def exec_path(self) -> Path:
@@ -640,7 +681,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def version_subcmd(self) -> Version:
         """
@@ -648,7 +688,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def ls_tree_subcmd(self) -> LsTree:
         """
@@ -656,7 +695,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def add_subcmd(self) -> Add:
         """
@@ -664,7 +702,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def worktree_subcmd(self) -> Worktree:
         """

@@ -80,8 +80,8 @@ Gitbolt lets you pass subcommands around as typed objects. This enables highly f
 import gitbolt
 
 git = gitbolt.get_git()
-version_subcmd = git.version_subcmd
-add_subcmd = git.add_subcmd
+version_subcmd = git.version_subcmd()
+add_subcmd = git.add_subcmd()
 
 def method_which_only_adds_a_file(add_subcmd: gitbolt.base.Add):
     """
@@ -102,7 +102,7 @@ git subcommands are modeled as terminal functions that return stdout.
 import gitbolt
 
 git = gitbolt.get_git()
-version_stdout = git.version_subcmd.version().version()
+version_stdout = git.version_subcmd().version().version()
 print(version_stdout)
 ```
 
@@ -117,8 +117,8 @@ particular commands.
 from gitbolt import get_git
 
 git = get_git() # get git object for the current working directory
-add_subcmd = git.add_subcmd
-ls_tree_subcmd = git.ls_tree_subcmd
+add_subcmd = git.add_subcmd()
+ls_tree_subcmd = git.ls_tree_subcmd()
 
 # now, functions can be written to accept only the required subcommands and nothing more than that.
 ```
@@ -302,8 +302,8 @@ import gitbolt
 
 git = gitbolt.get_git_command()
 git = git.git_opts_override(no_advice=True)
-git.subcmd_unchecked.run(['--version']) # run the version option for git.
-git.subcmd_unchecked.run(['version']) # run the version subcommand.
+git.subcmd_unchecked().run(['--version']) # run the version option for git.
+git.subcmd_unchecked().run(['version']) # run the version subcommand.
 ```
 
 #### 🖥️ Run one long-running process and communicate with it
@@ -318,7 +318,7 @@ import gitbolt
 import sys
 
 git = gitbolt.get_git_command()
-with git.subcmd_unchecked.popen(["cat-file", "--batch-command"]) as cf:
+with git.subcmd_unchecked().popen(["cat-file", "--batch-command"]) as cf:
     cf.stdin.write(b"contents HEAD\n")
     cf.stdin.flush()
     header = cf.stdout.readline().strip()
@@ -348,7 +348,7 @@ git = gitbolt.get_git_command()
 with git.session(
         cat_file1=["cat-file", "--batch"],
         cat_file2=["cat-file", "--batch"],
-        cat_file3=lambda: git.subcmd_unchecked.popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
+        cat_file3=lambda: git.subcmd_unchecked().popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
         mktree=["mktree", "--batch", "-z"]
 ) as ses:   # reusable and reentrant session
     tree_data: list[bytes] = []
@@ -391,6 +391,13 @@ git = git.git_opts_override(namespace="n2")
 
 Output of git commands is returned as-is. No transformations unless explicitly requested.
 Transformers for formatting/parsing can be added later.
+
+---
+
+## Notes
+
+
+- 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---
 

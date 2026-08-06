@@ -34,6 +34,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 
 
 class GitCommand(Git, ABC):
@@ -48,6 +49,45 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars | None = None
+        self._cmd_str_repr: str | None = None
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git) == GIT_CMD
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_b_git) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_c_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        if self._cmd_str_repr:
+            return self._cmd_str_repr
+        _built_cmd_envs = self.build_git_envs()
+        _built_cmd_options = self.build_main_cmd_args()
+        envs = [f"{k}={v}" for k, v in _built_cmd_envs.items()] if _built_cmd_envs else []
+        opts = _built_cmd_options or []
+        self._cmd_str_repr = " ".join(envs+[GIT_CMD]+opts)
+        return self._cmd_str_repr
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -115,6 +155,7 @@ class GitCommand(Git, ABC):
         _git_cmd = self.clone()
         _main_cmd_opts = merge_git_opts(overrides, self._main_cmd_opts)
         _git_cmd._main_cmd_opts = _main_cmd_opts
+        _git_cmd._cmd_str_repr = None   # make sure that the string representation is recomputed
         return _git_cmd
 
     def _main_cmd_cap_c_args(self) -> list[str]:
@@ -279,6 +320,7 @@ class GitCommand(Git, ABC):
         else:
             _env_vars = overrides
         _git_cmd._env_vars = _env_vars
+        _git_cmd._cmd_str_repr = None
         return _git_cmd
 
     # endregion
@@ -312,26 +354,21 @@ class GitCommand(Git, ABC):
         return Path(_path_str)
 
     @override
-    @property
     @abstractmethod
     def version_subcmd(self) -> VersionCommand: ...
 
     @override
-    @property
     @abstractmethod
     def ls_tree_subcmd(self) -> LsTreeCommand: ...
 
     @override
-    @property
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
 
     @override
-    @property
     @abstractmethod
     def worktree_subcmd(self) -> WorktreeCommand: ...
 
-    @property
     @abstractmethod
     def subcmd_unchecked(self) -> UncheckedSubcmd:
         """
@@ -369,7 +406,7 @@ class GitCommand(Git, ABC):
         >>> import gitbolt
         >>> _git = gitbolt.get_git_command()
         >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"],
-        ...                     cat_file=lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], env=None))
+        ...                     cat_file=lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], env=None))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
@@ -394,6 +431,25 @@ class GitCommand(Git, ABC):
         """
         ...
 
+    @override
+    def clone(self) -> Self:
+        # region obtain class instance
+        cloned = self._subclass_clone()
+        # endregion
+        # region clone protected members
+        cloned._main_cmd_opts = self._main_cmd_opts
+        cloned._env_vars = self._env_vars
+        cloned._cmd_str_repr = self._cmd_str_repr
+        # endregion
+        return cloned
+
+    @abstractmethod
+    def _subclass_clone(self) -> Self:
+        """
+        :returns: clone as defined by the subclass.
+        """
+        ...
+
 
 # TODO: extract a base session class from this
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
@@ -410,14 +466,14 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         >>> import gitbolt
         >>> from gitbolt.subprocess.base import GitSession
         >>> _git = gitbolt.get_git_command()
-        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked.popen(["ls-tree", "HEAD"], text=False),
-        ...                 cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False))
+        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked().popen(["ls-tree", "HEAD"], text=False),
+        ...                 cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False))
         >>> with ses:   # start the session by ctx mgr
         ...     pass    # any communication can be done by Popen semantics.
 
         Start the session in one go:
 
-        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked.popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
+        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
         ...     pass    # any communication can be done by Popen semantics.
 
 
@@ -616,6 +672,37 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
                     self._cache.build_options[b_k] = b_v
             return self._cache.build_options
 
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.version_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), VERSION_CMD])
+
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
     """
@@ -654,6 +741,37 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git ls-tree`` subprocess.
         """
         return IndividuallyOverridableLTCAB()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.ls_tree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {LS_TREE_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {LS_TREE_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {LS_TREE_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), LS_TREE_CMD])
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
@@ -739,6 +857,37 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         """
         return IndividuallyOverridableACAB()
 
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.add_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {ADD_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {ADD_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {ADD_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), ADD_CMD])
+
 
 class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
     """
@@ -761,6 +910,18 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
             ...
 
+        @abstractmethod
+        def _set_underlying_worktree(self, worktree: "WorktreeCommand") -> None:
+            """
+            Protected. Designed to be overridden not called publicly.
+
+            Set the `_underlying_worktree` in the derived class.
+
+            :param worktree: worktree to override current class's `underlying_worktree` to.
+            """
+            ...
+
+    # region worktree subcommands
     class ListCommand(Worktree.List, WorktreeSubcmdCommand, abc.ABC):
         """
         Subprocess worktree list subcommand.
@@ -805,6 +966,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.ListCommand":
+            ...
+
     class LockCommand(Worktree.Lock, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -827,6 +993,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.LockCommand":
+            ...
+
     class UnLockCommand(Worktree.UnLock, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -847,6 +1018,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.UnLockCommand":
+            ...
 
     class MoveCommand(Worktree.Move, WorktreeSubcmdCommand, abc.ABC):
 
@@ -871,6 +1047,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.MoveCommand":
+            ...
+
     class PruneCommand(Worktree.Prune, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -893,6 +1074,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.PruneCommand":
+            ...
+
     class RemoveCommand(Worktree.Remove, WorktreeSubcmdCommand, abc.ABC):
 
         @override
@@ -913,6 +1099,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RemoveCommand":
+            ...
 
     class RepairCommand(Worktree.Repair, WorktreeSubcmdCommand, abc.ABC):
 
@@ -935,6 +1126,11 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
             )
 
             return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RepairCommand":
+            ...
 
     class AddCommand(Worktree.Add, WorktreeSubcmdCommand, abc.ABC):
 
@@ -966,12 +1162,53 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
             return result.stdout.strip()
 
+        @override
+        def __str__(self) -> str:
+            return " ".join([str(self.underlying_worktree), WORKTREE_ADD_CMD])
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.AddCommand":
+            ...
+    # endregion
+
     @property
     def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
         """
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git worktree`` subprocess.
         """
         return WorktreeCLIArgsBuilder()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.worktree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), WORKTREE_CMD])
 
 
 
