@@ -15,6 +15,7 @@ from typing import overload, override, Any, Literal
 from gitbolt.subprocess.constants import GIT_CMD
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.runner import GitCommandRunner
+from gitbolt.subprocess.utils.env import subprocess_env_with_os
 
 
 class SimpleGitCR(GitCommandRunner):
@@ -85,11 +86,13 @@ class SimpleGitCR(GitCommandRunner):
         **subprocess_run_kwargs: Any,
     ) -> CompletedProcess[str] | CompletedProcess[bytes]:
         try:
+            env = subprocess_env_with_os(subprocess_run_kwargs.pop("env", None))
             return subprocess.run(
                 self.make_cmd(main_cmd_args, subcommand_args),
                 *subprocess_run_args,
                 input=_input,
                 text=text,
+                env=env,
                 **subprocess_run_kwargs,
             )
         except subprocess.CalledProcessError as e:
@@ -129,10 +132,12 @@ class SimpleGitCR(GitCommandRunner):
         **popen_run_kwargs: Any,
     ) -> Popen[str] | Popen[bytes]:
         try:
+            env = subprocess_env_with_os(popen_run_kwargs.pop("env", None))
             return subprocess.Popen(
                 self.make_cmd(main_cmd_args, subcommand_args),
                 *popen_run_args,
                 text=text,
+                env=env,
                 **popen_run_kwargs,
             )
         except subprocess.CalledProcessError as e:

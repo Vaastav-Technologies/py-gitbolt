@@ -1396,6 +1396,6 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
         :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
         """
         env_vars = self.git.build_git_envs()
-        if extra_git_envs and env_vars is not None:
-            env_vars.update(extra_git_envs)
+        if extra_git_envs:
+            env_vars = (env_vars or {}) | extra_git_envs
         return env_vars
