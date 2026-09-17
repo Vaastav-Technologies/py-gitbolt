@@ -22,6 +22,20 @@ def test_exec_path():
     assert isinstance(git.exec_path(), Path)
 
 
+def test_preserve_main_cmd_opt_order_in_single_override():
+    exec_path = Path("some/path")
+    c_paths = [Path("path"), Path("to/repo")]
+    git = SimpleGitCommand().git_opts_override(exec_path=exec_path, C=c_paths)
+    assert git.build_main_cmd_args() == [
+        "--exec-path",
+        str(exec_path),
+        "-C",
+        str(c_paths[0]),
+        "-C",
+        str(c_paths[1]),
+    ]
+
+
 def test_overrides_and_exec_path():
     git = SimpleGitCommand()
     assert git.git_opts_override(exec_path=None).exec_path() is not None
@@ -41,10 +55,10 @@ class TestMainGit:
                     assert git.git_opts_override(
                         no_replace_objects=True, git_dir=Path(), paginate=True
                     ).build_main_cmd_args() == [
-                        "--paginate",
+                        "--no-replace-objects",
                         "--git-dir",
                         ".",
-                        "--no-replace-objects",
+                        "--paginate",
                     ]
 
         class TestMultipleCalls:
@@ -63,14 +77,14 @@ class TestMainGit:
                 ).git_opts_override(
                     config_env={"auth": "suhas", "comm": "suyog"}
                 ).build_main_cmd_args() == [
+                    "--exec-path",
+                    "tmp",
+                    "--noglob-pathspecs",
+                    "--no-advice",
                     "--config-env",
                     "auth=suhas",
                     "--config-env",
                     "comm=suyog",
-                    "--exec-path",
-                    "tmp",
-                    "--no-advice",
-                    "--noglob-pathspecs",
                 ]
 
         class TestOverrideValues:
@@ -776,14 +790,14 @@ class TestMainCLIGit:
                         namespace="n1", exec_path=Path(), c=dict(p3="v3", p4="v4v5")
                     )
                     overriding_opts = [
+                        "--namespace",
+                        "n1",
+                        "--exec-path",
+                        ".",
                         "-c",
                         "p3=v3",
                         "-c",
                         "p4=v4v5",
-                        "--exec-path",
-                        ".",
-                        "--namespace",
-                        "n1",
                     ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert git.build_main_cmd_args() == opts
@@ -808,14 +822,14 @@ class TestMainCLIGit:
                 def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
                     git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                     overriding_opts = [
+                        "--exec-path",
+                        "tmp",
+                        "--noglob-pathspecs",
+                        "--no-advice",
                         "--config-env",
                         "auth=suhas",
                         "--config-env",
                         "comm=suyog",
-                        "--exec-path",
-                        "tmp",
-                        "--no-advice",
-                        "--noglob-pathspecs",
                     ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert (
@@ -831,15 +845,15 @@ class TestMainCLIGit:
             def test_intermixed(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                 overriding_opts = [
+                    "--exec-path",
+                    "tmp",
+                    "--noglob-pathspecs",
+                    "--no-advice",
                     "--config-env",
                     "auth=suhas",
                     "--config-env",
                     "comm=suyog",
-                    "--exec-path",
-                    "tmp",
                     "--no-pager",
-                    "--no-advice",
-                    "--noglob-pathspecs",
                 ]
                 opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                 assert (
