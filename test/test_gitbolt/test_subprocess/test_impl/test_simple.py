@@ -4,16 +4,17 @@
 """
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
-
 from pathlib import Path
 
 import pytest
 from vt.utils.commons.commons.core_py import UNSET
 from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 
+import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
+from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
 
 def test_exec_path():
@@ -1485,14 +1486,14 @@ class TestLsTreeSubcmd:
     def test_ls_tree(self, repo_local):
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
-        git.add_subcmd.add(".")
-        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
-        git.subcmd_unchecked.run(
+        git.add_subcmd().add(".")
+        git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked().run(
             ["config", "--local", "user.email", "suhas@example.com"]
         )
-        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
+        git.subcmd_unchecked().run(["commit", "-m", "committed a-file"])
         assert (
-            git.ls_tree_subcmd.ls_tree("HEAD")
+            git.ls_tree_subcmd().ls_tree("HEAD")
             == "100644 blob 7c35e066a9001b24677ae572214d292cebc55979	a-file"
         )
 
@@ -1520,13 +1521,13 @@ class TestLsTreeSubcmd:
     def test_ls_tree_custom_fmt(self, repo_local, fmt, res):
         git = SimpleGitCommand(repo_local)
         Path(repo_local, "a-file").write_text("a-file")
-        git.add_subcmd.add(".")
-        git.subcmd_unchecked.run(["config", "--local", "user.name", "suhas"])
-        git.subcmd_unchecked.run(
+        git.add_subcmd().add(".")
+        git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
+        git.subcmd_unchecked().run(
             ["config", "--local", "user.email", "suhas@example.com"]
         )
-        git.subcmd_unchecked.run(["commit", "-m", "committed a-file"])
-        assert git.ls_tree_subcmd.ls_tree("HEAD", format_=fmt) == res
+        git.subcmd_unchecked().run(["commit", "-m", "committed a-file"])
+        assert git.ls_tree_subcmd().ls_tree("HEAD", format_=fmt) == res
 
     class TestArgValidation:
         @pytest.mark.parametrize(
@@ -1548,19 +1549,19 @@ class TestLsTreeSubcmd:
         )
         def test_tree_ish_must_be_str(self, tree_ish):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree(tree_ish)  # type: ignore[arg-type] # expects str and provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree(tree_ish)  # type: ignore[arg-type] # expects str and provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize("abbrev", ["abc", True, 5.5, [5], None])
         def test_abbrev_must_be_int(self, abbrev):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", abbrev=abbrev)  # type: ignore[arg-type] # expects int, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize("abbrev", [-1, 41, 100])
         def test_abbrev_must_be_in_range(self, abbrev):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", abbrev=abbrev)
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", abbrev=abbrev)
             assert e.value.exit_code == ERR_INVALID_USAGE
 
         @pytest.mark.parametrize(
@@ -1569,7 +1570,7 @@ class TestLsTreeSubcmd:
         )
         def test_format_must_be_str(self, format_):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", format_=format_)  # type: ignore[arg-type] # expects str, provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", format_=format_)  # type: ignore[arg-type] # expects str, provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         @pytest.mark.parametrize(
@@ -1587,7 +1588,7 @@ class TestLsTreeSubcmd:
         )
         def test_path_must_be_list_of_strings(self, path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand().ls_tree_subcmd.ls_tree("HEAD", path=path)  # type: ignore[arg-type] # expects list[str], provided Any
+                SimpleGitCommand().ls_tree_subcmd().ls_tree("HEAD", path=path)  # type: ignore[arg-type] # expects list[str], provided Any
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
 
@@ -1598,17 +1599,17 @@ def test_version():
 
 def test_version_build_info():
     git = SimpleGitCommand()
-    git.version_subcmd.version(build_options=True).build_options()
+    git.version_subcmd().version(build_options=True).build_options()
 
 
 def test_version_build_options():
     git = SimpleGitCommand()
-    version_build_info = git.version_subcmd.version(build_options=True)
+    version_build_info = git.version_subcmd().version(build_options=True)
     assert "git version 2" in version_build_info.version()
     assert "cpu" in version_build_info.build_options()
     assert "shell-path" in version_build_info.build_options()
-    git.version_subcmd.git_opts_override().git_opts_override(no_advice=True)
-    ano_build_info = git.version_subcmd.git_opts_override(namespace="suhas").version(
+    git.version_subcmd().git_opts_override().git_opts_override(no_advice=True)
+    ano_build_info = git.version_subcmd().git_opts_override(namespace="suhas").version(
         build_options=True
     )
     assert "git version 2" in ano_build_info.version()
@@ -1620,10 +1621,10 @@ class TestAddSubcmd:
     def test_add(self, repo_local):
         Path(repo_local, "a-file").write_text("a-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add(".")
+        git.add_subcmd().add(".")
         assert (
             "a-file"
-            in git.subcmd_unchecked.run(
+            in git.subcmd_unchecked().run(
                 ["diff", "--cached", "--name-only"],
                 cwd=repo_local,
                 text=True,
@@ -1634,8 +1635,8 @@ class TestAddSubcmd:
         Path(repo_local, "a-file").write_text("a-file")
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add("*-file")
-        indexed_files = git.subcmd_unchecked.run(
+        git.add_subcmd().add("*-file")
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1646,8 +1647,8 @@ class TestAddSubcmd:
         Path(repo_local, "a-file").write_text("a-file")
         Path(repo_local, "b-file").write_text("b-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add("a-file", "b-file")
-        indexed_files = git.subcmd_unchecked.run(
+        git.add_subcmd().add("a-file", "b-file")
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1660,8 +1661,8 @@ class TestAddSubcmd:
         pathspec_file = Path(tmp_path, "pathspec-file.txt")
         pathspec_file.write_text("*-file")
         git = SimpleGitCommand(repo_local)
-        git.add_subcmd.add(pathspec_from_file=pathspec_file)
-        indexed_files = git.subcmd_unchecked.run(
+        git.add_subcmd().add(pathspec_from_file=pathspec_file)
+        indexed_files = git.subcmd_unchecked().run(
             ["diff", "--cached", "--name-only"],
             text=True,
         ).stdout
@@ -1687,7 +1688,7 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.git.build_git_envs()
+            == _subcmd().git.build_git_envs()
         )
 
     def test_opts_set_remain_set(self, repo_local, subcmd):
@@ -1702,7 +1703,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
     def test_opts_and_envs_intermixed_remain_set(self, repo_local, subcmd):
         git = SimpleGitCommand(repo_local)
@@ -1721,7 +1722,7 @@ class TestSubcommandsPersistence:
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
         assert (
             dict(
@@ -1730,14 +1731,14 @@ class TestSubcommandsPersistence:
                 GIT_COMMITTER_NAME="sos",
                 GIT_SSH_COMMAND="ssh-l",
             )
-            == _subcmd.git.build_git_envs()
+            == _subcmd().git.build_git_envs()
         )
         assert {
             "c": {"foo": True, "foo.bar": 10},
             "git_dir": repo_local,
             "icase_pathspecs": True,
             "no_pager": True,
-        } == _subcmd.git._main_cmd_opts
+        } == _subcmd().git._main_cmd_opts
 
 
 # TODO: write exhaustive tests for unchecked subcmd
@@ -1756,7 +1757,7 @@ class TestUncheckedSubcmd:
                 GitCmdException,
                 match="fatal: your current branch 'master' does not have any commits yet",
             ):
-                git.subcmd_unchecked.run(["log"])
+                git.subcmd_unchecked().run(["log"])
 
         def test_fails_on_check_true(self, repo_local):
             git = SimpleGitCommand(repo_local)
@@ -1764,11 +1765,11 @@ class TestUncheckedSubcmd:
                 GitCmdException,
                 match="fatal: your current branch 'master' does not have any commits yet",
             ):
-                git.subcmd_unchecked.run(["log"], check=True)
+                git.subcmd_unchecked().run(["log"], check=True)
 
         def test_no_fail_on_check_false(self, repo_local):
             git = SimpleGitCommand(repo_local)
-            git.subcmd_unchecked.run(["log"], check=False)
+            git.subcmd_unchecked().run(["log"], check=False)
 
     class TestCaptureOutput:
         """
@@ -1777,7 +1778,7 @@ class TestUncheckedSubcmd:
 
         @classmethod
         def _prepare_repo(cls, git: SimpleGitCommand):
-            git.subcmd_unchecked.run(
+            git.subcmd_unchecked().run(
                 ["commit", "--allow-empty", "-m", "initial commit"]
             )
 
@@ -1789,7 +1790,7 @@ class TestUncheckedSubcmd:
                 GIT_COMMITTER_EMAIL="ss@ss.ss",
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
-            op = git.subcmd_unchecked.run(["log"]).stdout.strip()
+            op = git.subcmd_unchecked().run(["log"]).stdout.strip()
             assert b"initial commit" in op
 
         def test_captures_output_when_capture_output_true(self, repo_local):
@@ -1800,7 +1801,7 @@ class TestUncheckedSubcmd:
                 GIT_COMMITTER_EMAIL="ss@ss.ss",
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
-            op = git.subcmd_unchecked.run(["log"], capture_output=True).stdout.strip()
+            op = git.subcmd_unchecked().run(["log"], capture_output=True).stdout.strip()
             assert b"initial commit" in op
 
         def test_no_output_captured_on_capture_output_false(self, repo_local):
@@ -1812,5 +1813,301 @@ class TestUncheckedSubcmd:
             )
             TestUncheckedSubcmd.TestCaptureOutput._prepare_repo(git)
             assert (
-                git.subcmd_unchecked.run(["log"], capture_output=False).stdout is None
+                git.subcmd_unchecked().run(["log"], capture_output=False).stdout is None
             )
+
+
+class TestGitSession:
+    """
+    Test the long-running ``GitSession``.
+    """
+
+    class TestSessionObtained:
+        """
+        Test the properties of an obtained ``GitSession``.
+        """
+
+        def test_session_in_ctx_mgr(self):
+            """
+            Obtain a session directly in the context manager.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(mktree=["mktree"]) as ses:
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+
+        def test_session_after_ctx_mgr(self):
+            """
+            Obtain a session directly in the context manager.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(mktree=["mktree", "--batch"]) as ses:
+                pass
+            assert ses.started
+            assert not ses.active
+            assert ses.done
+
+        class TestStarted:
+            """
+            Test ``started`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_started_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.started
+
+            def test_started_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert session.started
+
+            def test_started_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert session.started
+
+        class TestActive:
+            """
+            Test ``active`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_active_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.active
+
+            def test_active_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert session.active
+
+            def test_not_active_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert not session.active
+
+        class TestDone:
+            """
+            Test ``done`` state of ``GitSession`` started in and after its context manager.
+            """
+
+            def test_not_done_initially(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                assert not session.done
+
+            def test_not_done_in_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    assert not session.done
+
+            def test_done_after_ctxmgr(self):
+                git = gitbolt.get_git_command()
+                session = git.session(cat_file=["cat-file", "--batch"])
+                with session:
+                    pass
+                assert session.done
+
+    class TestMultiCommand:
+        """
+        Test multiple commands behavior in one git session.
+        """
+
+        def test_multi_commands_run(self):
+            """
+            Multiple commands run without failure.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(cat_file=["cat-file", "--batch"], ls_tree=["ls-tree", "HEAD"]) as ses:
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+                ses.commands.ls_tree.communicate()
+
+        def test_one_wrong_command_does_not_affect_others(self):
+            """
+            Multiple commands with many wrong command must not affect others.
+            """
+            git = gitbolt.get_git_command()
+            with git.session(
+                cat_file=["cat-file", "--batch"],
+                cat_file_faulty=["catfile", "HEAD"],
+                unknown_git_cmd=["unknown"],
+                mktree=["mktree", "--batch"],
+            ) as ses:
+                cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+                with pytest.raises(Exception):
+                    list(cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}"))
+
+    def test_reentrance(self):
+        """
+        Test all the states of reentrant ``GitSession``.
+        """
+        git = gitbolt.get_git_command()
+        with git.session(
+            cat_file=["cat-file", "--batch"],
+            mktree=["mktree", "--batch"]
+        ) as session:
+            assert session.depth == 1
+            assert session.started
+            assert session.active
+            assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+                with session:
+                    assert session.depth == 3
+                    assert session.started
+                    assert session.active
+                    assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+            assert session.depth == 1
+            assert session.started
+            assert session.active
+            assert not session.done
+            with session:
+                assert session.depth == 2
+                assert session.started
+                assert session.active
+                assert not session.done
+                with session:
+                    assert session.depth == 3
+                    assert session.started
+                    assert session.active
+                    assert not session.done
+                    with session:
+                        assert session.depth == 4
+                        assert session.started
+                        assert session.active
+                        assert not session.done
+        # session ended
+        assert session.depth == 0
+        assert session.started
+        assert not session.active
+        assert session.done
+
+    def test_reuse(self):
+        git = gitbolt.get_git_command()
+        git_session = git.session(cat_file_1=["cat-file", "--batch"],
+                                  mktree=["mktree", "--batch"],
+                                  cat_file_2=["cat-file", "--batch"])
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+                with git_session as sess1:
+                    cat_file_commit_content(sess1.commands.cat_file_2, b"HEAD")
+                    assert sess1.depth == 3
+                    assert len(sess1.started_commands) == 3
+                    assert sess1.started
+                    assert sess1.active
+                    assert not sess1.done
+        # session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert not ses.is_reused()
+
+        # new session started
+        with git_session as ses:
+            cat_file_commit_content(ses.commands.cat_file_1, b"HEAD")
+            assert ses.depth == 1
+            assert len(ses.started_commands) == 3
+            assert ses.started
+            assert ses.active
+            assert not ses.done
+            with ses:
+                cat_file_commit_content(ses.commands.cat_file_2, b"HEAD")
+                assert ses.depth == 2
+                assert len(ses.started_commands) == 3
+                assert ses.started
+                assert ses.active
+                assert not ses.done
+        # new session ended
+        assert ses.depth == 0
+        assert not len(ses.started_commands)    # no commands are started now
+        assert ses.started
+        assert not ses.active
+        assert ses.done
+        assert ses.is_reused()
+        assert ses.times_reused == 1
+
+    def test_commands_accessible_when_session_active(self):
+        git = gitbolt.get_git_command()
+        with git.session(cat_file=["cat-file", "--batch"]) as ses:
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+            assert ses.active
+        assert not ses.active
+
+    def test_commands_accessible_when_session_reentrant_active(self):
+        git = gitbolt.get_git_command()
+        with git.session(
+            cat_file=["cat-file", "--batch"],
+            cat_file2=["cat-file", "--batch"]
+        ) as ses:
+            assert ses.active
+            assert ses.started
+            assert not ses.done
+            with ses:
+                cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}")
+                assert ses.active
+            assert ses.active
+        assert not ses.active
+
+    def test_commands_inaccessible_when_session_inactive(self):
+        git = gitbolt.get_git_command()
+        with git.session(cat_file=["cat-file", "--batch"]) as ses:
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+            assert ses.active
+        assert not ses.active
+        with pytest.raises(RuntimeError, match="GitSession not active"):
+            cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
+        assert ses.done
+        assert ses.depth == 0
+
+@pytest.mark.parametrize("git_fact", [SimpleGitCommand, CLISimpleGitCommand])
+def test_list_worktree(git_fact, repo_local):
+    """
+    - Creates, lists and removes a worktree.
+    - Verifies that the user is warned of worktree usage.
+    """
+    git = git_fact(repo_local)
+    # create empty commit on master
+    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    # create and switch to new branch nb
+    git.subcmd_unchecked().run(["switch", "-c", "nb"])
+    # create empty commit on nb
+    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    # switch back to master
+    git.subcmd_unchecked().run(["switch", "-"])
+    with pytest.warns(match="Worktree implementations are not stable. Use subcmd_unchecked instead."):
+        git.worktree_subcmd().add_subcmd().add(Path(".git", ".nb-worktree"), "nb", checkout=False)
+        worktree_str = git.worktree_subcmd().list_subcmd().list()
+        assert ".git/.nb-worktree" in  worktree_str
+        assert " [master]" in worktree_str
+        git.worktree_subcmd().remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)

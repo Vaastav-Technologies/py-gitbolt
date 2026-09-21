@@ -12,4 +12,5 @@ from gitbolt.subprocess.base import AddCommand as AddCommand
 from gitbolt.subprocess.base import LsTreeCommand as LsTreeCommand
 from gitbolt.subprocess.base import VersionCommand as VersionCommand
 from gitbolt.subprocess.base import UncheckedSubcmd as UncheckedSubcmd
+from gitbolt.subprocess.base import GitSession as GitSession
 # endregion

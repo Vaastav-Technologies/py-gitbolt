@@ -80,8 +80,8 @@ Gitbolt lets you pass subcommands around as typed objects. This enables highly f
 import gitbolt
 
 git = gitbolt.get_git()
-version_subcmd = git.version_subcmd
-add_subcmd = git.add_subcmd
+version_subcmd = git.version_subcmd()
+add_subcmd = git.add_subcmd()
 
 def method_which_only_adds_a_file(add_subcmd: gitbolt.base.Add):
     """
@@ -102,7 +102,7 @@ git subcommands are modeled as terminal functions that return stdout.
 import gitbolt
 
 git = gitbolt.get_git()
-version_stdout = git.version_subcmd.version().version()
+version_stdout = git.version_subcmd().version().version()
 print(version_stdout)
 ```
 
@@ -110,15 +110,15 @@ print(version_stdout)
 
 #### 🧑‍💻 Modular at the programmatic level
 
-Commands are designed to be passed around as objects. This makes them modular and thus users can opt to use only 
+Commands are designed to be passed around as objects. This makes them modular and thus users can opt to use only
 particular commands.
 
 ```python
 from gitbolt import get_git
 
 git = get_git() # get git object for the current working directory
-add_subcmd = git.add_subcmd
-ls_tree_subcmd = git.ls_tree_subcmd
+add_subcmd = git.add_subcmd()
+ls_tree_subcmd = git.ls_tree_subcmd()
 
 # now, functions can be written to accept only the required subcommands and nothing more than that.
 ```
@@ -291,24 +291,86 @@ no_advice_reset_git = overridden_git.git_opts_override(no_advice=False)
 
 At last, run unchecked commands in git.
 
-Introduced in `0.0.0dev4` to 
+Introduced in `0.0.0.dev4` to
 - experiment.
 - have consistent interfaced commands run until all subcommands are provided by the library.
+
+#### 🖥️ Run one process per command
 
 ```python
 import gitbolt
 
 git = gitbolt.get_git_command()
 git = git.git_opts_override(no_advice=True)
-git.subcmd_unchecked.run(['--version']) # run the version option for git.
-git.subcmd_unchecked.run(['version']) # run the version subcommand.
+git.subcmd_unchecked().run(['--version']) # run the version option for git.
+git.subcmd_unchecked().run(['version']) # run the version subcommand.
+```
+
+#### 🖥️ Run one long-running process and communicate with it
+
+Introduced in `0.0.0.dev16` to:
+- Make communicable processes using `subprocess.Popen`.
+
+Get a long-running process and communicate with it for batching and faster operations.
+
+```python
+import gitbolt
+import sys
+
+git = gitbolt.get_git_command()
+with git.subcmd_unchecked().popen(["cat-file", "--batch-command"]) as cf:
+    cf.stdin.write(b"contents HEAD\n")
+    cf.stdin.flush()
+    header = cf.stdout.readline().strip()
+    print(f"HEADER: {header}", file=sys.stderr)
+    obj, typ, size = header.split()
+    print(cf.stdout.read(int(size)))
+    cf.stdout.readline()
+```
+
+Error handling and I/O management is left to the client/caller.
+
+#### 🏃 Communicate with long-running git sessions
+
+Introduced in `0.0.0.dev17` to:
+- Make long-running git command sessions.
+- Have reentrant sessions.
+- Communicate with long-running git command session using their `stdin` and `stdout`.
+
+Get long-running process sessions and communicate with them for batching and faster operations.
+
+```python
+import gitbolt
+from gitbolt.subprocess.utils.session import cat_file_blob_content, cat_file_tree_data, cat_file_tree_content, \
+    mktree_tree_make
+
+git = gitbolt.get_git_command()
+with git.session(
+        cat_file1=["cat-file", "--batch"],
+        cat_file2=["cat-file", "--batch"],
+        cat_file3=lambda: git.subcmd_unchecked().popen(["cat-file", "--batch"]),  # pass your own git subcmd Popen(s)
+        mktree=["mktree", "--batch", "-z"]
+) as ses:   # reusable and reentrant session
+    tree_data: list[bytes] = []
+    for mode_, sha_, name_ in cat_file_tree_data(ses.commands.cat_file2, b"HEAD^{tree}"):
+        print(mode_, sha_, name_)
+    for tree_entry in cat_file_tree_content(ses.commands.cat_file2, b"HEAD^{tree}"):
+        tree_data.append(tree_entry)
+    print("+" * 40)
+    print(cat_file_blob_content(ses.commands.cat_file3, b"9854cb4d432a881f59d38582791cf2636e7819d9"))
+    print("~" * 40)
+    with ses:  # is reentrant, if you want
+        tree_hash = mktree_tree_make(ses.commands.mktree, b"\0".join(tree_data))    # make tree
+        print("Obtained tree: ", tree_hash)
+
+assert not ses.active  # session no long active
 ```
 
 #### 💻 Run commands received from CLI
 
-Introduced in `0.0.0dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
+Introduced in `0.0.0.dev11` is the ability to take commands from CLI and run it inside `gitbolt`.
 
-While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example 
+While making a system it may be required to run cli commands as received from cli using gitbolt. An obvious example
 would be to make a system that receives CLI commands and does certain modifications/additions inside `gitbolt` before
 actually running them. An example:
 
@@ -329,6 +391,13 @@ git = git.git_opts_override(namespace="n2")
 
 Output of git commands is returned as-is. No transformations unless explicitly requested.
 Transformers for formatting/parsing can be added later.
+
+---
+
+## Notes
+
+
+- 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---
 

@@ -7,17 +7,23 @@ Git command interfaces with default implementation using subprocess calls.
 
 from __future__ import annotations
 
+import abc
+import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
+from contextlib import AbstractContextManager
+from datetime import datetime
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, Popen, PIPE
+from types import SimpleNamespace
 from typing import override, Protocol, Unpack, Self, overload, Literal, Any
 
-from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset
+from vt.utils.commons.commons.core_py import is_unset, not_none_not_unset, UNSET, Unset
 from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
+from gitbolt.base import Worktree
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.ls_tree import (
@@ -26,7 +32,9 @@ from gitbolt.subprocess.ls_tree import (
 )
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
+from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 
 
 class GitCommand(Git, ABC):
@@ -41,6 +49,45 @@ class GitCommand(Git, ABC):
         self.runner: GitCommandRunner = runner
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars | None = None
+        self._cmd_str_repr: str | None = None
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git) == GIT_CMD
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_b_git) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
+        >>> assert str(_c_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        if self._cmd_str_repr:
+            return self._cmd_str_repr
+        _built_cmd_envs = self.build_git_envs()
+        _built_cmd_options = self.build_main_cmd_args()
+        envs = [f"{k}={v}" for k, v in _built_cmd_envs.items()] if _built_cmd_envs else []
+        opts = _built_cmd_options or []
+        self._cmd_str_repr = " ".join(envs+[GIT_CMD]+opts)
+        return self._cmd_str_repr
 
     # region build_main_cmd_args
     def build_main_cmd_args(self) -> list[str]:
@@ -48,6 +95,35 @@ class GitCommand(Git, ABC):
         Terminal operation to build and return CLI args for git main cli command.
 
         For example, ``--no-pager --no-advice`` is the git main command in ``git --no-pager --no-advice log master -1``.
+
+        Examples:
+
+        - No CLI args to build
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> assert _git.build_main_cmd_args() == []
+
+        - One CLI arg to override
+
+        >>> _git = gitbolt.get_git_command()
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")])
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir"))]
+
+        - Multiple CLI args to override
+
+        >>> _git = gitbolt.get_git_command()
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")], config_env=dict(u1="user1", u2="user2"))
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir")), "--config-env", "u1=user1", "--config-env", "u2=user2"]
+
+        - Multiple CLI args to override when CLI is preferred
+
+        >>> _git = gitbolt.get_git_command(prefer_cli=True)
+        >>> _m_git = _git.git_opts_override(C=[Path("dir/my/dir")], config_env=dict(u1="user1", u2="user2"))
+        >>> _o_git = _m_git.git_opts_override(C=[Path("other/dir")])
+        >>> assert _o_git.build_main_cmd_args() == ["-C", str(Path("other/dir")), "--config-env", "u1=user1", "--config-env", "u2=user2"]
 
         :return: CLI args for git main cli command.
         """
@@ -79,6 +155,7 @@ class GitCommand(Git, ABC):
         _git_cmd = self.clone()
         _main_cmd_opts = merge_git_opts(overrides, self._main_cmd_opts)
         _git_cmd._main_cmd_opts = _main_cmd_opts
+        _git_cmd._cmd_str_repr = None   # make sure that the string representation is recomputed
         return _git_cmd
 
     def _main_cmd_cap_c_args(self) -> list[str]:
@@ -243,6 +320,7 @@ class GitCommand(Git, ABC):
         else:
             _env_vars = overrides
         _git_cmd._env_vars = _env_vars
+        _git_cmd._cmd_str_repr = None
         return _git_cmd
 
     # endregion
@@ -276,27 +354,231 @@ class GitCommand(Git, ABC):
         return Path(_path_str)
 
     @override
-    @property
     @abstractmethod
     def version_subcmd(self) -> VersionCommand: ...
 
     @override
-    @property
     @abstractmethod
     def ls_tree_subcmd(self) -> LsTreeCommand: ...
 
     @override
-    @property
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
 
-    @property
+    @override
+    @abstractmethod
+    def worktree_subcmd(self) -> WorktreeCommand: ...
+
     @abstractmethod
     def subcmd_unchecked(self) -> UncheckedSubcmd:
         """
         Run an unchecked git subcommand using subprocess.
+
+        :returns: An unchecked subcommand instance that simply runs the asked command in a ``subprocess.run()`` with
+            optional ``subprocess.Popen()``.
         """
         ...
+
+    @abstractmethod
+    def session(self, **commands: list[str] | Callable[[], Popen[bytes]]) -> GitSession:
+        """
+        Run long-running git session with multiple unchecked subcommands using ``subprocess.Popen`` and communicate with them.
+
+        Client/Caller can communicate with ``GitSession``'s processes with their stdin and stdout.
+
+        Examples:
+
+        Obtain a session:
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"], cat_file=["cat-file", "--batch"])
+        >>> with ses:   # start the session by ctx mgr
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Start the session in one go:
+
+        >>> with _git.session(cat_file=["cat-file", "--batch"]) as ses: # obtain, start and ctx manage the session.
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Run special Popen:
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = _git.session(ls_tree=["ls-tree", "HEAD"],
+        ...                     cat_file=lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], env=None))
+        >>> with ses:   # start the session by ctx mgr
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Is reentrant:
+
+        >>> import gitbolt
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = _git.session(cat_file=["cat-file", "--batch-check"])
+        >>> with ses:   # start the session by ctx mgr
+        ...     with ses:   # reentrant
+        ...         pass
+        ...     pass    # any communication can be done by Popen semantics.
+
+
+       Note: All commands/processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
+
+        :param commands: list of string git commands suppliable to ``subprocess.Popen`` or ``subprocess.Popen`` lambdas.
+        :returns: A (not yet started) long-running ``GitSession`` context manager.
+        """
+        ...
+
+    @override
+    def clone(self) -> Self:
+        # region obtain class instance
+        cloned = self._subclass_clone()
+        # endregion
+        # region clone protected members
+        cloned._main_cmd_opts = self._main_cmd_opts
+        cloned._env_vars = self._env_vars
+        cloned._cmd_str_repr = self._cmd_str_repr
+        # endregion
+        return cloned
+
+    @abstractmethod
+    def _subclass_clone(self) -> Self:
+        """
+        :returns: clone as defined by the subclass.
+        """
+        ...
+
+
+# TODO: extract a base session class from this
+class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
+    def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
+        """
+        Reusable and reentrant context Manager to start a git long-running session. Useful when a command is to be
+        held in open state and be communicated with its stdin and stdout. This is way faster that spawning multiple
+        processes each time.
+
+        Examples:
+
+        Obtain a session:
+
+        >>> import gitbolt
+        >>> from gitbolt.subprocess.base import GitSession
+        >>> _git = gitbolt.get_git_command()
+        >>> ses = GitSession(_git, ls_tree= lambda : _git.subcmd_unchecked().popen(["ls-tree", "HEAD"], text=False),
+        ...                 cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False))
+        >>> with ses:   # start the session by ctx mgr
+        ...     pass    # any communication can be done by Popen semantics.
+
+        Start the session in one go:
+
+        >>> with GitSession(_git, cat_file= lambda : _git.subcmd_unchecked().popen(["cat-file", "--batch"], text=False)) as ses: # obtain, start and ctx manage the session.
+        ...     pass    # any communication can be done by Popen semantics.
+
+
+       Note: All processes are assumed:
+
+       - in bytes mode.
+       - pipe their stdin and stdout.
+
+        :param git: ``gitbolt.subprocess.GitCommand`` instance.
+        :param commands: commands in kwargs fashion.
+        """
+        self._git = git
+        self.all_supplied_commands: dict[str, Callable[[], Popen[bytes]]] = commands.copy()
+        self.started_commands: dict[str, Popen[bytes]] = dict()
+        self._commands: SimpleNamespace | None = None
+        self.__started = False
+        self.__done = False
+        self.__depth = 0
+        self.__times_reused = -1
+
+    @override
+    def __enter__(self) -> Self:
+        if self.depth == 0:
+            self.__done = False
+            processes_started_keys: list[str] = []
+            for unstarted_command_key, unstarted_command in self.all_supplied_commands.items():
+                try:
+                    self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
+                except Exception:
+                    for k in reversed(processes_started_keys):
+                        self.started_commands[k].__exit__(*sys.exc_info())
+                    raise
+                processes_started_keys.append(unstarted_command_key)
+            self._commands = SimpleNamespace(**self.started_commands)
+            self.__started = True
+            self.__times_reused += 1
+        self.__depth += 1
+        return self
+
+    @override
+    @property
+    def git(self) -> GitCommand:
+        return self._git
+
+    @override
+    def __exit__(self, exc_type, exc_value, traceback, /) -> Literal[False]:
+        self.__depth -= 1
+        if self.__depth == 0:
+            process_done_keys: list[str] = []
+            for started_popen_key, started_popen in self.started_commands.items():
+                started_popen.__exit__(exc_type, exc_value, traceback)
+                process_done_keys.append(started_popen_key)
+            self._commands = None
+            for pk in process_done_keys:
+                del self.started_commands[pk]
+            self.__done = True
+        return False
+
+    @property
+    def started(self) -> bool:
+        """
+        :returns: Whether the session has started.
+        """
+        return self.__started
+
+    @property
+    def done(self) -> bool:
+        """
+        :returns: Whether the session has completed and thus exited/closed.
+        """
+        return self.__done
+
+    @property
+    def active(self) -> bool:
+        """
+        :returns: Whether the session is currently actively running.
+        """
+        return self.started and not self.done
+
+    @property
+    def commands(self) -> SimpleNamespace:
+        """
+        :returns: All the registered commands and these can be accessed by member notations.
+        :raises RuntimeError: if commands are queried when the session is inactive.
+        """
+        if self._commands is None or not self.active:
+            raise RuntimeError("GitSession not active")
+        return self._commands
+
+    @property
+    def depth(self) -> int:
+        """
+        :returns: The current session depth. Multilevel context managers increment the depth each y one.
+        """
+        return self.__depth
+
+    def is_reused(self) -> bool:
+        """
+        :returns: The session is reused after being closed once.
+        """
+        return self.__times_reused > 0
+
+    @property
+    def times_reused(self) -> int:
+        return self.__times_reused
 
 
 class GitSubcmdCommand(GitSubCommand, HasGitUnderneath["GitCommand"], Protocol):
@@ -390,6 +672,37 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
                     self._cache.build_options[b_k] = b_v
             return self._cache.build_options
 
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.version_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), VERSION_CMD])
+
 
 class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
     """
@@ -428,6 +741,37 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         :return: Builder the complete list of subcommand CLI arguments to be passed to ``git ls-tree`` subprocess.
         """
         return IndividuallyOverridableLTCAB()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.ls_tree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {LS_TREE_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {LS_TREE_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {LS_TREE_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), LS_TREE_CMD])
 
 
 class AddCommand(Add, GitSubcmdCommand, Protocol):
@@ -513,6 +857,360 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         """
         return IndividuallyOverridableACAB()
 
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.add_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {ADD_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {ADD_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {ADD_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), ADD_CMD])
+
+
+class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
+    """
+    Subprocess command running worktree abstract implementation.
+    """
+
+    class WorktreeSubcmdCommand(Worktree.WorktreeSubcmd, HasGitUnderneath[GitCommand], Protocol):
+        """
+        Subprocess worktree subcommand.
+        """
+
+        @override
+        @property
+        @abstractmethod
+        def underlying_worktree(self) -> WorktreeCommand:
+            ...
+
+        @property
+        @abstractmethod
+        def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+            ...
+
+        @abstractmethod
+        def _set_underlying_worktree(self, worktree: "WorktreeCommand") -> None:
+            """
+            Protected. Designed to be overridden not called publicly.
+
+            Set the `_underlying_worktree` in the derived class.
+
+            :param worktree: worktree to override current class's `underlying_worktree` to.
+            """
+            ...
+
+    # region worktree subcommands
+    class ListCommand(Worktree.List, WorktreeSubcmdCommand, abc.ABC):
+        """
+        Subprocess worktree list subcommand.
+        """
+
+        @override
+        @overload
+        def list(self, *, verbose: bool = False) -> str:
+            ...
+
+        @override
+        @overload
+        def list(self, *, porcelain: Literal[False]) -> str:
+            ...
+
+        @override
+        @overload
+        def list(self, *, porcelain: Literal[True], z: Literal[True] | Unset = UNSET) -> str:
+            ...
+
+        @override
+        def list(self, *, verbose: bool | Unset = UNSET, porcelain: Literal[True, False] | Unset = UNSET,
+                 z: Literal[True] | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_list_cli_args(
+                verbose=verbose,
+                porcelain=porcelain,
+                z=z,
+            )
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.ListCommand":
+            ...
+
+    class LockCommand(Worktree.Lock, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def lock(self, worktree: Path, reason: str | Literal[False] | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_lock_cli_args(
+                worktree, reason,)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.LockCommand":
+            ...
+
+    class UnLockCommand(Worktree.UnLock, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def unlock(self, worktree: Path) -> str:
+            sub_cmd_args = self.cli_args_builder.build_unlock_cli_args(worktree)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.UnLockCommand":
+            ...
+
+    class MoveCommand(Worktree.Move, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def move(self, worktree: Path, new_path: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET,
+                 relative_paths: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_move_cli_args(
+                worktree, new_path, force=force, reforce=reforce, relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.MoveCommand":
+            ...
+
+    class PruneCommand(Worktree.Prune, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def prune(self, *, dry_run: bool | Unset = UNSET, verbose: bool | Unset = UNSET,
+                  expire: Literal[False] | int | datetime | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_prune_cli_args(dry_run, verbose, expire)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.PruneCommand":
+            ...
+
+    class RemoveCommand(Worktree.Remove, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def remove(self, worktree: Path, *, force: bool | Unset = UNSET, reforce: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_remove_cli_args(worktree, force=force, reforce=reforce)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RemoveCommand":
+            ...
+
+    class RepairCommand(Worktree.Repair, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def repair(self, *worktrees: Path, relative_paths: Unset | bool = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_repair_cli_args(*worktrees,
+                                                                       relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.RepairCommand":
+            ...
+
+    class AddCommand(Worktree.Add, WorktreeSubcmdCommand, abc.ABC):
+
+        @override
+        def add(self, worktree: Path, commit_ish: str | None = None, *, force: bool | Unset = UNSET,
+                reforce: bool | Unset = UNSET, new_branch: str | Unset = UNSET, new_branch_force: str | Unset = UNSET,
+                orphan: Literal[True] | Unset = UNSET, detach: Literal[True] | Unset = UNSET,
+                checkout: bool | Unset = UNSET, lock: bool | Unset = UNSET,
+                reason: str | Literal[False] | Unset = UNSET, quiet: bool | Unset = UNSET,
+                track: bool | Unset = UNSET, guess_remote: bool | Unset = UNSET,
+                relative_paths: bool | Unset = UNSET) -> str:
+            sub_cmd_args = self.cli_args_builder.build_add_cli_args(
+                worktree, commit_ish, force=force, reforce=reforce, new_branch=new_branch,
+                new_branch_force=new_branch_force, orphan=orphan, detach=detach, checkout=checkout, lock=lock,
+                reason=reason, quiet=quiet, track=track, guess_remote=guess_remote, relative_paths=relative_paths)
+            main_cmd_args = self.git.build_main_cmd_args()
+            env_vars = self.git.build_git_envs()
+
+            # Run the git command
+            result = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                check=True,
+                text=True,
+                capture_output=True,
+                cwd=self.root_dir,
+                env=env_vars,
+            )
+
+            return result.stdout.strip()
+
+        @override
+        def __str__(self) -> str:
+            return " ".join([str(self.underlying_worktree), WORKTREE_ADD_CMD])
+
+        @override
+        @abstractmethod
+        def clone(self) -> "WorktreeCommand.AddCommand":
+            ...
+    # endregion
+
+    @property
+    def cli_args_builder(self) -> WorktreeCLIArgsBuilder:
+        """
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git worktree`` subprocess.
+        """
+        return WorktreeCLIArgsBuilder()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.worktree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), WORKTREE_CMD])
+
+
 
 class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
     """
@@ -584,12 +1282,8 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
 
         :return: ``CompletedProcess`` capturing all the required stdout, stderr, return-code etc.
         """
-        main_cmd_args = self.git.build_main_cmd_args()
-        envs_vars = self.git.build_git_envs()
-        another_supplied_env = subprocess_run_kwargs.pop("env", None)
-        if another_supplied_env:
-            if envs_vars is not None:
-                envs_vars.update(another_supplied_env)
+        main_cmd_args = self.git_main_cmd_args()
+        envs_vars = self.git_envs(subprocess_run_kwargs.pop("env", None))
         cwd = subprocess_run_kwargs.pop("cwd", self.root_dir)
         capture_output = subprocess_run_kwargs.pop("capture_output", True)
         check = subprocess_run_kwargs.pop("check", True)
@@ -607,3 +1301,101 @@ class UncheckedSubcmd(GitSubcmdCommand, RootDirOp, Protocol):
             **subprocess_run_kwargs,
         )
         return result
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[False] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[bytes]: ...
+
+    @overload
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[True] = True,
+        **popen_kwargs: Any,
+    ) -> Popen[str]: ...
+
+    def popen(
+        self,
+        subcommand_args: list[str],
+        *popen_args: Any,
+        text: Literal[False, True] = False,
+        **popen_kwargs: Any,
+    ) -> Popen[str] | Popen[bytes]:
+        """
+        Open unchecked git subcommand communicable process, using ``subprocess.Popen``.
+
+        All the arguments are congruent to ``subprocess.Popen`` and mostly pass as-is.
+
+        :param subcommand_args: the full subcommand argument list.
+        :param popen_args: additional subprocess positionals.
+        :param text: ``_input`` and returns both are str if this value is ``True``. Else, bytes are considered.
+        :param popen_kwargs: additional subprocess keyword arguments.
+
+        :return: ``Popen`` capturing all the required stdout, stderr etc and streaming stdin.
+        """
+        main_cmd_args = self.git_main_cmd_args()
+        envs_vars = self.git_envs(popen_kwargs.pop("env", None))
+        cwd = popen_kwargs.pop("cwd", self.root_dir)
+        stdin = popen_kwargs.pop("stdin", PIPE)
+        stdout = popen_kwargs.pop("stdout", PIPE)
+        stderr = popen_kwargs.pop("stderr", PIPE)
+        # Popen the git command
+        result = self.git.runner.popen_git_command(
+            main_cmd_args,
+            subcommand_args,
+            *popen_args,
+            text=text,
+            env=envs_vars,
+            cwd=cwd,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            **popen_kwargs,
+        )
+        return result
+
+    def make_cmd(self, subcommand_args: list[str]) -> list[str]:
+        """
+        Make full runnable command for execution from the supplied ``subcommand_args``.
+
+        As knowledge of the git program and the main command is encapsulated within this ``UncheckedSubcmd`` thus,
+        this is a convenience method for any external entities that want to run commands in their own subprocess.
+
+        :param subcommand_args: arguments for subcommand.
+        :returns: a fully made and runnable command for some external ``subprocess`` call.
+        """
+        return self.git.runner.make_cmd(self.git.build_main_cmd_args(), subcommand_args)
+
+    def git_main_cmd_args(self) -> list[str]:
+        """
+        Get CLI args for git main cli command.
+
+        For example, ``--no-pager --no-advice`` is the git main command in ``git --no-pager --no-advice log master -1``.
+
+        :return: CLI args for git main cli command.
+        """
+        return self.git.build_main_cmd_args()
+
+    def git_envs(
+        self, extra_git_envs: dict[str, str] | None = None
+    ) -> dict[str, str] | None:
+        """
+        Get Git environment variables from the merged ``GitEnvVars`` object.
+
+        Skips values that are ``Unset`` or ``None``-like using ``not_none_not_unset()``.
+        Converts ``Path`` and ``datetime`` instances to ``str``.
+
+        :param extra_git_envs: extraneous git envs supplied by the caller. These will be merged into the resultant
+            git envs and then returned.
+        :return: A cleaned and normalized GitEnvVars dict suitable for use in subprocesses.
+        """
+        env_vars = self.git.build_git_envs()
+        if extra_git_envs and env_vars is not None:
+            env_vars.update(extra_git_envs)
+        return env_vars
