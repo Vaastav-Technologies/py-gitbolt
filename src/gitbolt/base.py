@@ -683,7 +683,7 @@ class HashObject(GitSubCommand, Protocol):
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> HashObject:
-        return git.hash_object_subcmd
+        return git.hash_object_subcmd()
 
     @property
     @abstractmethod
@@ -800,7 +800,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def hash_object_subcmd(self) -> HashObject:
         """
@@ -808,7 +807,6 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
         """
         ...
 
-    @property
     @abstractmethod
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
