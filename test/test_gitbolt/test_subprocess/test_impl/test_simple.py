@@ -2111,6 +2111,10 @@ def test_list_worktree(git_fact, repo_local):
     - Verifies that the user is warned of worktree usage.
     """
     git = git_fact(repo_local)
+    git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
+    git.subcmd_unchecked().run(
+        ["config", "--local", "user.email", "suhas@example.com"]
+    )
     # create empty commit on master
     git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
     # create and switch to new branch nb
