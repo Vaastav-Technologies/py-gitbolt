@@ -2111,16 +2111,22 @@ def test_list_worktree(git_fact, repo_local):
     - Verifies that the user is warned of worktree usage.
     """
     git = git_fact(repo_local)
-    git.subcmd_unchecked().run(["config", "--local", "user.name", "suhas"])
-    git.subcmd_unchecked().run(
-        ["config", "--local", "user.email", "suhas@example.com"]
+    ident_git = git.git_envs_override(
+        GIT_AUTHOR_NAME="ss",
+        GIT_AUTHOR_EMAIL="ss@ss.ss",
+        GIT_COMMITTER_NAME="ss",
+        GIT_COMMITTER_EMAIL="ss@ss.ss",
     )
     # create empty commit on master
-    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    ident_git.subcmd_unchecked().run(
+        ["commit", "-m", "initial empty commit", "--allow-empty"]
+    )
     # create and switch to new branch nb
     git.subcmd_unchecked().run(["switch", "-c", "nb"])
     # create empty commit on nb
-    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    ident_git.subcmd_unchecked().run(
+        ["commit", "-m", "initial empty commit", "--allow-empty"]
+    )
     # switch back to master
     git.subcmd_unchecked().run(["switch", "-"])
     with pytest.warns(match="Worktree implementations are not stable. Use subcmd_unchecked instead."):
