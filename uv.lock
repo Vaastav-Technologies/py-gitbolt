@@ -236,7 +236,7 @@ wheels = [
 
 [[package]]
 name = "gitbolt"
-version = "0.0.0.dev25"
+version = "0.0.0.dev26"
 source = { virtual = "." }
 dependencies = [
     { name = "vt-commons" },
