@@ -50,6 +50,28 @@ class GitCommand(Git, ABC):
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars | None = None
         self._cmd_str_repr: str | None = None
+        self._main_cmd_opt_builders: dict[str, Callable[[], list[str]]] = {
+            "C": self._main_cmd_cap_c_args,
+            "c": self._main_cmd_small_c_args,
+            "config_env": self._main_cmd_config_env_args,
+            "exec_path": self._main_cmd_exec_path_args,
+            "paginate": self._main_cmd_paginate_args,
+            "no_pager": self._main_cmd_no_pager_args,
+            "git_dir": self._main_cmd_git_dir_args,
+            "work_tree": self._main_cmd_work_tree_args,
+            "namespace": self._main_cmd_namespace_args,
+            "bare": self._main_cmd_bare_args,
+            "no_replace_objects": self._main_cmd_no_replace_objects_args,
+            "no_lazy_fetch": self._main_cmd_no_lazy_fetch_args,
+            "no_optional_locks": self._main_cmd_no_optional_locks_args,
+            "no_advice": self._main_cmd_no_advice_args,
+            "literal_pathspecs": self._main_cmd_literal_pathspecs_args,
+            "glob_pathspecs": self._main_cmd_glob_pathspecs_args,
+            "noglob_pathspecs": self._main_cmd_noglob_pathspecs_args,
+            "icase_pathspecs": self._main_cmd_icase_pathspecs_args,
+            "list_cmds": self._main_cmd_list_cmds_args,
+            "attr_source": self._main_cmd_attr_source_args,
+        }
 
     @override
     def __str__(self) -> str:
@@ -65,7 +87,7 @@ class GitCommand(Git, ABC):
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
         >>> assert str(_a_git) == GIT_CMD    # _a_git never changed
-        >>> assert str(_b_git) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice"
+        >>> assert str(_b_git) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects"
 
         Adding git envs:
 
@@ -74,7 +96,7 @@ class GitCommand(Git, ABC):
         >>> assert str(_c_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice"
+        >>> assert str(_d_git) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2"
 
         Does not affect repr:
 
@@ -127,28 +149,14 @@ class GitCommand(Git, ABC):
 
         :return: CLI args for git main cli command.
         """
-        return (
-            self._main_cmd_cap_c_args()
-            + self._main_cmd_small_c_args()
-            + self._main_cmd_config_env_args()
-            + self._main_cmd_exec_path_args()
-            + self._main_cmd_paginate_args()
-            + self._main_cmd_no_pager_args()
-            + self._main_cmd_git_dir_args()
-            + self._main_cmd_work_tree_args()
-            + self._main_cmd_namespace_args()
-            + self._main_cmd_bare_args()
-            + self._main_cmd_no_replace_objects_args()
-            + self._main_cmd_no_lazy_fetch_args()
-            + self._main_cmd_no_optional_locks_args()
-            + self._main_cmd_no_advice_args()
-            + self._main_cmd_literal_pathspecs_args()
-            + self._main_cmd_glob_pathspecs_args()
-            + self._main_cmd_noglob_pathspecs_args()
-            + self._main_cmd_icase_pathspecs_args()
-            + self._main_cmd_list_cmds_args()
-            + self._main_cmd_attr_source_args()
-        )
+        args: list[str] = []
+        for opt_key in self._main_cmd_opts:
+            args.extend(self._main_cmd_args_for_opt_key(opt_key))
+        return args
+
+    def _main_cmd_args_for_opt_key(self, opt_key: str) -> list[str]:
+        builder = self._main_cmd_opt_builders.get(opt_key)
+        return builder() if builder else []
 
     @override
     def git_opts_override(self, **overrides: Unpack[GitOpts]) -> Self:
@@ -686,7 +694,7 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
         >>> assert str(_a_git.version_subcmd()) == f"{GIT_CMD} {VERSION_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.version_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {VERSION_CMD}"
+        >>> assert str(_b_git.version_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {VERSION_CMD}"
 
         Adding git envs:
 
@@ -695,7 +703,7 @@ class VersionCommand(Version, GitSubcmdCommand, Protocol):
         >>> assert str(_c_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {VERSION_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {VERSION_CMD}"
+        >>> assert str(_d_git.version_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {VERSION_CMD}"
 
         Does not affect repr:
 
@@ -756,7 +764,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
         >>> assert str(_a_git.ls_tree_subcmd()) == f"{GIT_CMD} {LS_TREE_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.ls_tree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {LS_TREE_CMD}"
+        >>> assert str(_b_git.ls_tree_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {LS_TREE_CMD}"
 
         Adding git envs:
 
@@ -765,7 +773,7 @@ class LsTreeCommand(LsTree, GitSubcmdCommand, Protocol):
         >>> assert str(_c_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {LS_TREE_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {LS_TREE_CMD}"
+        >>> assert str(_d_git.ls_tree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {LS_TREE_CMD}"
 
         Does not affect repr:
 
@@ -871,7 +879,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
         >>> assert str(_a_git.add_subcmd()) == f"{GIT_CMD} {ADD_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.add_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {ADD_CMD}"
+        >>> assert str(_b_git.add_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {ADD_CMD}"
 
         Adding git envs:
 
@@ -880,7 +888,7 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         >>> assert str(_c_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {ADD_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {ADD_CMD}"
+        >>> assert str(_d_git.add_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {ADD_CMD}"
 
         Does not affect repr:
 
@@ -1193,7 +1201,7 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
 
         >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
         >>> assert str(_a_git.worktree_subcmd()) == f"{GIT_CMD} {WORKTREE_CMD}"    # _a_git never changed
-        >>> assert str(_b_git.worktree_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {WORKTREE_CMD}"
+        >>> assert str(_b_git.worktree_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {WORKTREE_CMD}"
 
         Adding git envs:
 
@@ -1202,7 +1210,7 @@ class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
         >>> assert str(_c_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {WORKTREE_CMD}"
 
         >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
-        >>> assert str(_d_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {WORKTREE_CMD}"
+        >>> assert str(_d_git.worktree_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {WORKTREE_CMD}"
 
         Does not affect repr:
 
