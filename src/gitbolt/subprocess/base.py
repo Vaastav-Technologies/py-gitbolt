@@ -50,6 +50,28 @@ class GitCommand(Git, ABC):
         self._main_cmd_opts: GitOpts = {}
         self._env_vars: GitEnvVars | None = None
         self._cmd_str_repr: str | None = None
+        self._main_cmd_opt_builders: dict[str, Callable[[], list[str]]] = {
+            "C": self._main_cmd_cap_c_args,
+            "c": self._main_cmd_small_c_args,
+            "config_env": self._main_cmd_config_env_args,
+            "exec_path": self._main_cmd_exec_path_args,
+            "paginate": self._main_cmd_paginate_args,
+            "no_pager": self._main_cmd_no_pager_args,
+            "git_dir": self._main_cmd_git_dir_args,
+            "work_tree": self._main_cmd_work_tree_args,
+            "namespace": self._main_cmd_namespace_args,
+            "bare": self._main_cmd_bare_args,
+            "no_replace_objects": self._main_cmd_no_replace_objects_args,
+            "no_lazy_fetch": self._main_cmd_no_lazy_fetch_args,
+            "no_optional_locks": self._main_cmd_no_optional_locks_args,
+            "no_advice": self._main_cmd_no_advice_args,
+            "literal_pathspecs": self._main_cmd_literal_pathspecs_args,
+            "glob_pathspecs": self._main_cmd_glob_pathspecs_args,
+            "noglob_pathspecs": self._main_cmd_noglob_pathspecs_args,
+            "icase_pathspecs": self._main_cmd_icase_pathspecs_args,
+            "list_cmds": self._main_cmd_list_cmds_args,
+            "attr_source": self._main_cmd_attr_source_args,
+        }
 
     @override
     def __str__(self) -> str:
@@ -133,29 +155,7 @@ class GitCommand(Git, ABC):
         return args
 
     def _main_cmd_args_for_opt_key(self, opt_key: str) -> list[str]:
-        builders: dict[str, Callable[[], list[str]]] = {
-            "C": self._main_cmd_cap_c_args,
-            "c": self._main_cmd_small_c_args,
-            "config_env": self._main_cmd_config_env_args,
-            "exec_path": self._main_cmd_exec_path_args,
-            "paginate": self._main_cmd_paginate_args,
-            "no_pager": self._main_cmd_no_pager_args,
-            "git_dir": self._main_cmd_git_dir_args,
-            "work_tree": self._main_cmd_work_tree_args,
-            "namespace": self._main_cmd_namespace_args,
-            "bare": self._main_cmd_bare_args,
-            "no_replace_objects": self._main_cmd_no_replace_objects_args,
-            "no_lazy_fetch": self._main_cmd_no_lazy_fetch_args,
-            "no_optional_locks": self._main_cmd_no_optional_locks_args,
-            "no_advice": self._main_cmd_no_advice_args,
-            "literal_pathspecs": self._main_cmd_literal_pathspecs_args,
-            "glob_pathspecs": self._main_cmd_glob_pathspecs_args,
-            "noglob_pathspecs": self._main_cmd_noglob_pathspecs_args,
-            "icase_pathspecs": self._main_cmd_icase_pathspecs_args,
-            "list_cmds": self._main_cmd_list_cmds_args,
-            "attr_source": self._main_cmd_attr_source_args,
-        }
-        builder = builders.get(opt_key)
+        builder = self._main_cmd_opt_builders.get(opt_key)
         return builder() if builder else []
 
     @override
