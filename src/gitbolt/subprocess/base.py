@@ -8,6 +8,7 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 import abc
+import errno
 import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
@@ -459,6 +460,25 @@ class GitCommand(Git, ABC):
         ...
 
 
+def _close_session_popen(popen: Popen[bytes], exc_type, exc_value, traceback) -> None:
+    """
+    Close a session ``Popen`` and ignore a broken pipe.
+
+    A git process started with a bad command can exit before the session does. Closing its stdin
+    then raises ``BrokenPipeError`` (common on macOS) or a matching ``OSError``.
+    """
+    try:
+        popen.__exit__(exc_type, exc_value, traceback)
+    except BrokenPipeError:
+        return
+    except OSError as err:
+        if err.errno in {errno.EPIPE, errno.ECONNRESET}:
+            return
+        if getattr(err, "winerror", None) in {109, 232}:
+            return
+        raise
+
+
 # TODO: extract a base session class from this
 class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
     def __init__(self, git: GitCommand, **commands: Callable[[], Popen[bytes]]):
@@ -512,7 +532,9 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
                     self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
                 except Exception:
                     for k in reversed(processes_started_keys):
-                        self.started_commands[k].__exit__(*sys.exc_info())
+                        _close_session_popen(
+                            self.started_commands[k], *sys.exc_info()
+                        )
                     raise
                 processes_started_keys.append(unstarted_command_key)
             self._commands = SimpleNamespace(**self.started_commands)
@@ -532,7 +554,7 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         if self.__depth == 0:
             process_done_keys: list[str] = []
             for started_popen_key, started_popen in self.started_commands.items():
-                started_popen.__exit__(exc_type, exc_value, traceback)
+                _close_session_popen(started_popen, exc_type, exc_value, traceback)
                 process_done_keys.append(started_popen_key)
             self._commands = None
             for pk in process_done_keys:
