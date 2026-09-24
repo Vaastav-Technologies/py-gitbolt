@@ -8,6 +8,7 @@ Create sessions for long-running commands and communicate with them using their 
 
 Much faster that subprocess creation for each input/output pair.
 """
+import errno
 import subprocess
 from typing import Iterable, IO, cast
 
@@ -16,6 +17,25 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE, ERR_DATA_FORMAT_ERR
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.utils.models import GitRawActor, GitRawSignature, GPGGitRawSignature, SSHGitRawSignature, \
     RawCommitBytesObj, RawBytesValsOfCommit
+
+
+def _close_session_popen(popen: subprocess.Popen[bytes], exc_type, exc_value, traceback) -> None:
+    """
+    Close a session ``Popen`` and ignore a broken pipe.
+
+    A git process started with a bad command can exit before the session does. Closing its stdin
+    then raises ``BrokenPipeError`` (common on macOS) or a matching ``OSError``.
+    """
+    try:
+        popen.__exit__(exc_type, exc_value, traceback)
+    except BrokenPipeError:
+        return
+    except OSError as err:
+        if err.errno in {errno.EPIPE, errno.ECONNRESET}:
+            return
+        if getattr(err, "winerror", None) in {109, 232}:
+            return
+        raise
 
 
 # region blob

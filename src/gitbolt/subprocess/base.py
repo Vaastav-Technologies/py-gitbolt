@@ -8,7 +8,6 @@ Git command interfaces with default implementation using subprocess calls.
 from __future__ import annotations
 
 import abc
-import errno
 import sys
 from abc import abstractmethod, ABC
 from collections.abc import Callable
@@ -36,6 +35,7 @@ from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
 from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.utils.session import _close_session_popen
 
 
 class GitCommand(Git, ABC):
@@ -458,25 +458,6 @@ class GitCommand(Git, ABC):
         :returns: clone as defined by the subclass.
         """
         ...
-
-
-def _close_session_popen(popen: Popen[bytes], exc_type, exc_value, traceback) -> None:
-    """
-    Close a session ``Popen`` and ignore a broken pipe.
-
-    A git process started with a bad command can exit before the session does. Closing its stdin
-    then raises ``BrokenPipeError`` (common on macOS) or a matching ``OSError``.
-    """
-    try:
-        popen.__exit__(exc_type, exc_value, traceback)
-    except BrokenPipeError:
-        return
-    except OSError as err:
-        if err.errno in {errno.EPIPE, errno.ECONNRESET}:
-            return
-        if getattr(err, "winerror", None) in {109, 232}:
-            return
-        raise
 
 
 # TODO: extract a base session class from this
