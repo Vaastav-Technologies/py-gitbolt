@@ -281,7 +281,7 @@ provides-extras = ["pygit2", "test"]
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy" },
-    { name = "ruff" },
+    { name = "ruff", specifier = "==0.11.10" },
 ]
 doc = [
     { name = "sphinx" },

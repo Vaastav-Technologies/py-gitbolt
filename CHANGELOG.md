@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date format: YYYY-MM-DD
 
+## [Unreleased]
+
+### Fixed
+
+- Pin `ruff` to `0.11.10` in the `dev` dependency group so CI lint matches local (`#12`).
+
 ## [0.0.0.dev27] - 2026-09-24
 
 ### Added

@@ -46,7 +46,7 @@ pygit2 = ['pygit2']
 test = ['pytest']
 
 [dependency-groups]
-dev = ["mypy", "ruff"]
+dev = ["mypy", "ruff==0.11.10"]
 doc = ['sphinx', 'sphinx-argparse']
 test = ["pytest", 'pytest-cov', "pytest-xdist"]
 multitest = ['tox']
