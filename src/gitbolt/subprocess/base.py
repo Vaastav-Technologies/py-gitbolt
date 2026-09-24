@@ -35,6 +35,7 @@ from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
 from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.utils.session import _close_session_popen
 
 
 class GitCommand(Git, ABC):
@@ -512,7 +513,9 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
                     self.started_commands[unstarted_command_key] = unstarted_command().__enter__()
                 except Exception:
                     for k in reversed(processes_started_keys):
-                        self.started_commands[k].__exit__(*sys.exc_info())
+                        _close_session_popen(
+                            self.started_commands[k], *sys.exc_info()
+                        )
                     raise
                 processes_started_keys.append(unstarted_command_key)
             self._commands = SimpleNamespace(**self.started_commands)
@@ -532,7 +535,7 @@ class GitSession(HasGitUnderneath[GitCommand], AbstractContextManager):
         if self.__depth == 0:
             process_done_keys: list[str] = []
             for started_popen_key, started_popen in self.started_commands.items():
-                started_popen.__exit__(exc_type, exc_value, traceback)
+                _close_session_popen(started_popen, exc_type, exc_value, traceback)
                 process_done_keys.append(started_popen_key)
             self._commands = None
             for pk in process_done_keys:

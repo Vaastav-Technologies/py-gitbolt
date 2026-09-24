@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date format: YYYY-MM-DD
 
+## [Unreleased]
+
+### Added
+
+- Listed Thamotharan R as a project author.
+
+### Fixed
+
+- `GitSession` ignores a broken pipe when closing a git process that already exited (`#11`).
+  This avoids `BrokenPipeError` on macOS in `test_one_wrong_command_does_not_affect_others`.
+
 ## [0.0.0.dev26] - 2026-09-22
 
 ### Added

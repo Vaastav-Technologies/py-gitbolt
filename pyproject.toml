@@ -5,7 +5,8 @@ description = "Fast, flexible and type-safe Git commands in Python."
 requires-python = ">=3.12"
 readme = "README.md"
 authors = [
-    {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}
+    {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"},
+    {name = "Thamotharan R", email = "thamotharan.r@vaastav.tech"}
 ]
 maintainers = [
     {name = "Suhas Krishna Srivastava", email = "suhas.srivastava@vaastav.tech"}

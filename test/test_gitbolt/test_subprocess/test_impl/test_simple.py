@@ -5,6 +5,7 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from vt.utils.commons.commons.core_py import UNSET
@@ -13,6 +14,7 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
+from gitbolt.subprocess.base import GitSession
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
@@ -1959,6 +1961,43 @@ class TestGitSession:
                 cat_file_tree_data(ses.commands.cat_file, b"HEAD^{tree}")
                 with pytest.raises(Exception):
                     list(cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}"))
+
+        def test_session_exit_ignores_broken_pipe(self):
+            """
+            Closing a process that already exited must not fail the session (macOS BrokenPipeError).
+            Later processes in the session must still be closed.
+            """
+            git = gitbolt.get_git_command()
+            dead = MagicMock()
+            dead.__enter__.return_value = dead
+            dead.__exit__.side_effect = BrokenPipeError(32, "Broken pipe")
+            live = MagicMock()
+            live.__enter__.return_value = live
+            live.__exit__.return_value = None
+            with GitSession(git, dead=lambda: dead, live=lambda: live):
+                pass
+            dead.__exit__.assert_called_once()
+            live.__exit__.assert_called_once()
+
+        def test_session_exit_ignores_windows_broken_pipe_oserror(self):
+            git = gitbolt.get_git_command()
+            dead = MagicMock()
+            dead.__enter__.return_value = dead
+            win_err = OSError("The pipe is being closed")
+            win_err.winerror = 232
+            dead.__exit__.side_effect = win_err
+            with GitSession(git, dead=lambda: dead):
+                pass
+            dead.__exit__.assert_called_once()
+
+        def test_session_exit_reraises_unexpected_oserror(self):
+            git = gitbolt.get_git_command()
+            popen = MagicMock()
+            popen.__enter__.return_value = popen
+            popen.__exit__.side_effect = OSError("unexpected close failure")
+            with pytest.raises(OSError, match="unexpected close failure"):
+                with GitSession(git, cmd=lambda: popen):
+                    pass
 
     def test_reentrance(self):
         """
