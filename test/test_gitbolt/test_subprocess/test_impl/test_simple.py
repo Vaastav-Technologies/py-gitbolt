@@ -1799,7 +1799,7 @@ class TestHashObjectSubcmd:
     class TestArgValidation:
         def test_file_path_or_stdin_required(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object()
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object() # type: ignore[arg-type]
             assert e.value.exit_code == ERR_INVALID_USAGE
             assert "file_path" in str(e.value)
             assert "stdin" in str(e.value)
@@ -1839,22 +1839,22 @@ class TestHashObjectSubcmd:
 
         def test_extra_file_path_must_be_path(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
-                    Path("a-file"), "b-file"  # type: ignore[arg-type]
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object( # type: ignore[arg-type]
+                    Path("a-file"), "b-file"
                 )
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         def test_path_must_be_path(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
-                    Path("a-file"), path="filters/a-file"  # type: ignore[arg-type]
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object( # type: ignore[arg-type]
+                    Path("a-file"), path="filters/a-file"
                 )
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         def test_invalid_type(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
-                    Path("a-file"), t="blobb"  # type: ignore[arg-type]
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object( # type: ignore[arg-type]
+                    Path("a-file"), t="blobb"
                 )
             assert e.value.exit_code == ERR_INVALID_USAGE
 
@@ -1868,15 +1868,15 @@ class TestHashObjectSubcmd:
 
         def test_w_must_be_bool(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).writing_hash_object_subcmd().hash_object(
-                    Path("a-file"), w="yes"  # type: ignore[arg-type]
+                SimpleGitCommand(tmp_path).writing_hash_object_subcmd().hash_object( # type: ignore[arg-type]
+                    Path("a-file"), w="yes"
                 )
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
         def test_stdin_must_be_bytes(self, tmp_path):
             with pytest.raises(GitExitingException) as e:
-                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
-                    Path("a-file"), stdin="not-bytes"  # type: ignore[arg-type]
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object( # type: ignore[arg-type]
+                    Path("a-file"), stdin="not-bytes"
                 )
             assert e.value.exit_code == ERR_DATA_FORMAT_ERR
 
