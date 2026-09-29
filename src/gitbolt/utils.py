@@ -7,6 +7,7 @@ Utility functions related to processors specific to git commands.
 
 from __future__ import annotations
 
+from vt.utils.commons.commons.core_py import is_unset
 
 from gitbolt.models import GitOpts, GitEnvVars
 
@@ -86,7 +87,7 @@ def merge_git_opts(primary: GitOpts, fallback: GitOpts) -> GitOpts:
         fallbacks on the corresponding property from the ``fallback`` ``GitOpts`` object if that corresponding property
         is ``None`` in the ``primary`` ``GitOpts`` object.
     """
-    return merge_typed_dicts(primary, fallback, GitOpts)
+    return merge_typed_dicts(primary, fallback, GitOpts, omit_unset_keys=True)
 
 
 def merge_git_envs(primary: GitEnvVars, fallback: GitEnvVars) -> GitEnvVars:
@@ -164,16 +165,51 @@ def merge_git_envs(primary: GitEnvVars, fallback: GitEnvVars) -> GitEnvVars:
         fallbacks on the corresponding property from the ``fallback`` ``GitEnvVars`` object if that corresponding property
         is explicitly ``None`` in the ``primary`` ``GitEnvVars`` object.
     """
-    return merge_typed_dicts(primary, fallback, GitEnvVars)
+    return merge_typed_dicts(primary, fallback, GitEnvVars, omit_unset_keys=False)
 
 
 # TODO: check for typing this function
-def merge_typed_dicts(primary, fallback, the_typed_dict):
-    merged = {}
-    for k in the_typed_dict.__annotations__.keys():  # type: ignore
-        val = primary.get(k)  # type: ignore # required as mypy thinks k is not str
+def merge_typed_dicts(
+    primary, fallback, the_typed_dict, *, omit_unset_keys: bool = False
+):
+    """
+    Merge typed dicts preserving insertion order of ``fallback`` then new keys from ``primary``.
+
+    Value resolution matches the previous annotation-order merge: primary wins, ``None`` in primary
+    falls back, ``Unset`` is kept for env merges and omitted from opts when ``omit_unset_keys`` is True.
+    """
+    valid_keys = frozenset(the_typed_dict.__annotations__.keys())
+
+    keys_order: list[str] = []
+    seen: set[str] = set()
+    for k in fallback:
+        if k in valid_keys and k not in seen:
+            keys_order.append(k)
+            seen.add(k)
+    for k in primary:
+        if k in valid_keys and k not in seen:
+            keys_order.append(k)
+            seen.add(k)
+
+    merged: dict = {}
+    for k in keys_order:
+        if k in primary and is_unset(primary[k]):
+            if omit_unset_keys:
+                continue
+            merged[k] = primary[k]
+            continue
+
+        if k in primary:
+            val = primary[k]
+            if val is None:
+                val = fallback.get(k)
+        else:
+            val = fallback.get(k)
+
         if val is None:
-            val = fallback.get(k)  # type: ignore # required as mypy thinks k is not str
-        if val is not None:
-            merged[k] = val  # type: ignore # required as mypy thinks k is not str
+            continue
+        if omit_unset_keys and is_unset(val):
+            continue
+        merged[k] = val
+
     return merged

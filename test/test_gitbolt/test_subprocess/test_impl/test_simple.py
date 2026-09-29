@@ -5,6 +5,7 @@
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from vt.utils.commons.commons.core_py import UNSET
@@ -13,6 +14,7 @@ from vt.utils.errors.error_specs import ERR_DATA_FORMAT_ERR, ERR_INVALID_USAGE
 import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
+from gitbolt.subprocess.base import GitSession
 from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
 from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
@@ -20,6 +22,20 @@ from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit
 def test_exec_path():
     git = SimpleGitCommand()
     assert isinstance(git.exec_path(), Path)
+
+
+def test_preserve_main_cmd_opt_order_in_single_override():
+    exec_path = Path("some/path")
+    c_paths = [Path("path"), Path("to/repo")]
+    git = SimpleGitCommand().git_opts_override(exec_path=exec_path, C=c_paths)
+    assert git.build_main_cmd_args() == [
+        "--exec-path",
+        str(exec_path),
+        "-C",
+        str(c_paths[0]),
+        "-C",
+        str(c_paths[1]),
+    ]
 
 
 def test_overrides_and_exec_path():
@@ -41,10 +57,10 @@ class TestMainGit:
                     assert git.git_opts_override(
                         no_replace_objects=True, git_dir=Path(), paginate=True
                     ).build_main_cmd_args() == [
-                        "--paginate",
+                        "--no-replace-objects",
                         "--git-dir",
                         ".",
-                        "--no-replace-objects",
+                        "--paginate",
                     ]
 
         class TestMultipleCalls:
@@ -63,14 +79,14 @@ class TestMainGit:
                 ).git_opts_override(
                     config_env={"auth": "suhas", "comm": "suyog"}
                 ).build_main_cmd_args() == [
+                    "--exec-path",
+                    "tmp",
+                    "--noglob-pathspecs",
+                    "--no-advice",
                     "--config-env",
                     "auth=suhas",
                     "--config-env",
                     "comm=suyog",
-                    "--exec-path",
-                    "tmp",
-                    "--no-advice",
-                    "--noglob-pathspecs",
                 ]
 
         class TestOverrideValues:
@@ -776,14 +792,14 @@ class TestMainCLIGit:
                         namespace="n1", exec_path=Path(), c=dict(p3="v3", p4="v4v5")
                     )
                     overriding_opts = [
+                        "--namespace",
+                        "n1",
+                        "--exec-path",
+                        ".",
                         "-c",
                         "p3=v3",
                         "-c",
                         "p4=v4v5",
-                        "--exec-path",
-                        ".",
-                        "--namespace",
-                        "n1",
                     ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert git.build_main_cmd_args() == opts
@@ -808,14 +824,14 @@ class TestMainCLIGit:
                 def test_multiple_supplied(self, opts: list[str], prefer_cli: bool):
                     git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                     overriding_opts = [
+                        "--exec-path",
+                        "tmp",
+                        "--noglob-pathspecs",
+                        "--no-advice",
                         "--config-env",
                         "auth=suhas",
                         "--config-env",
                         "comm=suyog",
-                        "--exec-path",
-                        "tmp",
-                        "--no-advice",
-                        "--noglob-pathspecs",
                     ]
                     opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                     assert (
@@ -831,15 +847,15 @@ class TestMainCLIGit:
             def test_intermixed(self, opts: list[str], prefer_cli: bool):
                 git = CLISimpleGitCommand(opts=opts.copy(), prefer_cli=prefer_cli)
                 overriding_opts = [
+                    "--exec-path",
+                    "tmp",
+                    "--noglob-pathspecs",
+                    "--no-advice",
                     "--config-env",
                     "auth=suhas",
                     "--config-env",
                     "comm=suyog",
-                    "--exec-path",
-                    "tmp",
                     "--no-pager",
-                    "--no-advice",
-                    "--noglob-pathspecs",
                 ]
                 opts = _adjust_opts(opts, prefer_cli, overriding_opts)
                 assert (
@@ -2094,6 +2110,43 @@ class TestGitSession:
                 with pytest.raises(Exception):
                     list(cat_file_tree_data(ses.commands.cat_file_faulty, b"HEAD^{tree}"))
 
+        def test_session_exit_ignores_broken_pipe(self):
+            """
+            Closing a process that already exited must not fail the session (macOS BrokenPipeError).
+            Later processes in the session must still be closed.
+            """
+            git = gitbolt.get_git_command()
+            dead = MagicMock()
+            dead.__enter__.return_value = dead
+            dead.__exit__.side_effect = BrokenPipeError(32, "Broken pipe")
+            live = MagicMock()
+            live.__enter__.return_value = live
+            live.__exit__.return_value = None
+            with GitSession(git, dead=lambda: dead, live=lambda: live):
+                pass
+            dead.__exit__.assert_called_once()
+            live.__exit__.assert_called_once()
+
+        def test_session_exit_ignores_windows_broken_pipe_oserror(self):
+            git = gitbolt.get_git_command()
+            dead = MagicMock()
+            dead.__enter__.return_value = dead
+            win_err = OSError("The pipe is being closed")
+            win_err.winerror = 232
+            dead.__exit__.side_effect = win_err
+            with GitSession(git, dead=lambda: dead):
+                pass
+            dead.__exit__.assert_called_once()
+
+        def test_session_exit_reraises_unexpected_oserror(self):
+            git = gitbolt.get_git_command()
+            popen = MagicMock()
+            popen.__enter__.return_value = popen
+            popen.__exit__.side_effect = OSError("unexpected close failure")
+            with pytest.raises(OSError, match="unexpected close failure"):
+                with GitSession(git, cmd=lambda: popen):
+                    pass
+
     def test_reentrance(self):
         """
         Test all the states of reentrant ``GitSession``.
@@ -2245,12 +2298,22 @@ def test_list_worktree(git_fact, repo_local):
     - Verifies that the user is warned of worktree usage.
     """
     git = git_fact(repo_local)
+    ident_git = git.git_envs_override(
+        GIT_AUTHOR_NAME="ss",
+        GIT_AUTHOR_EMAIL="ss@ss.ss",
+        GIT_COMMITTER_NAME="ss",
+        GIT_COMMITTER_EMAIL="ss@ss.ss",
+    )
     # create empty commit on master
-    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    ident_git.subcmd_unchecked().run(
+        ["commit", "-m", "initial empty commit", "--allow-empty"]
+    )
     # create and switch to new branch nb
     git.subcmd_unchecked().run(["switch", "-c", "nb"])
     # create empty commit on nb
-    git.subcmd_unchecked().run(["commit", "-m", "initial empty commit", "--allow-empty"])
+    ident_git.subcmd_unchecked().run(
+        ["commit", "-m", "initial empty commit", "--allow-empty"]
+    )
     # switch back to master
     git.subcmd_unchecked().run(["switch", "-"])
     with pytest.warns(match="Worktree implementations are not stable. Use subcmd_unchecked instead."):
