@@ -15,7 +15,14 @@ import gitbolt
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.base import GitSession
-from gitbolt.subprocess.impl.simple import SimpleGitCommand, CLISimpleGitCommand
+from gitbolt.hash_object import UtilHashObjectArgsValidator
+from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
+from gitbolt.subprocess.impl.simple import (
+    SimpleGitCommand,
+    CLISimpleGitCommand,
+    HashObjectCommandImpl,
+    WritingHashObjectCommandImpl,
+)
 from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
 
 
@@ -1824,6 +1831,138 @@ class TestHashObjectSubcmd:
                     path=Path("p"), stdin_paths=[Path("a-file")]
                 )
             assert e.value.exit_code == ERR_INVALID_USAGE
+
+        def test_file_path_must_be_path(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object("a-file")  # type: ignore[arg-type]
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_extra_file_path_must_be_path(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), "b-file"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_path_must_be_path(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), path="filters/a-file"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_invalid_type(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), t="blobb"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+        @pytest.mark.parametrize("flag", ["no_filters", "literally"])
+        def test_bool_flags_must_be_bool(self, tmp_path, flag):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), **{flag: "yes"}  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_w_must_be_bool(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).writing_hash_object_subcmd().hash_object(
+                    Path("a-file"), w="yes"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_stdin_must_be_bytes(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), stdin="not-bytes"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+        def test_stdin_paths_must_be_list_of_paths(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    stdin_paths="a-file"  # type: ignore[arg-type]
+                )
+            assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+    def test_str(self):
+        git = SimpleGitCommand()
+        assert str(git.hash_object_subcmd()).endswith("hash-object")
+
+    def test_writing_property(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().writing.hash_object(Path("a-file"), w=True)
+        assert hashed == _git_object_hash("blob", b"a-file")
+
+    def test_writing_property_is_self(self, repo_local):
+        cmd = SimpleGitCommand(repo_local).writing_hash_object_subcmd()
+        assert cmd.writing is cmd
+
+    def test_cli_simple_git_command(self, tmp_path):
+        Path(tmp_path, "a-file").write_bytes(b"a-file")
+        git = CLISimpleGitCommand(tmp_path)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        assert hashed == _git_object_hash("blob", b"a-file")
+        cloned = git.clone()
+        assert cloned.hash_object_subcmd().hash_object(Path("a-file")) == hashed
+
+    def test_subcmd_from_git(self, tmp_path):
+        git = SimpleGitCommand(tmp_path)
+        ho = git.hash_object_subcmd()
+        assert ho._subcmd_from_git(git) is not None
+        writing = git.writing_hash_object_subcmd()
+        assert writing._subcmd_from_git(git) is not None
+
+    def test_args_validator_injection(self, tmp_path):
+        git = SimpleGitCommand(tmp_path)
+        validator = UtilHashObjectArgsValidator()
+        cmd = HashObjectCommandImpl(tmp_path, git, args_validator=validator)
+        assert cmd.clone().args_validator is validator
+        writing = WritingHashObjectCommandImpl(tmp_path, git, args_validator=validator)
+        assert writing.clone().root_dir == tmp_path
+        assert writing.clone().args_validator is validator
+        validator.validate(Path("a.txt"))
+        validator.mandate_required_arguments(Path("a.txt"), stdin=None, stdin_paths=None)
+        validator.validate_exclusive_args(
+            Path("a.txt"),
+            path=None,
+            no_filters=False,
+            stdin=None,
+            stdin_paths=None,
+        )
+        validator.validate_types(
+            Path("a.txt"),
+            t="blob",
+            path=None,
+            no_filters=False,
+            literally=False,
+            stdin=None,
+            stdin_paths=None,
+            w=False,
+        )
+        validator._require_path(Path("a.txt"), "file_path")
+
+    def test_cli_builder_helpers(self):
+        builder = IndividuallyOverridableHOCAB()
+        assert builder.w_arg(True) == ["-w"]
+        assert builder.w_arg(False) == []
+        assert builder.w_arg(None) == []
+        assert builder.type_arg("blob") == ["-t", "blob"]
+        assert builder.type_arg(None) == []
+        assert builder.path_arg(None) == []
+        assert builder.no_filters_arg(True) == ["--no-filters"]
+        assert builder.no_filters_arg(False) == []
+        assert builder.literally_arg(True) == ["--literally"]
+        assert builder.literally_arg(None) == []
+        assert builder.stdin_arg(b"x") == ["--stdin"]
+        assert builder.stdin_arg(None) == []
+        assert builder.stdin_paths_arg([Path("a.txt")]) == ["--stdin-paths"]
+        assert builder.stdin_paths_arg(None) == []
+        assert builder.file_path_args(Path("a.txt"), Path("b.txt")) == ["a.txt", "b.txt"]
+        assert builder.file_path_args(None) == []
 
 
 @pytest.mark.parametrize(
