@@ -89,8 +89,10 @@ class IndividuallyOverridableHOCAB(HashObjectCLIArgsBuilder):
 
         Using --path:
 
-        >>> builder.build(Path("file.txt"), path=Path("filters/file.txt"))
-        ['hash-object', '-t', 'blob', '--path=filters/file.txt', 'file.txt']
+        >>> _path = Path("filters/file.txt")
+        >>> builder.build(Path("file.txt"), path=_path) == [
+        ...     "hash-object", "-t", "blob", f"--path={_path}", "file.txt"]
+        True
 
         Using multiple files:
 
@@ -153,8 +155,9 @@ class IndividuallyOverridableHOCAB(HashObjectCLIArgsBuilder):
         """
         Return ``--path=<path>`` if `path` is provided.
 
-        >>> IndividuallyOverridableHOCAB().path_arg(Path("filters/file.txt"))
-        ['--path=filters/file.txt']
+        >>> _path = Path("filters/file.txt")
+        >>> IndividuallyOverridableHOCAB().path_arg(_path) == [f"--path={_path}"]
+        True
         >>> IndividuallyOverridableHOCAB().path_arg(None)
         []
         """
