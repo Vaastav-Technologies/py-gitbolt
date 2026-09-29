@@ -747,7 +747,7 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
 
     @override
     def _subcmd_from_git(self, git: 'Git') -> WritingHashObject:
-        return git.writing_hash_object_subcmd
+        return git.writing_hash_object_subcmd()
 
 
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
