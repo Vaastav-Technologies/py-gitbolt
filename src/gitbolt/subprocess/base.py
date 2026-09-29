@@ -23,9 +23,13 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from gitbolt.base import Worktree
+from gitbolt.base import Worktree, HashObject, WritingHashObject
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
+from gitbolt.subprocess.hash_object import (
+    HashObjectCLIArgsBuilder,
+    IndividuallyOverridableHOCAB,
+)
 from gitbolt.subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
     IndividuallyOverridableLTCAB,
@@ -34,7 +38,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 
 
 class GitCommand(Git, ABC):
@@ -364,6 +368,14 @@ class GitCommand(Git, ABC):
     @override
     @abstractmethod
     def add_subcmd(self) -> AddCommand: ...
+
+    @override
+    @abstractmethod
+    def hash_object_subcmd(self) -> HashObjectCommand: ...
+
+    @override
+    @abstractmethod
+    def writing_hash_object_subcmd(self) -> WritingHashObjectCommand: ...
 
     @override
     @abstractmethod
@@ -887,6 +899,324 @@ class AddCommand(Add, GitSubcmdCommand, Protocol):
         >>> assert repr(_d_git) != str(_d_git)
         """
         return " ".join([str(self.git), ADD_CMD])
+
+
+class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
+    """
+    A composable class for building arguments for the `git hash-object` subcommand, which is run later in a subprocess.
+    """
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+    ) -> list[str]: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+        stdin: bytes | None = None,
+    ) -> list[str]: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
+        stdin_paths: list[Path],
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+    ) -> list[str]: ...
+
+    @override
+    def hash_object(
+        self,
+        file_path: Path | None = None,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        stdin_paths: list[Path] | None = None,
+    ) -> str | list[str]:
+        return self._run_hash_object(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=False,
+        )
+
+    def _run_hash_object(
+        self,
+        file_path: Path | None = None,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        stdin_paths: list[Path] | None = None,
+        w: bool = False,
+    ) -> str | list[str]:
+        self.args_validator.validate(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        _input = self._hash_object_input(stdin=stdin, stdin_paths=stdin_paths)
+        run_kwargs: dict[str, Any] = {
+            "check": True,
+            "capture_output": True,
+            "cwd": self.cwd,
+            "env": env_vars,
+        }
+        if _input is None:
+            result_text = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                text=True,
+                **run_kwargs,
+            )
+            stdout = result_text.stdout.strip()
+        else:
+            result_bytes = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                _input=_input,
+                text=False,
+                **run_kwargs,
+            )
+            stdout = result_bytes.stdout.decode().strip()
+
+        hashes = stdout.splitlines() if stdout else []
+        if stdin_paths is not None or stdin is not None or file_paths:
+            return hashes
+        return hashes[0] if hashes else ""
+
+    @override
+    @abstractmethod
+    def clone(self) -> Self: ...
+
+    def _hash_object_input(
+        self,
+        *,
+        stdin: bytes | None,
+        stdin_paths: list[Path] | None,
+    ) -> bytes | None:
+        if stdin_paths is not None:
+            return b"\n".join(str(p).encode() for p in stdin_paths) + b"\n"
+        return stdin
+
+    @property
+    def cwd(self) -> Path:
+        """
+        Working directory used when looking up relative file paths.
+
+        Hashing does not require a Git repository; this is only the subprocess cwd.
+        """
+        return Path.cwd()
+
+    @property
+    def cli_args_builder(self) -> HashObjectCLIArgsBuilder:
+        """
+        The builder assembles the subcommand CLI portion of the git command invocation, such as
+        in ``git --no-pager hash-object -w file.txt``, where ``-w file.txt`` is the subcommand argument list.
+
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git hash-object`` subprocess.
+        """
+        return IndividuallyOverridableHOCAB()
+
+    @property
+    def writing(self) -> WritingHashObject:
+        return self.git.writing_hash_object_subcmd()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.hash_object_subcmd()) == f"{GIT_CMD} {HASH_OBJECT_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.hash_object_subcmd()) == f"{GIT_CMD} {HASH_OBJECT_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.hash_object_subcmd()) == f"{GIT_CMD} -C a -C b --no-replace-objects --no-advice {HASH_OBJECT_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.hash_object_subcmd()) == f"{GIT_CMD} {HASH_OBJECT_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.hash_object_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {HASH_OBJECT_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.hash_object_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --config-env conf1=val1 --config-env glob1=val2 --no-replace-objects --no-advice {HASH_OBJECT_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), HASH_OBJECT_CMD])
+
+
+class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
+    """
+    ``git hash-object`` subcommand that can write objects to the Git object database.
+    """
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+        w: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        w: bool = False,
+    ) -> list[str]: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        file_path: Path,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        w: bool = False,
+    ) -> list[str]: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
+        stdin_paths: list[Path],
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+    ) -> list[str]: ...
+
+    @override
+    def hash_object(
+        self,
+        file_path: Path | None = None,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        stdin_paths: list[Path] | None = None,
+        w: bool = False,
+    ) -> str | list[str]:
+        return self._run_hash_object(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+
+    @property
+    def writing(self) -> WritingHashObject:
+        return self
 
 
 class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):

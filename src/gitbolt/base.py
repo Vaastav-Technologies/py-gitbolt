@@ -20,6 +20,7 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
+from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -684,6 +685,15 @@ class HashObject(GitSubCommand, Protocol):
     @override
     def _subcmd_from_git(self, git: 'Git') -> HashObject:
         return git.hash_object_subcmd()
+
+    @property
+    def args_validator(self) -> HashObjectArgsValidator:
+        """
+        The argument validator for ``git hash-object`` subcommand.
+
+        :return: a validator for hash_object subcommand arguments.
+        """
+        return UtilHashObjectArgsValidator()
 
     @property
     @abstractmethod

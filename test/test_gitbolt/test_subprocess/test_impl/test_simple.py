@@ -1670,8 +1670,156 @@ class TestAddSubcmd:
         assert "b-file" in indexed_files
 
 
+def _git_object_hash(obj_type: str, data: bytes) -> str:
+    import hashlib
+
+    return hashlib.sha1(f"{obj_type} {len(data)}\0".encode() + data).hexdigest()
+
+
+class TestHashObjectSubcmd:
+    def test_one_file(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        assert hashed == _git_object_hash("blob", b"a-file")
+        assert isinstance(hashed, str)
+
+    def test_multiple_files(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        Path(repo_local, "b-file").write_bytes(b"b-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), Path("b-file"))
+        assert hashed == [
+            _git_object_hash("blob", b"a-file"),
+            _git_object_hash("blob", b"b-file"),
+        ]
+
+    def test_no_filters(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), no_filters=True)
+        assert hashed == _git_object_hash("blob", b"a-file")
+
+    def test_literally(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(
+            Path("a-file"), literally=True, no_filters=True
+        )
+        assert hashed == _git_object_hash("blob", b"a-file")
+
+    def test_type(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(
+            Path("a-file"), t="commit", literally=True
+        )
+        assert hashed == _git_object_hash("commit", b"a-file")
+
+    def test_path(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(
+            Path("a-file"), path=Path("filters/a-file")
+        )
+        assert hashed == _git_object_hash("blob", b"a-file")
+
+    def test_stdin(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), stdin=b"from-stdin")
+        assert hashed == [
+            _git_object_hash("blob", b"from-stdin"),
+            _git_object_hash("blob", b"a-file"),
+        ]
+
+    def test_stdin_only(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(stdin=b"from-stdin")
+        assert hashed == [_git_object_hash("blob", b"from-stdin")]
+
+    def test_stdin_paths(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        Path(repo_local, "b-file").write_bytes(b"b-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(
+            stdin_paths=[Path("a-file"), Path("b-file")]
+        )
+        assert hashed == [
+            _git_object_hash("blob", b"a-file"),
+            _git_object_hash("blob", b"b-file"),
+        ]
+
+    def test_writing(self, repo_local):
+        Path(repo_local, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(repo_local)
+        hashed = git.writing_hash_object_subcmd().hash_object(Path("a-file"), w=True)
+        assert hashed == _git_object_hash("blob", b"a-file")
+        obj_type = git.subcmd_unchecked().run(
+            ["cat-file", "-t", hashed],
+            text=True,
+        ).stdout.strip()
+        assert obj_type == "blob"
+
+    def test_hashing_outside_git_repository(self, tmp_path):
+        Path(tmp_path, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(tmp_path)
+        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        assert hashed == _git_object_hash("blob", b"a-file")
+
+    def test_writing_outside_git_repository(self, tmp_path):
+        Path(tmp_path, "a-file").write_bytes(b"a-file")
+        git = SimpleGitCommand(tmp_path)
+        with pytest.raises(GitCmdException):
+            git.writing_hash_object_subcmd().hash_object(Path("a-file"), w=True)
+
+    class TestArgValidation:
+        def test_file_path_or_stdin_required(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object()
+            assert e.value.exit_code == ERR_INVALID_USAGE
+            assert "file_path" in str(e.value)
+            assert "stdin" in str(e.value)
+
+        def test_file_and_stdin_paths(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), stdin_paths=[Path("b-file")]
+                )
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+        def test_stdin_and_stdin_paths(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    stdin=b"x", stdin_paths=[Path("a-file")]
+                )
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+        def test_path_and_no_filters(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    Path("a-file"), path=Path("p"), no_filters=True
+                )
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+        def test_path_and_stdin_paths(self, tmp_path):
+            with pytest.raises(GitExitingException) as e:
+                SimpleGitCommand(tmp_path).hash_object_subcmd().hash_object(
+                    path=Path("p"), stdin_paths=[Path("a-file")]
+                )
+            assert e.value.exit_code == ERR_INVALID_USAGE
+
+
 @pytest.mark.parametrize(
-    "subcmd", ["add_subcmd", "version_subcmd", "ls_tree_subcmd", "subcmd_unchecked"]
+    "subcmd",
+    [
+        "add_subcmd",
+        "version_subcmd",
+        "ls_tree_subcmd",
+        "hash_object_subcmd",
+        "writing_hash_object_subcmd",
+        "subcmd_unchecked",
+    ],
 )
 class TestSubcommandsPersistence:
     def test_envs_set_remain_set(self, repo_local, subcmd):

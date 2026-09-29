@@ -236,7 +236,7 @@ wheels = [
 
 [[package]]
 name = "gitbolt"
-version = "0.0.0.dev11"
+version = "0.0.0.dev25"
 source = { virtual = "." }
 dependencies = [
     { name = "vt-commons" },
@@ -273,14 +273,14 @@ test = [
 requires-dist = [
     { name = "pygit2", marker = "extra == 'pygit2'" },
     { name = "pytest", marker = "extra == 'test'" },
-    { name = "vt-commons", specifier = ">=0.0.1.dev9" },
-    { name = "vt-err-hndlr", specifier = ">=0.0.0.dev5" },
+    { name = "vt-commons", specifier = ">=0.0.1.dev11" },
+    { name = "vt-err-hndlr", specifier = ">=0.0.0.dev6" },
 ]
 provides-extras = ["pygit2", "test"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mypy", specifier = "==1.15.0" },
+    { name = "mypy" },
     { name = "ruff" },
 ]
 doc = [
@@ -736,11 +736,11 @@ wheels = [
 
 [[package]]
 name = "vt-commons"
-version = "0.0.1.dev9"
+version = "0.0.1.dev11"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cc/1b/d0f139612634ea0cf8feeeab760ed3e78a8916494378f5b479889175a29b/vt_commons-0.0.1.dev9.tar.gz", hash = "sha256:300191e76869556975c6dbbd26c3f8caea2e874c3220f59177293f818ad601b8", size = 19728, upload-time = "2025-10-21T14:38:29.218Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/96/7299687d5c235f3474a61b918664c2df420dd7f0ee7a425e1f139758129f/vt_commons-0.0.1.dev11.tar.gz", hash = "sha256:692028a825d51bf6379e8bf77d5b85b26bfe2d9718189be9e375f4e85be87dcb", size = 20528, upload-time = "2026-05-25T19:07:36.857Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/7c/bcf32c9a3f3eff7013d8e1e7387b498abf0cf127593cbe40c4e841abc7c9/vt_commons-0.0.1.dev9-py3-none-any.whl", hash = "sha256:b09aa466823aa9f4c2899c503493a6eb1183084ba338b7cec73af43e736954e8", size = 23776, upload-time = "2025-10-21T14:38:27.824Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/be/619d672a8fbb31f6ef4609b49b25e397131e7c5adcc558be89ad6f04a94f/vt_commons-0.0.1.dev11-py3-none-any.whl", hash = "sha256:38cc7ee3ee88054123bba526b249c4a40cdce94b6099b969b08a67745bf818c7", size = 24792, upload-time = "2026-05-25T19:07:35.282Z" },
 ]
 
 [[package]]
