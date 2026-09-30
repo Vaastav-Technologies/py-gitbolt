@@ -675,6 +675,18 @@ class HashObject(GitSubCommand, Protocol):
 
     @overload
     @abstractmethod
+    def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
     def hash_object(self, *, stdin_paths: list[Path],
                     t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     no_filters: bool = False, literally: bool = False) -> list[str]:
@@ -686,7 +698,6 @@ class HashObject(GitSubCommand, Protocol):
     def _subcmd_from_git(self, git: 'Git') -> HashObject:
         return git.hash_object_subcmd()
 
-    @property
     def args_validator(self) -> HashObjectArgsValidator:
         """
         The argument validator for ``git hash-object`` subcommand.
@@ -734,6 +745,18 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
     def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     path: Path | None = None, literally: bool = False, stdin: bytes | None = None,
                     w: bool = False) -> list[str]:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    path: Path | None = None, literally: bool = False, w: bool = False) -> str:
+        ...
+
+    @overload
+    @abstractmethod
+    def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                    no_filters: bool = False, literally: bool = False, w: bool = False) -> str:
         ...
 
     @overload

@@ -180,7 +180,7 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
         """
         super().__init__(git)
         self._cwd = cwd
-        self._args_validator = args_validator or super().args_validator
+        self._args_validator = args_validator or super().args_validator()
         self._cli_args_builder = cli_args_builder or super().cli_args_builder
 
     @override
@@ -189,7 +189,6 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
         return self._cwd
 
     @override
-    @property
     def args_validator(self) -> HashObjectArgsValidator:
         return self._args_validator
 
@@ -200,7 +199,7 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
 
     @override
     def clone(self) -> "HashObjectCommandImpl":
-        return HashObjectCommandImpl(self.cwd, self.git, args_validator=self.args_validator,
+        return HashObjectCommandImpl(self.cwd, self.git, args_validator=self.args_validator(),
                                      cli_args_builder=self.cli_args_builder)
 
 
@@ -228,7 +227,7 @@ class WritingHashObjectCommandImpl(WritingHashObjectCommand, HashObjectCommandIm
 
     @override
     def clone(self) -> "WritingHashObjectCommandImpl":
-        return WritingHashObjectCommandImpl(self.root_dir, self.git, args_validator=self.args_validator,
+        return WritingHashObjectCommandImpl(self.root_dir, self.git, args_validator=self.args_validator(),
                                             cli_args_builder=self.cli_args_builder)
 
 

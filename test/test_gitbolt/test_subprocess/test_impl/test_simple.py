@@ -4,6 +4,7 @@
 """
 Tests for Git command interfaces with default implementation using subprocess calls.
 """
+import hashlib
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -1694,8 +1695,6 @@ class TestAddSubcmd:
 
 
 def _git_object_hash(obj_type: str, data: bytes) -> str:
-    import hashlib
-
     return hashlib.sha1(f"{obj_type} {len(data)}\0".encode() + data).hexdigest()
 
 
@@ -1759,7 +1758,15 @@ class TestHashObjectSubcmd:
     def test_stdin_only(self, repo_local):
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(stdin=b"from-stdin")
-        assert hashed == [_git_object_hash("blob", b"from-stdin")]
+        assert hashed == _git_object_hash("blob", b"from-stdin")
+        assert isinstance(hashed, str)
+
+    def test_stdin_only_with_path(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        hashed = git.hash_object_subcmd().hash_object(
+            stdin=b"from-stdin", path=Path("filters/a-file")
+        )
+        assert hashed == _git_object_hash("blob", b"from-stdin")
 
     def test_stdin_paths(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
@@ -1920,10 +1927,10 @@ class TestHashObjectSubcmd:
         git = SimpleGitCommand(tmp_path)
         validator = UtilHashObjectArgsValidator()
         cmd = HashObjectCommandImpl(tmp_path, git, args_validator=validator)
-        assert cmd.clone().args_validator is validator
+        assert cmd.clone().args_validator() is validator
         writing = WritingHashObjectCommandImpl(tmp_path, git, args_validator=validator)
         assert writing.clone().root_dir == tmp_path
-        assert writing.clone().args_validator is validator
+        assert writing.clone().args_validator() is validator
         validator.validate(Path("a.txt"))
         validator.mandate_required_arguments(Path("a.txt"), stdin=None, stdin_paths=None)
         validator.validate_exclusive_args(

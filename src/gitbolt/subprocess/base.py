@@ -968,6 +968,28 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
     def hash_object(
         self,
         *,
+        stdin: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
+        stdin: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
         stdin_paths: list[Path],
         t: Literal["commit", "tree", "blob", "tag"] = "blob",
         no_filters: bool = False,
@@ -1010,7 +1032,7 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         stdin_paths: list[Path] | None = None,
         w: bool = False,
     ) -> str | list[str]:
-        self.args_validator.validate(
+        self.args_validator().validate(
             file_path,
             *file_paths,
             t=t,
@@ -1060,9 +1082,9 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
             stdout = result_bytes.stdout.decode().strip()
 
         hashes = stdout.splitlines() if stdout else []
-        if stdin_paths is not None or stdin is not None or file_paths:
+        if stdin_paths is not None or file_paths or (file_path is not None and stdin is not None):
             return hashes
-        return hashes[0] if hashes else ""
+        return hashes[0]
 
     @override
     @abstractmethod
@@ -1187,6 +1209,30 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
         stdin: bytes | None = None,
         w: bool = False,
     ) -> list[str]: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
+        stdin: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        literally: bool = False,
+        w: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def hash_object(
+        self,
+        *,
+        stdin: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+    ) -> str: ...
 
     @override
     @overload
