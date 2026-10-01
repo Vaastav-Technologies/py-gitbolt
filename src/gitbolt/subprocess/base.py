@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import abc
 import sys
+import tempfile
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -1020,6 +1021,39 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
             w=False,
         )
 
+    @override
+    def multi_hash_objects(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+    ) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=Path(tmpdir))
+            hashed = self.hash_object(
+                file_paths[0],
+                *file_paths[1:],
+                t=t,
+                no_filters=no_filters,
+                literally=literally,
+            )
+            return [hashed] if isinstance(hashed, str) else hashed
+
+    def _stdin_temp_file_paths(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        tmpdir: Path,
+    ) -> list[Path]:
+        file_paths: list[Path] = []
+        for index, data in enumerate((stdin, *stdins)):
+            path = tmpdir / f"stdin-{index}"
+            path.write_bytes(data)
+            file_paths.append(path)
+        return file_paths
+
     def _run_hash_object(
         self,
         file_path: Path | None = None,
@@ -1271,16 +1305,27 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
             w=w,
         )
 
-    @abstractmethod
-    def multi_hash_object(self, stdin: bytes, * stdins: bytes,
-                          t: Literal["commit", "tree", "blob", "tag"] = "blob",
-                          no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
-        # iterate through stdins.
-        # create temporary files for each stdins.
-        # return the list of paths to those temporary files
-        # store these temporary paths into a list variable named file_paths.
-        # take the list of paths and pass this list into self.hash_object(*file_paths, t=t, no_filter=no_filters,
-        #                                                   literally=literally, w=w)
+    @override
+    def multi_hash_object(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+    ) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=Path(tmpdir))
+            hashed = self.hash_object(
+                file_paths[0],
+                *file_paths[1:],
+                t=t,
+                no_filters=no_filters,
+                literally=literally,
+                w=w,
+            )
+            return [hashed] if isinstance(hashed, str) else hashed
 
     @property
     def writing(self) -> WritingHashObject:

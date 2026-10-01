@@ -693,7 +693,7 @@ class HashObject(GitSubCommand, Protocol):
         ...
 
     @abstractmethod
-    def multi_hash_objects(self, stdin: bytes, * stdins: bytes,
+    def multi_hash_objects(self, stdin: bytes, *stdins: bytes,
                           t: Literal["commit", "tree", "blob", "tag"] = "blob",
                           no_filters: bool = False, literally: bool = False) -> list[str]:
         """
@@ -777,7 +777,7 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         ...
 
     @abstractmethod
-    def multi_hash_object(self, stdin: bytes, * stdins: bytes,
+    def multi_hash_object(self, stdin: bytes, *stdins: bytes,
                           t: Literal["commit", "tree", "blob", "tag"] = "blob",
                           no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
         """
