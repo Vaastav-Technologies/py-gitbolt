@@ -428,7 +428,10 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._ls_tree = ls_tree_subcmd or LsTreeCommandImpl(self.root_dir, self)
         self._add_subcmd = add_subcmd or AddCommandImpl(self.root_dir, self)
         self._hash_object_subcmd = hash_object_subcmd or HashObjectCommandImpl(self)
-        self._writing_hash_object_subcmd = writing_hash_object_subcmd or WritingHashObjectCommandImpl(self.root_dir, self)
+        self._writing_hash_object_subcmd = (
+            writing_hash_object_subcmd
+            or WritingHashObjectCommandImpl(self.root_dir, self)
+        )
         self._worktree_subcmd = worktree_subcmd or WorktreeCommandImpl(self.root_dir, self)
         self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)
 

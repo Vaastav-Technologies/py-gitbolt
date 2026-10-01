@@ -777,7 +777,9 @@ class HashObject(GitSubCommand, Protocol):
         """
         Hash multiple stdin payloads in one ``git hash-object`` process.
 
-        Each stdin is written to a temporary file, then those paths are hashed together.
+        This is a GitBolt utility method. Git ``hash-object`` has no ``multi_hash_objects``
+        subcommand or flag; each stdin is written to a temporary file and those paths are
+        hashed together in a single process.
         If ``tmpdir`` is omitted, a temporary directory is created and cleaned up.
 
         :param stdin: First bytes payload to hash.
@@ -871,6 +873,9 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
                           tmpdir: Path | None = None) -> list[str]:
         """
         Hash multiple stdin payloads in one ``git hash-object`` process.
+
+        This is a GitBolt utility method. Git ``hash-object`` has no ``multi_hash_objects``
+        subcommand or flag.
 
         :param w: Write the resulting objects into the object database.
         :param tmpdir: Directory for the temporary files. Created when omitted.
