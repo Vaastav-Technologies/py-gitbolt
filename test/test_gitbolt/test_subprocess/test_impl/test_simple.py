@@ -24,7 +24,7 @@ from gitbolt.subprocess.impl.simple import (
     HashObjectCommandImpl,
     WritingHashObjectCommandImpl,
 )
-from gitbolt.subprocess.utils.session import cat_file_tree_data, cat_file_commit_content
+from gitbolt.subprocess.utils.session import cat_file_data, cat_file_tree_data, cat_file_commit_content
 
 
 def test_exec_path():
@@ -1694,7 +1694,7 @@ class TestAddSubcmd:
         assert "b-file" in indexed_files
 
 
-def _git_object_hash(obj_type: str, data: bytes) -> str:
+def _sha1_object_hash(obj_type: str, data: bytes) -> str:
     return hashlib.sha1(f"{obj_type} {len(data)}\0".encode() + data).hexdigest()
 
 
@@ -1703,7 +1703,7 @@ class TestHashObjectSubcmd:
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
         assert isinstance(hashed, str)
 
     def test_multiple_files(self, repo_local):
@@ -1712,15 +1712,15 @@ class TestHashObjectSubcmd:
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"), Path("b-file"))
         assert hashed == [
-            _git_object_hash("blob", b"a-file"),
-            _git_object_hash("blob", b"b-file"),
+            _sha1_object_hash("blob", b"a-file"),
+            _sha1_object_hash("blob", b"b-file"),
         ]
 
     def test_no_filters(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"), no_filters=True)
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_literally(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
@@ -1728,7 +1728,7 @@ class TestHashObjectSubcmd:
         hashed = git.hash_object_subcmd().hash_object(
             Path("a-file"), literally=True, no_filters=True
         )
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_type(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
@@ -1736,7 +1736,7 @@ class TestHashObjectSubcmd:
         hashed = git.hash_object_subcmd().hash_object(
             Path("a-file"), t="commit", literally=True
         )
-        assert hashed == _git_object_hash("commit", b"a-file")
+        assert hashed == _sha1_object_hash("commit", b"a-file")
 
     def test_path(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
@@ -1744,21 +1744,21 @@ class TestHashObjectSubcmd:
         hashed = git.hash_object_subcmd().hash_object(
             Path("a-file"), path=Path("filters/a-file")
         )
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_stdin(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"), stdin=b"from-stdin")
         assert hashed == [
-            _git_object_hash("blob", b"from-stdin"),
-            _git_object_hash("blob", b"a-file"),
+            _sha1_object_hash("blob", b"from-stdin"),
+            _sha1_object_hash("blob", b"a-file"),
         ]
 
     def test_stdin_only(self, repo_local):
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(stdin=b"from-stdin")
-        assert hashed == _git_object_hash("blob", b"from-stdin")
+        assert hashed == _sha1_object_hash("blob", b"from-stdin")
         assert isinstance(hashed, str)
 
     def test_stdin_only_with_path(self, repo_local):
@@ -1766,7 +1766,7 @@ class TestHashObjectSubcmd:
         hashed = git.hash_object_subcmd().hash_object(
             stdin=b"from-stdin", path=Path("filters/a-file")
         )
-        assert hashed == _git_object_hash("blob", b"from-stdin")
+        assert hashed == _sha1_object_hash("blob", b"from-stdin")
 
     def test_stdin_paths(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
@@ -1776,107 +1776,123 @@ class TestHashObjectSubcmd:
             stdin_paths=[Path("a-file"), Path("b-file")]
         )
         assert hashed == [
-            _git_object_hash("blob", b"a-file"),
-            _git_object_hash("blob", b"b-file"),
+            _sha1_object_hash("blob", b"a-file"),
+            _sha1_object_hash("blob", b"b-file"),
         ]
 
-    def test_multi_hash_objects_multiple_stdins(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().multi_hash_objects(b"from-a", b"from-b", b"from-c")
-        assert hashed == [
-            _git_object_hash("blob", b"from-a"),
-            _git_object_hash("blob", b"from-b"),
-            _git_object_hash("blob", b"from-c"),
-        ]
+    class TestMultiHashObjects:
+        def test_multiple_stdins(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(b"from-a", b"from-b", b"from-c")
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+                _sha1_object_hash("blob", b"from-c"),
+            ]
 
-    def test_multi_hash_objects_single_stdin_returns_list(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().multi_hash_objects(b"only")
-        assert hashed == [_git_object_hash("blob", b"only")]
-        assert isinstance(hashed, list)
+        def test_single_stdin_returns_list(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(b"only")
+            assert hashed == [_sha1_object_hash("blob", b"only")]
+            assert isinstance(hashed, list)
 
-    def test_multi_hash_objects_empty_bytes(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().multi_hash_objects(b"", b"x")
-        assert hashed == [
-            _git_object_hash("blob", b""),
-            _git_object_hash("blob", b"x"),
-        ]
+        def test_empty_bytes(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(b"", b"x")
+            assert hashed == [
+                _sha1_object_hash("blob", b""),
+                _sha1_object_hash("blob", b"x"),
+            ]
 
-    def test_multi_hash_objects_no_filters(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().multi_hash_objects(
-            b"from-a", b"from-b", no_filters=True
-        )
-        assert hashed == [
-            _git_object_hash("blob", b"from-a"),
-            _git_object_hash("blob", b"from-b"),
-        ]
-
-    def test_multi_hash_objects_type_and_literally(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().multi_hash_objects(
-            b"from-a", b"from-b", t="commit", literally=True
-        )
-        assert hashed == [
-            _git_object_hash("commit", b"from-a"),
-            _git_object_hash("commit", b"from-b"),
-        ]
-
-    def test_multi_hash_objects_outside_git_repository(self, tmp_path):
-        git = SimpleGitCommand(tmp_path)
-        hashed = git.hash_object_subcmd().multi_hash_objects(b"from-a", b"from-b")
-        assert hashed == [
-            _git_object_hash("blob", b"from-a"),
-            _git_object_hash("blob", b"from-b"),
-        ]
-
-    def test_multi_hash_object_writing(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.writing_hash_object_subcmd().multi_hash_object(
-            b"from-a", b"from-b", w=True
-        )
-        assert hashed == [
-            _git_object_hash("blob", b"from-a"),
-            _git_object_hash("blob", b"from-b"),
-        ]
-        for object_hash in hashed:
-            obj_type = git.subcmd_unchecked().run(
-                ["cat-file", "-t", object_hash],
-                text=True,
-            ).stdout.strip()
-            assert obj_type == "blob"
-
-    def test_multi_hash_object_writing_without_w_does_not_persist(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.writing_hash_object_subcmd().multi_hash_object(b"from-a", w=False)
-        assert hashed == [_git_object_hash("blob", b"from-a")]
-        with pytest.raises(GitCmdException):
-            git.subcmd_unchecked().run(
-                ["cat-file", "-t", hashed[0]],
-                text=True,
+        def test_no_filters(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(
+                b"from-a", b"from-b", no_filters=True
             )
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+            ]
 
-    def test_multi_hash_object_writing_outside_git_repository(self, tmp_path):
-        git = SimpleGitCommand(tmp_path)
-        with pytest.raises(GitCmdException):
-            git.writing_hash_object_subcmd().multi_hash_object(b"from-a", w=True)
+        def test_type_and_literally(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(
+                b"from-a", b"from-b", t="commit", literally=True
+            )
+            assert hashed == [
+                _sha1_object_hash("commit", b"from-a"),
+                _sha1_object_hash("commit", b"from-b"),
+            ]
 
-    def test_multi_hash_object_via_writing_property(self, repo_local):
-        git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().writing.multi_hash_object(
-            b"from-a", b"from-b", w=True
-        )
-        assert hashed == [
-            _git_object_hash("blob", b"from-a"),
-            _git_object_hash("blob", b"from-b"),
-        ]
+        def test_outside_git_repository(self, tmp_path):
+            git = SimpleGitCommand(tmp_path)
+            hashed = git.hash_object_subcmd().multi_hash_objects(b"from-a", b"from-b")
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+            ]
+
+        def test_supplied_tmpdir(self, repo_local, tmp_path):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().multi_hash_objects(
+                b"from-a", b"from-b", tmpdir=tmp_path
+            )
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+            ]
+            assert (tmp_path / "stdin-0").read_bytes() == b"from-a"
+            assert (tmp_path / "stdin-1").read_bytes() == b"from-b"
+
+        def test_writing(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.writing_hash_object_subcmd().multi_hash_objects(
+                b"from-a", b"from-b", w=True
+            )
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+            ]
+            with git.session(cat_file=["cat-file", "--batch"]) as ses:
+                for object_hash in hashed:
+                    _, typ, _, content = cat_file_data(
+                        ses.commands.cat_file, object_hash.encode()
+                    )
+                    assert typ == b"blob"
+                    assert content in {b"from-a", b"from-b"}
+
+        def test_writing_without_w_does_not_persist(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.writing_hash_object_subcmd().multi_hash_objects(
+                b"from-a", w=False
+            )
+            assert hashed == [_sha1_object_hash("blob", b"from-a")]
+            with pytest.raises(GitCmdException):
+                git.subcmd_unchecked().run(
+                    ["cat-file", "-t", hashed[0]],
+                    text=True,
+                )
+
+        def test_writing_outside_git_repository(self, tmp_path):
+            git = SimpleGitCommand(tmp_path)
+            with pytest.raises(GitCmdException):
+                git.writing_hash_object_subcmd().multi_hash_objects(b"from-a", w=True)
+
+        def test_via_writing_property(self, repo_local):
+            git = SimpleGitCommand(repo_local)
+            hashed = git.hash_object_subcmd().writing.multi_hash_objects(
+                b"from-a", b"from-b", w=True
+            )
+            assert hashed == [
+                _sha1_object_hash("blob", b"from-a"),
+                _sha1_object_hash("blob", b"from-b"),
+            ]
 
     def test_writing(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.writing_hash_object_subcmd().hash_object(Path("a-file"), w=True)
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
         obj_type = git.subcmd_unchecked().run(
             ["cat-file", "-t", hashed],
             text=True,
@@ -1887,7 +1903,7 @@ class TestHashObjectSubcmd:
         Path(tmp_path, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(tmp_path)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_writing_outside_git_repository(self, tmp_path):
         Path(tmp_path, "a-file").write_bytes(b"a-file")
@@ -1994,7 +2010,7 @@ class TestHashObjectSubcmd:
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().writing.hash_object(Path("a-file"), w=True)
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_writing_property_is_self(self, repo_local):
         cmd = SimpleGitCommand(repo_local).writing_hash_object_subcmd()
@@ -2004,7 +2020,7 @@ class TestHashObjectSubcmd:
         Path(tmp_path, "a-file").write_bytes(b"a-file")
         git = CLISimpleGitCommand(tmp_path)
         hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
-        assert hashed == _git_object_hash("blob", b"a-file")
+        assert hashed == _sha1_object_hash("blob", b"a-file")
         cloned = git.clone()
         assert cloned.hash_object_subcmd().hash_object(Path("a-file")) == hashed
 

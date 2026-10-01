@@ -653,36 +653,102 @@ class HashObject(GitSubCommand, Protocol):
     @abstractmethod
     def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     path: Path | None = None, literally: bool = False) -> str:
+        """
+        Compute the object ID of a file without writing it to the object database.
+
+        Mirrors ``git hash-object`` from `git hash-object documentation <https://git-scm.com/docs/git-hash-object>`_.
+
+        :param file_path: Path of the file to hash.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param path: Virtual path used to select attributes and filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :return: Object hash.
+        """
         ...
 
     @overload
     @abstractmethod
     def hash_object(self, file_path: Path, *, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     no_filters: bool = False, literally: bool = False) -> str:
+        """
+        Compute the object ID of a file without writing it to the object database.
+
+        ``path`` and ``no_filters`` cannot be combined.
+
+        :param file_path: Path of the file to hash.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash the file as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :return: Object hash.
+        """
         ...
 
     @overload
     @abstractmethod
     def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     no_filters: bool = False, literally: bool = False, stdin: bytes | None = None) -> list[str]:
+        """
+        Compute object IDs for one or more files, optionally hashing ``stdin`` first.
+
+        :param file_path: First file to hash.
+        :param file_paths: Additional files to hash in the same invocation.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash files as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :param stdin: Optional bytes hashed with ``--stdin`` before the files.
+        :return: Object hashes, one per hashed input.
+        """
         ...
 
     @overload
     @abstractmethod
     def hash_object(self, file_path: Path, *file_paths: Path, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     path: Path | None = None, literally: bool = False, stdin: bytes | None = None) -> list[str]:
+        """
+        Compute object IDs for one or more files, optionally hashing ``stdin`` first.
+
+        ``path`` and ``no_filters`` cannot be combined.
+
+        :param file_path: First file to hash.
+        :param file_paths: Additional files to hash in the same invocation.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param path: Virtual path used to select attributes and filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :param stdin: Optional bytes hashed with ``--stdin`` before the files.
+        :return: Object hashes, one per hashed input.
+        """
         ...
 
     @overload
     @abstractmethod
     def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     path: Path | None = None, literally: bool = False) -> str:
+        """
+        Compute the object ID of bytes from standard input.
+
+        :param stdin: Bytes to hash with ``--stdin``.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param path: Virtual path used to select attributes and filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :return: Object hash.
+        """
         ...
 
     @overload
     @abstractmethod
     def hash_object(self, *, stdin: bytes, t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     no_filters: bool = False, literally: bool = False) -> str:
+        """
+        Compute the object ID of bytes from standard input.
+
+        ``path`` and ``no_filters`` cannot be combined.
+
+        :param stdin: Bytes to hash with ``--stdin``.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash the bytes as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :return: Object hash.
+        """
         ...
 
     @overload
@@ -690,16 +756,37 @@ class HashObject(GitSubCommand, Protocol):
     def hash_object(self, *, stdin_paths: list[Path],
                     t: Literal["commit", "tree", "blob", "tag"] = "blob",
                     no_filters: bool = False, literally: bool = False) -> list[str]:
+        """
+        Compute object IDs for paths read from standard input.
+
+        ``stdin_paths`` cannot be combined with file paths, ``stdin``, or ``path``.
+
+        :param stdin_paths: Paths hashed with ``--stdin-paths``.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash files as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :return: Object hashes, one per path.
+        """
         ...
 
     @abstractmethod
     def multi_hash_objects(self, stdin: bytes, *stdins: bytes,
                           t: Literal["commit", "tree", "blob", "tag"] = "blob",
-                          no_filters: bool = False, literally: bool = False) -> list[str]:
+                          no_filters: bool = False, literally: bool = False,
+                          tmpdir: Path | None = None) -> list[str]:
         """
-        Hash multiple files/blobs/commits/trees/tags in one go.
+        Hash multiple stdin payloads in one ``git hash-object`` process.
 
-        :returns: list of hashes of each file/blobs/commits/trees/tags that were hashed into git.
+        Each stdin is written to a temporary file, then those paths are hashed together.
+        If ``tmpdir`` is omitted, a temporary directory is created and cleaned up.
+
+        :param stdin: First bytes payload to hash.
+        :param stdins: Additional bytes payloads to hash.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash files as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
+        :param tmpdir: Directory for the temporary files. Created when omitted.
+        :return: Object hashes, one per stdin payload.
         """
         ...
     # endregion
@@ -776,14 +863,18 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
                     no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
         ...
 
+    @override
     @abstractmethod
-    def multi_hash_object(self, stdin: bytes, *stdins: bytes,
+    def multi_hash_objects(self, stdin: bytes, *stdins: bytes,
                           t: Literal["commit", "tree", "blob", "tag"] = "blob",
-                          no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
+                          no_filters: bool = False, literally: bool = False, w: bool = False,
+                          tmpdir: Path | None = None) -> list[str]:
         """
-        Hash multiple files/blobs/commits/trees/tags in one go.
+        Hash multiple stdin payloads in one ``git hash-object`` process.
 
-        :returns: list of hashes of each file/blobs/commits/trees/tags that were hashed into git.
+        :param w: Write the resulting objects into the object database.
+        :param tmpdir: Directory for the temporary files. Created when omitted.
+        :return: Object hashes, one per stdin payload.
         """
         ...
 

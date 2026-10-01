@@ -1029,17 +1029,44 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         t: Literal["commit", "tree", "blob", "tag"] = "blob",
         no_filters: bool = False,
         literally: bool = False,
+        tmpdir: Path | None = None,
     ) -> list[str]:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=Path(tmpdir))
-            hashed = self.hash_object(
+        return self._multi_hash_objects(
+            stdin,
+            *stdins,
+            t=t,
+            no_filters=no_filters,
+            literally=literally,
+            w=False,
+            tmpdir=tmpdir,
+        )
+
+    def _multi_hash_objects(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+        tmpdir: Path | None = None,
+    ) -> list[str]:
+        def hash_in(tmpdir_path: Path) -> list[str]:
+            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=tmpdir_path)
+            hashed = self._run_hash_object(
                 file_paths[0],
                 *file_paths[1:],
                 t=t,
                 no_filters=no_filters,
                 literally=literally,
+                w=w,
             )
             return [hashed] if isinstance(hashed, str) else hashed
+
+        if tmpdir is None:
+            with tempfile.TemporaryDirectory() as created:
+                return hash_in(Path(created))
+        return hash_in(tmpdir)
 
     def _stdin_temp_file_paths(
         self,
@@ -1306,7 +1333,7 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
         )
 
     @override
-    def multi_hash_object(
+    def multi_hash_objects(
         self,
         stdin: bytes,
         *stdins: bytes,
@@ -1314,18 +1341,17 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
         no_filters: bool = False,
         literally: bool = False,
         w: bool = False,
+        tmpdir: Path | None = None,
     ) -> list[str]:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=Path(tmpdir))
-            hashed = self.hash_object(
-                file_paths[0],
-                *file_paths[1:],
-                t=t,
-                no_filters=no_filters,
-                literally=literally,
-                w=w,
-            )
-            return [hashed] if isinstance(hashed, str) else hashed
+        return super()._multi_hash_objects(
+            stdin,
+            *stdins,
+            t=t,
+            no_filters=no_filters,
+            literally=literally,
+            w=w,
+            tmpdir=tmpdir,
+        )
 
     @property
     def writing(self) -> WritingHashObject:
