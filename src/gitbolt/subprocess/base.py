@@ -1271,6 +1271,17 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
             w=w,
         )
 
+    @abstractmethod
+    def multi_hash_object(self, stdin: bytes, * stdins: bytes,
+                          t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                          no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
+        # iterate through stdins.
+        # create temporary files for each stdins.
+        # return the list of paths to those temporary files
+        # store these temporary paths into a list variable named file_paths.
+        # take the list of paths and pass this list into self.hash_object(*file_paths, t=t, no_filter=no_filters,
+        #                                                   literally=literally, w=w)
+
     @property
     def writing(self) -> WritingHashObject:
         return self

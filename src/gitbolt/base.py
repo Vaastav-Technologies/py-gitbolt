@@ -692,6 +692,16 @@ class HashObject(GitSubCommand, Protocol):
                     no_filters: bool = False, literally: bool = False) -> list[str]:
         ...
 
+    @abstractmethod
+    def multi_hash_objects(self, stdin: bytes, * stdins: bytes,
+                          t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                          no_filters: bool = False, literally: bool = False) -> list[str]:
+        """
+        Hash multiple files/blobs/commits/trees/tags in one go.
+
+        :returns: list of hashes of each file/blobs/commits/trees/tags that were hashed into git.
+        """
+        ...
     # endregion
 
     @override
@@ -766,6 +776,16 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
                     no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
         ...
 
+    @abstractmethod
+    def multi_hash_object(self, stdin: bytes, * stdins: bytes,
+                          t: Literal["commit", "tree", "blob", "tag"] = "blob",
+                          no_filters: bool = False, literally: bool = False, w: bool = False) -> list[str]:
+        """
+        Hash multiple files/blobs/commits/trees/tags in one go.
+
+        :returns: list of hashes of each file/blobs/commits/trees/tags that were hashed into git.
+        """
+        ...
     # endregion
 
     @override
