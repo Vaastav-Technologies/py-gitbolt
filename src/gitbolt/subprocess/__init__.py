@@ -11,6 +11,8 @@ from gitbolt.subprocess.base import GitSubcmdCommand as GitSubcmdCommand
 from gitbolt.subprocess.base import AddCommand as AddCommand
 from gitbolt.subprocess.base import LsTreeCommand as LsTreeCommand
 from gitbolt.subprocess.base import VersionCommand as VersionCommand
+from gitbolt.subprocess.base import HashObjectCommand as HashObjectCommand
+from gitbolt.subprocess.base import WritingHashObjectCommand as WritingHashObjectCommand
 from gitbolt.subprocess.base import UncheckedSubcmd as UncheckedSubcmd
 from gitbolt.subprocess.base import GitSession as GitSession
 # endregion
