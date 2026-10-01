@@ -786,6 +786,7 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         :returns: list of hashes of each file/blobs/commits/trees/tags that were hashed into git.
         """
         ...
+
     # endregion
 
     @override
