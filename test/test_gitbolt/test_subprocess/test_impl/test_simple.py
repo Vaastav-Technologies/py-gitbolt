@@ -2034,7 +2034,7 @@ class TestHashObjectSubcmd:
     def test_args_validator_injection(self, tmp_path):
         git = SimpleGitCommand(tmp_path)
         validator = UtilHashObjectArgsValidator()
-        cmd = HashObjectCommandImpl(tmp_path, git, args_validator=validator)
+        cmd = HashObjectCommandImpl(git, args_validator=validator)
         assert cmd.clone().args_validator() is validator
         writing = WritingHashObjectCommandImpl(tmp_path, git, args_validator=validator)
         assert writing.clone().root_dir == tmp_path

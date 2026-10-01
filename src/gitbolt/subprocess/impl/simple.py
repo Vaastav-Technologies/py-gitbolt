@@ -164,7 +164,6 @@ class AddCommandImpl(AddCommand, GitSubcmdCommandImpl):
 class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
     def __init__(
         self,
-        cwd: Path,
         git: GitCommand,
         *,
         args_validator: HashObjectArgsValidator | None = None,
@@ -173,20 +172,13 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
         """
         ``hash-object`` cli command implementation using subprocess.
 
-        :param cwd: Working directory used to resolve relative file paths. Hashing does not require a Git repository.
         :param git: Underlying Git command interface.
         :param args_validator: Optional custom argument validator. If None, uses the default from superclass.
         :param cli_args_builder: Optional CLI args builder. If None, uses the default from superclass.
         """
         super().__init__(git)
-        self._cwd = cwd
         self._args_validator = args_validator or super().args_validator()
         self._cli_args_builder = cli_args_builder or super().cli_args_builder
-
-    @override
-    @property
-    def cwd(self) -> Path:
-        return self._cwd
 
     @override
     def args_validator(self) -> HashObjectArgsValidator:
@@ -199,7 +191,7 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
 
     @override
     def clone(self) -> "HashObjectCommandImpl":
-        return HashObjectCommandImpl(self.cwd, self.git, args_validator=self.args_validator(),
+        return HashObjectCommandImpl(self.git, args_validator=self.args_validator(),
                                      cli_args_builder=self.cli_args_builder)
 
 
@@ -213,7 +205,6 @@ class WritingHashObjectCommandImpl(WritingHashObjectCommand, HashObjectCommandIm
         cli_args_builder: HashObjectCLIArgsBuilder | None = None,
     ):
         super().__init__(
-            root_dir,
             git,
             args_validator=args_validator,
             cli_args_builder=cli_args_builder,
@@ -436,7 +427,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._version_subcmd = version_subcmd or VersionCommandImpl(self)
         self._ls_tree = ls_tree_subcmd or LsTreeCommandImpl(self.root_dir, self)
         self._add_subcmd = add_subcmd or AddCommandImpl(self.root_dir, self)
-        self._hash_object_subcmd = hash_object_subcmd or HashObjectCommandImpl(self.root_dir, self)
+        self._hash_object_subcmd = hash_object_subcmd or HashObjectCommandImpl(self)
         self._writing_hash_object_subcmd = writing_hash_object_subcmd or WritingHashObjectCommandImpl(self.root_dir, self)
         self._worktree_subcmd = worktree_subcmd or WorktreeCommandImpl(self.root_dir, self)
         self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)

@@ -1121,9 +1121,11 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         run_kwargs: dict[str, Any] = {
             "check": True,
             "capture_output": True,
-            "cwd": self.cwd,
             "env": env_vars,
         }
+        git_root_dir = getattr(self.git, "root_dir", None)
+        if git_root_dir is not None:
+            run_kwargs["cwd"] = git_root_dir
         if _input is None:
             result_text = self.git.runner.run_git_command(
                 main_cmd_args,
@@ -1160,15 +1162,6 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         if stdin_paths is not None:
             return b"\n".join(str(p).encode() for p in stdin_paths) + b"\n"
         return stdin
-
-    @property
-    def cwd(self) -> Path:
-        """
-        Working directory used when looking up relative file paths.
-
-        Hashing does not require a Git repository; this is only the subprocess cwd.
-        """
-        return Path.cwd()
 
     @property
     def cli_args_builder(self) -> HashObjectCLIArgsBuilder:
