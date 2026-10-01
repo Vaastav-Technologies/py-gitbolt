@@ -1880,7 +1880,7 @@ class TestHashObjectSubcmd:
 
         def test_via_writing_property(self, repo_local):
             git = SimpleGitCommand(repo_local)
-            hashed = git.hash_object_subcmd().writing.multi_hash_objects(
+            hashed = git.hash_object_subcmd().writing().multi_hash_objects(
                 b"from-a", b"from-b", w=True
             )
             assert hashed == [
@@ -2009,12 +2009,12 @@ class TestHashObjectSubcmd:
     def test_writing_property(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().writing.hash_object(Path("a-file"), w=True)
+        hashed = git.hash_object_subcmd().writing().hash_object(Path("a-file"), w=True)
         assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_writing_property_is_self(self, repo_local):
         cmd = SimpleGitCommand(repo_local).writing_hash_object_subcmd()
-        assert cmd.writing is cmd
+        assert cmd.writing() is cmd
 
     def test_cli_simple_git_command(self, tmp_path):
         Path(tmp_path, "a-file").write_bytes(b"a-file")

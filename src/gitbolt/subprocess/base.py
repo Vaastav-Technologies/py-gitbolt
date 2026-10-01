@@ -1173,7 +1173,7 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         """
         return IndividuallyOverridableHOCAB()
 
-    @property
+    @override
     def writing(self) -> WritingHashObject:
         return self.git.writing_hash_object_subcmd()
 
@@ -1346,7 +1346,7 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
             tmpdir=tmpdir,
         )
 
-    @property
+    @override
     def writing(self) -> WritingHashObject:
         return self
 

@@ -805,7 +805,6 @@ class HashObject(GitSubCommand, Protocol):
         """
         return UtilHashObjectArgsValidator()
 
-    @property
     @abstractmethod
     def writing(self) -> WritingHashObject:
         """
@@ -877,6 +876,11 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         This is a GitBolt utility method. Git ``hash-object`` has no ``multi_hash_objects``
         subcommand or flag.
 
+        :param stdin: First bytes payload to hash.
+        :param stdins: Additional bytes payloads to hash.
+        :param t: Object type (``blob``, ``commit``, ``tree``, or ``tag``).
+        :param no_filters: Hash files as-is, without converting CRLF or applying filters.
+        :param literally: Allow an object type that would otherwise fail fsck.
         :param w: Write the resulting objects into the object database.
         :param tmpdir: Directory for the temporary files. Created when omitted.
         :return: Object hashes, one per stdin payload.
