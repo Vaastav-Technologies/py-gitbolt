@@ -11,7 +11,7 @@ import warnings
 from abc import ABC
 from pathlib import Path
 from subprocess import Popen
-from typing import override, Literal, overload, Callable
+from typing import override, Literal, overload, Callable, Any
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -30,6 +30,12 @@ from gitbolt.subprocess.add import AddCLIArgsBuilder
 from gitbolt.subprocess.base import GitSession, WorktreeCommand, HashObjectCommand, WritingHashObjectCommand
 from gitbolt.subprocess.constants import VERSION_CMD
 from gitbolt.subprocess.hash_object import HashObjectCLIArgsBuilder
+from gitbolt.subprocess.hash_object_util import (
+    hash_object_stdin_input,
+    hashes_from_hash_object_stdout,
+    run_in_tmpdir,
+    stdin_temp_file_paths,
+)
 from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.subprocess.runner.simple import SimpleGitCR
@@ -194,6 +200,105 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
         return HashObjectCommandImpl(self.git, args_validator=self.args_validator(),
                                      cli_args_builder=self.cli_args_builder)
 
+    def _hash_object_cwd(self) -> Path | None:
+        return None
+
+    @override
+    def _execute_hash_object(
+        self,
+        file_path: Path | None = None,
+        *file_paths: Path,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        path: Path | None = None,
+        no_filters: bool = False,
+        literally: bool = False,
+        stdin: bytes | None = None,
+        stdin_paths: list[Path] | None = None,
+        w: bool = False,
+    ) -> str | list[str]:
+        self.args_validator().validate(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        _input = hash_object_stdin_input(stdin=stdin, stdin_paths=stdin_paths)
+        run_kwargs: dict[str, Any] = {
+            "check": True,
+            "capture_output": True,
+            "env": env_vars,
+        }
+        cwd = self._hash_object_cwd()
+        if cwd is not None:
+            run_kwargs["cwd"] = cwd
+        if _input is None:
+            result_text = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                text=True,
+                **run_kwargs,
+            )
+            stdout = result_text.stdout.strip()
+        else:
+            result_bytes = self.git.runner.run_git_command(
+                main_cmd_args,
+                sub_cmd_args,
+                _input=_input,
+                text=False,
+                **run_kwargs,
+            )
+            stdout = result_bytes.stdout.decode().strip()
+        return hashes_from_hash_object_stdout(
+            stdout,
+            file_path=file_path,
+            file_paths=file_paths,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+        )
+
+    @override
+    def _multi_hash_objects(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+        tmpdir: Path | None = None,
+    ) -> list[str]:
+        def hash_in(tmpdir_path: Path) -> list[str]:
+            file_paths = stdin_temp_file_paths(stdin, *stdins, tmpdir=tmpdir_path)
+            hashed = self._execute_hash_object(
+                file_paths[0],
+                *file_paths[1:],
+                t=t,
+                no_filters=no_filters,
+                literally=literally,
+                w=w,
+            )
+            return [hashed] if isinstance(hashed, str) else hashed
+
+        return run_in_tmpdir(tmpdir, hash_in)
+
 
 class WritingHashObjectCommandImpl(WritingHashObjectCommand, HashObjectCommandImpl):
     def __init__(
@@ -215,6 +320,10 @@ class WritingHashObjectCommandImpl(WritingHashObjectCommand, HashObjectCommandIm
     @property
     def root_dir(self) -> Path:
         return self._root_dir
+
+    @override
+    def _hash_object_cwd(self) -> Path | None:
+        return self.root_dir
 
     @override
     def clone(self) -> "WritingHashObjectCommandImpl":

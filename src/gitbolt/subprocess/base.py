@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import abc
 import sys
-import tempfile
 from abc import abstractmethod, ABC
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -1009,7 +1008,7 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         stdin: bytes | None = None,
         stdin_paths: list[Path] | None = None,
     ) -> str | list[str]:
-        return self._run_hash_object(
+        return self._execute_hash_object(
             file_path,
             *file_paths,
             t=t,
@@ -1041,47 +1040,8 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
             tmpdir=tmpdir,
         )
 
-    def _multi_hash_objects(
-        self,
-        stdin: bytes,
-        *stdins: bytes,
-        t: Literal["commit", "tree", "blob", "tag"] = "blob",
-        no_filters: bool = False,
-        literally: bool = False,
-        w: bool = False,
-        tmpdir: Path | None = None,
-    ) -> list[str]:
-        def hash_in(tmpdir_path: Path) -> list[str]:
-            file_paths = self._stdin_temp_file_paths(stdin, *stdins, tmpdir=tmpdir_path)
-            hashed = self._run_hash_object(
-                file_paths[0],
-                *file_paths[1:],
-                t=t,
-                no_filters=no_filters,
-                literally=literally,
-                w=w,
-            )
-            return [hashed] if isinstance(hashed, str) else hashed
-
-        if tmpdir is None:
-            with tempfile.TemporaryDirectory() as created:
-                return hash_in(Path(created))
-        return hash_in(tmpdir)
-
-    def _stdin_temp_file_paths(
-        self,
-        stdin: bytes,
-        *stdins: bytes,
-        tmpdir: Path,
-    ) -> list[Path]:
-        file_paths: list[Path] = []
-        for index, data in enumerate((stdin, *stdins)):
-            path = tmpdir / f"stdin-{index}"
-            path.write_bytes(data)
-            file_paths.append(path)
-        return file_paths
-
-    def _run_hash_object(
+    @abstractmethod
+    def _execute_hash_object(
         self,
         file_path: Path | None = None,
         *file_paths: Path,
@@ -1093,75 +1053,30 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         stdin_paths: list[Path] | None = None,
         w: bool = False,
     ) -> str | list[str]:
-        self.args_validator().validate(
-            file_path,
-            *file_paths,
-            t=t,
-            path=path,
-            no_filters=no_filters,
-            literally=literally,
-            stdin=stdin,
-            stdin_paths=stdin_paths,
-            w=w,
-        )
-        sub_cmd_args = self.cli_args_builder.build(
-            file_path,
-            *file_paths,
-            t=t,
-            path=path,
-            no_filters=no_filters,
-            literally=literally,
-            stdin=stdin,
-            stdin_paths=stdin_paths,
-            w=w,
-        )
-        main_cmd_args = self.git.build_main_cmd_args()
-        env_vars = self.git.build_git_envs()
-        _input = self._hash_object_input(stdin=stdin, stdin_paths=stdin_paths)
-        run_kwargs: dict[str, Any] = {
-            "check": True,
-            "capture_output": True,
-            "env": env_vars,
-        }
-        git_root_dir = getattr(self.git, "root_dir", None)
-        if git_root_dir is not None:
-            run_kwargs["cwd"] = git_root_dir
-        if _input is None:
-            result_text = self.git.runner.run_git_command(
-                main_cmd_args,
-                sub_cmd_args,
-                text=True,
-                **run_kwargs,
-            )
-            stdout = result_text.stdout.strip()
-        else:
-            result_bytes = self.git.runner.run_git_command(
-                main_cmd_args,
-                sub_cmd_args,
-                _input=_input,
-                text=False,
-                **run_kwargs,
-            )
-            stdout = result_bytes.stdout.decode().strip()
+        """
+        Protected. Run ``git hash-object`` in a subprocess.
+        """
+        ...
 
-        hashes = stdout.splitlines() if stdout else []
-        if stdin_paths is not None or file_paths or (file_path is not None and stdin is not None):
-            return hashes
-        return hashes[0]
+    @abstractmethod
+    def _multi_hash_objects(
+        self,
+        stdin: bytes,
+        *stdins: bytes,
+        t: Literal["commit", "tree", "blob", "tag"] = "blob",
+        no_filters: bool = False,
+        literally: bool = False,
+        w: bool = False,
+        tmpdir: Path | None = None,
+    ) -> list[str]:
+        """
+        Protected. Hash multiple stdin payloads via temporary files.
+        """
+        ...
 
     @override
     @abstractmethod
     def clone(self) -> Self: ...
-
-    def _hash_object_input(
-        self,
-        *,
-        stdin: bytes | None,
-        stdin_paths: list[Path] | None,
-    ) -> bytes | None:
-        if stdin_paths is not None:
-            return b"\n".join(str(p).encode() for p in stdin_paths) + b"\n"
-        return stdin
 
     @property
     def cli_args_builder(self) -> HashObjectCLIArgsBuilder:
@@ -1313,7 +1228,7 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
         stdin_paths: list[Path] | None = None,
         w: bool = False,
     ) -> str | list[str]:
-        return self._run_hash_object(
+        return self._execute_hash_object(
             file_path,
             *file_paths,
             t=t,
@@ -1336,7 +1251,7 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
         w: bool = False,
         tmpdir: Path | None = None,
     ) -> list[str]:
-        return super()._multi_hash_objects(
+        return self._multi_hash_objects(
             stdin,
             *stdins,
             t=t,

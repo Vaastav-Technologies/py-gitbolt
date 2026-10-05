@@ -1702,7 +1702,7 @@ class TestHashObjectSubcmd:
     def test_one_file(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        hashed = git.hash_object_subcmd().hash_object(Path(repo_local, "a-file"))
         assert hashed == _sha1_object_hash("blob", b"a-file")
         assert isinstance(hashed, str)
 
@@ -1710,7 +1710,9 @@ class TestHashObjectSubcmd:
         Path(repo_local, "a-file").write_bytes(b"a-file")
         Path(repo_local, "b-file").write_bytes(b"b-file")
         git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), Path("b-file"))
+        hashed = git.hash_object_subcmd().hash_object(
+            Path(repo_local, "a-file"), Path(repo_local, "b-file")
+        )
         assert hashed == [
             _sha1_object_hash("blob", b"a-file"),
             _sha1_object_hash("blob", b"b-file"),
@@ -1719,14 +1721,14 @@ class TestHashObjectSubcmd:
     def test_no_filters(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), no_filters=True)
+        hashed = git.hash_object_subcmd().hash_object(Path(repo_local, "a-file"), no_filters=True)
         assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_literally(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(
-            Path("a-file"), literally=True, no_filters=True
+            Path(repo_local, "a-file"), literally=True, no_filters=True
         )
         assert hashed == _sha1_object_hash("blob", b"a-file")
 
@@ -1734,7 +1736,7 @@ class TestHashObjectSubcmd:
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(
-            Path("a-file"), t="commit", literally=True
+            Path(repo_local, "a-file"), t="commit", literally=True
         )
         assert hashed == _sha1_object_hash("commit", b"a-file")
 
@@ -1742,14 +1744,16 @@ class TestHashObjectSubcmd:
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(
-            Path("a-file"), path=Path("filters/a-file")
+            Path(repo_local, "a-file"), path=Path("filters/a-file")
         )
         assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_stdin(self, repo_local):
         Path(repo_local, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(repo_local)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"), stdin=b"from-stdin")
+        hashed = git.hash_object_subcmd().hash_object(
+            Path(repo_local, "a-file"), stdin=b"from-stdin"
+        )
         assert hashed == [
             _sha1_object_hash("blob", b"from-stdin"),
             _sha1_object_hash("blob", b"a-file"),
@@ -1773,7 +1777,7 @@ class TestHashObjectSubcmd:
         Path(repo_local, "b-file").write_bytes(b"b-file")
         git = SimpleGitCommand(repo_local)
         hashed = git.hash_object_subcmd().hash_object(
-            stdin_paths=[Path("a-file"), Path("b-file")]
+            stdin_paths=[Path(repo_local, "a-file"), Path(repo_local, "b-file")]
         )
         assert hashed == [
             _sha1_object_hash("blob", b"a-file"),
@@ -1902,7 +1906,7 @@ class TestHashObjectSubcmd:
     def test_hashing_outside_git_repository(self, tmp_path):
         Path(tmp_path, "a-file").write_bytes(b"a-file")
         git = SimpleGitCommand(tmp_path)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        hashed = git.hash_object_subcmd().hash_object(Path(tmp_path, "a-file"))
         assert hashed == _sha1_object_hash("blob", b"a-file")
 
     def test_writing_outside_git_repository(self, tmp_path):
@@ -2019,10 +2023,10 @@ class TestHashObjectSubcmd:
     def test_cli_simple_git_command(self, tmp_path):
         Path(tmp_path, "a-file").write_bytes(b"a-file")
         git = CLISimpleGitCommand(tmp_path)
-        hashed = git.hash_object_subcmd().hash_object(Path("a-file"))
+        hashed = git.hash_object_subcmd().hash_object(Path(tmp_path, "a-file"))
         assert hashed == _sha1_object_hash("blob", b"a-file")
         cloned = git.clone()
-        assert cloned.hash_object_subcmd().hash_object(Path("a-file")) == hashed
+        assert cloned.hash_object_subcmd().hash_object(Path(tmp_path, "a-file")) == hashed
 
     def test_subcmd_from_git(self, tmp_path):
         git = SimpleGitCommand(tmp_path)
