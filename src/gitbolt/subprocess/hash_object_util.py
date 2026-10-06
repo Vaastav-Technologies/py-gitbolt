@@ -73,6 +73,13 @@ def stripped_stdout_text(stdout: bytes) -> str:
     return stdout.decode().strip()
 
 
+def as_hash_list(hashed: str | list[str]) -> list[str]:
+    """
+    Normalize a single hash or a list of hashes to ``list[str]``.
+    """
+    return hashed if isinstance(hashed, list) else [hashed]
+
+
 def run_in_tmpdir(tmpdir: Path | None, action: Callable[[Path], _T]) -> _T:
     """
     Run ``action`` with ``tmpdir``, or with a created temporary directory when omitted.

@@ -30,6 +30,14 @@ from gitbolt.subprocess.hash_object import (
     HashObjectCLIArgsBuilder,
     IndividuallyOverridableHOCAB,
 )
+from gitbolt.subprocess.hash_object_util import (
+    as_hash_list,
+    hash_object_stdin_input,
+    hashes_from_hash_object_stdout,
+    run_in_tmpdir,
+    stdin_temp_file_paths,
+    stripped_stdout_text,
+)
 from gitbolt.subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
     IndividuallyOverridableLTCAB,
@@ -1040,7 +1048,6 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
             tmpdir=tmpdir,
         )
 
-    @abstractmethod
     def _execute_hash_object(
         self,
         file_path: Path | None = None,
@@ -1053,12 +1060,49 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         stdin_paths: list[Path] | None = None,
         w: bool = False,
     ) -> str | list[str]:
-        """
-        Protected. Run ``git hash-object`` in a subprocess.
-        """
-        ...
+        self.args_validator().validate(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            file_path,
+            *file_paths,
+            t=t,
+            path=path,
+            no_filters=no_filters,
+            literally=literally,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+            w=w,
+        )
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        _input = hash_object_stdin_input(stdin=stdin, stdin_paths=stdin_paths)
+        result = self.git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            _input=_input,
+            check=True,
+            text=False,
+            capture_output=True,
+            cwd=self._hash_object_cwd(),
+            env=env_vars,
+        )
+        return hashes_from_hash_object_stdout(
+            stripped_stdout_text(result.stdout),
+            file_path=file_path,
+            file_paths=file_paths,
+            stdin=stdin,
+            stdin_paths=stdin_paths,
+        )
 
-    @abstractmethod
     def _multi_hash_objects(
         self,
         stdin: bytes,
@@ -1069,10 +1113,23 @@ class HashObjectCommand(HashObject, GitSubcmdCommand, Protocol):
         w: bool = False,
         tmpdir: Path | None = None,
     ) -> list[str]:
-        """
-        Protected. Hash multiple stdin payloads via temporary files.
-        """
-        ...
+        def hash_in(tmpdir_path: Path) -> list[str]:
+            file_paths = stdin_temp_file_paths(stdin, *stdins, tmpdir=tmpdir_path)
+            return as_hash_list(
+                self._execute_hash_object(
+                    file_paths[0],
+                    *file_paths[1:],
+                    t=t,
+                    no_filters=no_filters,
+                    literally=literally,
+                    w=w,
+                )
+            )
+
+        return run_in_tmpdir(tmpdir, hash_in)
+
+    def _hash_object_cwd(self) -> Path | None:
+        return None
 
     @override
     @abstractmethod
