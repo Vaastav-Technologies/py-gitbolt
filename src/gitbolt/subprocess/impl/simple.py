@@ -11,7 +11,7 @@ import warnings
 from abc import ABC
 from pathlib import Path
 from subprocess import Popen
-from typing import override, Literal, overload, Callable, Any
+from typing import override, Literal, overload, Callable
 
 from vt.utils.commons.commons.op import RootDirOp
 
@@ -35,6 +35,7 @@ from gitbolt.subprocess.hash_object_util import (
     hashes_from_hash_object_stdout,
     run_in_tmpdir,
     stdin_temp_file_paths,
+    stripped_stdout_text,
 )
 from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
@@ -241,33 +242,18 @@ class HashObjectCommandImpl(HashObjectCommand, GitSubcmdCommandImpl):
         main_cmd_args = self.git.build_main_cmd_args()
         env_vars = self.git.build_git_envs()
         _input = hash_object_stdin_input(stdin=stdin, stdin_paths=stdin_paths)
-        run_kwargs: dict[str, Any] = {
-            "check": True,
-            "capture_output": True,
-            "env": env_vars,
-        }
-        cwd = self._hash_object_cwd()
-        if cwd is not None:
-            run_kwargs["cwd"] = cwd
-        if _input is None:
-            result_text = self.git.runner.run_git_command(
-                main_cmd_args,
-                sub_cmd_args,
-                text=True,
-                **run_kwargs,
-            )
-            stdout = result_text.stdout.strip()
-        else:
-            result_bytes = self.git.runner.run_git_command(
-                main_cmd_args,
-                sub_cmd_args,
-                _input=_input,
-                text=False,
-                **run_kwargs,
-            )
-            stdout = result_bytes.stdout.decode().strip()
+        result = self.git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            _input=_input,
+            check=True,
+            text=False,
+            capture_output=True,
+            cwd=self._hash_object_cwd(),
+            env=env_vars,
+        )
         return hashes_from_hash_object_stdout(
-            stdout,
+            stripped_stdout_text(result.stdout),
             file_path=file_path,
             file_paths=file_paths,
             stdin=stdin,

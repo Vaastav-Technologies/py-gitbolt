@@ -66,6 +66,13 @@ def hashes_from_hash_object_stdout(
     return hashes[0]
 
 
+def stripped_stdout_text(stdout: bytes) -> str:
+    """
+    Decode captured ``git hash-object`` bytes and strip surrounding whitespace.
+    """
+    return stdout.decode().strip()
+
+
 def run_in_tmpdir(tmpdir: Path | None, action: Callable[[Path], _T]) -> _T:
     """
     Run ``action`` with ``tmpdir``, or with a created temporary directory when omitted.
