@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date format: YYYY-MM-DD
 
+## [0.0.0] - 2026-10-07
+
+First non-dev release of gitbolt.
+
+### Added
+
+- `git hash-object` on the existing command stack (`#14`): `HashObject` /
+  `WritingHashObject`, stdin-only overloads that return a single hash, and
+  `multi_hash_objects` (a GitBolt utility that writes each stdin to a temp file
+  and hashes them in one process). Hashing works outside a repository; `-w`
+  requires a repository.
+
+This cut also includes earlier development work already listed below: main-option
+order preservation (`#2`) and `GitSession` broken-pipe handling (`#11`).
+
 ## [0.0.0.dev27] - 2026-09-24
 
 ### Added
