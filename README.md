@@ -72,6 +72,36 @@ Type-checking ensures runtime safety.
 
 `git hash-object` supports taking multiple files and outputs a hash per file. But in practice, it's most often used to write a single file to the Git object database and return its hash. To match this real-world usage, Gitbolt offers a more ergonomic method that accepts one file and returns one hash — while still giving you the flexibility to access the full range of `git hash-object` capabilities when needed.
 
+Hashing a path or stdin does **not** require a repository. Writing objects (`-w`) does.
+
+```python
+from pathlib import Path
+import gitbolt
+
+git = gitbolt.get_git()
+hash_object = git.hash_object_subcmd()
+
+# Read-only: one file → one hash (no repository required).
+blob_hash = hash_object.hash_object(Path("a-file"))
+
+# Write the object into the repository (`-w`). Requires a repository.
+written_hash = hash_object.writing().hash_object(Path("a-file"), w=True)
+# Same writing command, obtained directly:
+written_hash = git.writing_hash_object_subcmd().hash_object(Path("a-file"), w=True)
+```
+
+`multi_hash_objects` is a Gitbolt utility (Git has no such flag). Each stdin payload is written to a temp file and hashed in **one** `git hash-object` process:
+
+```python
+import gitbolt
+
+git = gitbolt.get_git()
+hashes = git.hash_object_subcmd().multi_hash_objects(b"from-a", b"from-b", b"from-c")
+
+# Write those objects (`-w`) — requires a repository:
+written = git.hash_object_subcmd().writing().multi_hash_objects(b"from-a", b"from-b", w=True)
+```
+
 #### Let subcommands be passed around as objects
 
 Gitbolt lets you pass subcommands around as typed objects. This enables highly focused, minimal APIs — you can write functions that accept only the subcommands they truly need. This leads to cleaner logic, better separation of concerns, and compile-time guarantees that help prevent misuse.
@@ -396,7 +426,7 @@ Transformers for formatting/parsing can be added later.
 
 ## Notes
 
-
+- 0.0.0: `git hash-object` is available as `hash_object_subcmd()` / `writing_hash_object_subcmd()`. Use `writing()` (or `w=True`) to write objects; use `multi_hash_objects` to hash several stdin payloads in one process. Hashing works outside a repository; `-w` requires a repository.
 - 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---
