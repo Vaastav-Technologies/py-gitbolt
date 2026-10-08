@@ -18,6 +18,7 @@ from vt.utils.commons.commons.op import RootDirOp
 from gitbolt.base import Version
 from gitbolt.add import AddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator
+from gitbolt.commit_tree import CommitTreeArgsValidator
 from gitbolt.subprocess import (
     GitCommand,
     VersionCommand,
@@ -27,9 +28,16 @@ from gitbolt.subprocess import (
     UncheckedSubcmd,
 )
 from gitbolt.subprocess.add import AddCLIArgsBuilder
-from gitbolt.subprocess.base import GitSession, WorktreeCommand, HashObjectCommand, WritingHashObjectCommand
+from gitbolt.subprocess.base import (
+    GitSession,
+    WorktreeCommand,
+    HashObjectCommand,
+    WritingHashObjectCommand,
+    CommitTreeCommand,
+)
 from gitbolt.subprocess.constants import VERSION_CMD
 from gitbolt.subprocess.hash_object import HashObjectCLIArgsBuilder
+from gitbolt.subprocess.commit_tree import CommitTreeCLIArgsBuilder
 from gitbolt.subprocess.ls_tree import LsTreeCLIArgsBuilder
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.subprocess.runner.simple import SimpleGitCR
@@ -224,6 +232,52 @@ class WritingHashObjectCommandImpl(WritingHashObjectCommand, HashObjectCommandIm
     def clone(self) -> "WritingHashObjectCommandImpl":
         return WritingHashObjectCommandImpl(self.root_dir, self.git, args_validator=self.args_validator(),
                                             cli_args_builder=self.cli_args_builder)
+
+
+class CommitTreeCommandImpl(CommitTreeCommand, GitSubcmdCommandImpl):
+    def __init__(
+        self,
+        root_dir: Path,
+        git: GitCommand,
+        *,
+        args_validator: CommitTreeArgsValidator | None = None,
+        cli_args_builder: CommitTreeCLIArgsBuilder | None = None,
+    ):
+        """
+        ``commit-tree`` cli command implementation using subprocess.
+
+        :param root_dir: Path to the Git repository root.
+        :param git: Underlying Git command interface.
+        :param args_validator: Optional custom argument validator. If None, uses the default from superclass.
+        :param cli_args_builder: Optional CLI args builder. If None, uses the default from superclass.
+        """
+        super().__init__(git)
+        self._root_dir = root_dir
+        self._args_validator = args_validator or super().args_validator()
+        self._cli_args_builder = cli_args_builder or super().cli_args_builder
+
+    @override
+    @property
+    def root_dir(self) -> Path:
+        return self._root_dir
+
+    @override
+    def args_validator(self) -> CommitTreeArgsValidator:
+        return self._args_validator
+
+    @override
+    @property
+    def cli_args_builder(self) -> CommitTreeCLIArgsBuilder:
+        return self._cli_args_builder
+
+    @override
+    def clone(self) -> "CommitTreeCommandImpl":
+        return CommitTreeCommandImpl(
+            self.root_dir,
+            self.git,
+            args_validator=self.args_validator(),
+            cli_args_builder=self.cli_args_builder,
+        )
 
 
 class WorktreeSubcmdCommandImpl(WorktreeCommand.WorktreeSubcmdCommand, ABC):
@@ -423,6 +477,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         add_subcmd: AddCommand | None = None,
         hash_object_subcmd: HashObjectCommand | None = None,
         writing_hash_object_subcmd: WritingHashObjectCommand | None = None,
+        commit_tree_subcmd: CommitTreeCommand | None = None,
         worktree_subcmd: WorktreeCommand | None = None,
         subcmd_unchecked: UncheckedSubcmd | None = None,
     ):
@@ -435,6 +490,9 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         self._writing_hash_object_subcmd = (
             writing_hash_object_subcmd
             or WritingHashObjectCommandImpl(self.root_dir, self)
+        )
+        self._commit_tree_subcmd = commit_tree_subcmd or CommitTreeCommandImpl(
+            self.root_dir, self
         )
         self._worktree_subcmd = worktree_subcmd or WorktreeCommandImpl(self.root_dir, self)
         self._subcmd_unchecked = subcmd_unchecked or UncheckedSubcmdImpl(self.root_dir, self)
@@ -472,6 +530,12 @@ class SimpleGitCommand(GitCommand, RootDirOp):
         return writing_hash_object_subcmd
 
     @override
+    def commit_tree_subcmd(self) -> CommitTreeCommand:
+        commit_tree_subcmd = self._commit_tree_subcmd.clone()
+        commit_tree_subcmd._set_underlying_git(self)
+        return commit_tree_subcmd
+
+    @override
     def worktree_subcmd(self) -> WorktreeCommand:
         warnings.warn("Worktree implementations are not stable. Use subcmd_unchecked instead.")
         return self._worktree_subcmd_clone()
@@ -494,6 +558,7 @@ class SimpleGitCommand(GitCommand, RootDirOp):
             add_subcmd=self.add_subcmd(),
             hash_object_subcmd=self.hash_object_subcmd(),
             writing_hash_object_subcmd=self.writing_hash_object_subcmd(),
+            commit_tree_subcmd=self.commit_tree_subcmd(),
             worktree_subcmd=self._worktree_subcmd_clone(),
             subcmd_unchecked=self.subcmd_unchecked(),
         )
@@ -543,6 +608,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
         add_subcmd: AddCommand | None = None,
         hash_object_subcmd: HashObjectCommand | None = None,
         writing_hash_object_subcmd: WritingHashObjectCommand | None = None,
+        commit_tree_subcmd: CommitTreeCommand | None = None,
         worktree_subcmd: WorktreeCommand | None = None,
         subcmd_unchecked: UncheckedSubcmd | None = None,
     ):
@@ -562,6 +628,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             add_subcmd=add_subcmd,
             hash_object_subcmd=hash_object_subcmd,
             writing_hash_object_subcmd=writing_hash_object_subcmd,
+            commit_tree_subcmd=commit_tree_subcmd,
             worktree_subcmd=worktree_subcmd,
             subcmd_unchecked=subcmd_unchecked,
         )
@@ -608,6 +675,7 @@ class CLISimpleGitCommand(SimpleGitCommand):
             add_subcmd=self.add_subcmd(),
             hash_object_subcmd=self.hash_object_subcmd(),
             writing_hash_object_subcmd=self.writing_hash_object_subcmd(),
+            commit_tree_subcmd=self.commit_tree_subcmd(),
             worktree_subcmd=self._worktree_subcmd_clone(),
             subcmd_unchecked=self.subcmd_unchecked(),
         )

@@ -21,6 +21,7 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.commit_tree import CommitTreeArgsValidator, UtilCommitTreeArgsValidator
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +895,174 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class CommitTree(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git commit-tree`` subcommand.
+
+    Creates a commit object from a tree and writes it to the object database.
+    A repository is required.
+    """
+
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        m: str | list[str],
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with log paragraph(s) from ``m``.
+
+        Mirrors ``git commit-tree`` from
+        `git commit-tree documentation <https://git-scm.com/docs/git-commit-tree>`_.
+
+        Extra positional arguments after ``tree`` are parent commit ids (``-p``).
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param m: Commit log paragraph, or a list of paragraphs (each becomes ``-m``).
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid (``-S<keyid>``).
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        F: Path,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with the log message read from ``F``.
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param F: File whose contents become the commit log message.
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid.
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        F: list[Path],
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with log paragraphs from each file in ``F``.
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param F: Files whose contents become commit log paragraphs (each ``-F``).
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid.
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        F: Literal["-"],
+        stdin: bytes,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with the log message from stdin (``-F -``).
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param F: Must be ``'-'`` so Git reads the message from stdin.
+        :param stdin: Bytes hashed as the commit log message.
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid.
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        stdin: bytes,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with the log message from stdin (neither ``-m`` nor ``-F``).
+
+        GitBolt requires ``stdin`` in this form so the process does not hang waiting for input.
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param stdin: Bytes used as the commit log message.
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid.
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        m: str | list[str] | None = None,
+        F: Path | list[Path] | Literal["-"] | None = None,
+        stdin: bytes | None = None,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object based on ``tree`` and emit the new commit id.
+
+        Mirrors ``git commit-tree`` from
+        `git commit-tree documentation <https://git-scm.com/docs/git-commit-tree>`_.
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids (``-p``).
+        :param m: Commit log paragraph, or a list of paragraphs.
+        :param F: File(s) to read the log message from, or ``'-'`` for stdin.
+        :param stdin: Log message bytes when ``F`` is ``'-'`` or when neither ``m`` nor ``F`` is given.
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid (``-S<keyid>``).
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> CommitTree:
+        return git.commit_tree_subcmd()
+
+    def args_validator(self) -> CommitTreeArgsValidator:
+        """
+        The argument validator for ``git commit-tree`` subcommand.
+
+        :return: a validator for commit_tree subcommand arguments.
+        """
+        return UtilCommitTreeArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -965,6 +1134,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
         :return: ``git hash-object`` subcommand. Can write objects to the git database.
+        """
+        ...
+
+    @abstractmethod
+    def commit_tree_subcmd(self) -> CommitTree:
+        """
+        :return: ``git commit-tree`` subcommand.
         """
         ...
 
