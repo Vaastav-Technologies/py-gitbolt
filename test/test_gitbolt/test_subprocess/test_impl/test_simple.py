@@ -2093,9 +2093,18 @@ def _write_tree(git: SimpleGitCommand, repo_local: Path, name: str = "a-file", c
     return git.subcmd_unchecked().run(["write-tree"], text=True).stdout.strip()
 
 
+def _commit_tree_git(repo_local: Path, cls=SimpleGitCommand) -> SimpleGitCommand:
+    return cls(repo_local).git_envs_override(
+        GIT_AUTHOR_NAME="ss",
+        GIT_AUTHOR_EMAIL="ss@ss.ss",
+        GIT_COMMITTER_NAME="ss",
+        GIT_COMMITTER_EMAIL="ss@ss.ss",
+    )
+
+
 class TestCommitTreeSubcmd:
     def test_message(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, m="first")
         assert git.subcmd_unchecked().run(["cat-file", "-t", commit], text=True).stdout.strip() == "commit"
@@ -2103,7 +2112,7 @@ class TestCommitTreeSubcmd:
         assert log == "first"
 
     def test_parent(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         parent = git.commit_tree_subcmd().commit_tree(tree, m="root")
         Path(repo_local, "b-file").write_bytes(b"b-file")
@@ -2116,7 +2125,7 @@ class TestCommitTreeSubcmd:
         assert parents == parent
 
     def test_message_from_file(self, repo_local, tmp_path):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         msg_file = tmp_path / "msg.txt"
         msg_file.write_text("from-file")
@@ -2125,21 +2134,21 @@ class TestCommitTreeSubcmd:
         assert log == "from-file"
 
     def test_message_from_f_dash(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, F="-", stdin=b"from-dash")
         log = git.subcmd_unchecked().run(["log", "-1", "--format=%s", commit], text=True).stdout.strip()
         assert log == "from-dash"
 
     def test_message_from_stdin(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, stdin=b"from-stdin")
         log = git.subcmd_unchecked().run(["log", "-1", "--format=%s", commit], text=True).stdout.strip()
         assert log == "from-stdin"
 
     def test_multiple_m(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, m=["para-a", "para-b"])
         body = git.subcmd_unchecked().run(["log", "-1", "--format=%B", commit], text=True).stdout
@@ -2147,7 +2156,7 @@ class TestCommitTreeSubcmd:
         assert "para-b" in body
 
     def test_no_gpg_sign(self, repo_local):
-        git = SimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, m="unsigned", no_gpg_sign=True)
         assert git.subcmd_unchecked().run(["cat-file", "-t", commit], text=True).stdout.strip() == "commit"
@@ -2192,7 +2201,7 @@ class TestCommitTreeSubcmd:
         assert str(git.commit_tree_subcmd()).endswith("commit-tree")
 
     def test_cli_simple_git_command(self, repo_local):
-        git = CLISimpleGitCommand(repo_local)
+        git = _commit_tree_git(repo_local, CLISimpleGitCommand)
         tree = _write_tree(git, repo_local)
         commit = git.commit_tree_subcmd().commit_tree(tree, m="cli")
         cloned = git.clone()
