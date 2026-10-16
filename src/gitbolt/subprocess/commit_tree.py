@@ -9,6 +9,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol, override, Literal
 
+from gitbolt.commit_tree import CommitTreeLogPart
 from gitbolt.subprocess.constants import COMMIT_TREE_CMD
 
 
@@ -24,6 +25,7 @@ class CommitTreeCLIArgsBuilder(Protocol):
         *p: str,
         m: str | list[str] | None = None,
         F: Path | list[Path] | Literal["-"] | None = None,
+        log: list[CommitTreeLogPart] | None = None,
         S: bool | str = False,
         no_gpg_sign: bool = False,
     ) -> list[str]:
@@ -49,6 +51,7 @@ class IndividuallyOverridableCTCAB(CommitTreeCLIArgsBuilder):
         *p: str,
         m: str | list[str] | None = None,
         F: Path | list[Path] | Literal["-"] | None = None,
+        log: list[CommitTreeLogPart] | None = None,
         S: bool | str = False,
         no_gpg_sign: bool = False,
     ) -> list[str]:
@@ -91,14 +94,25 @@ class IndividuallyOverridableCTCAB(CommitTreeCLIArgsBuilder):
 
         >>> builder.build("abc", m=["a", "b"])
         ['commit-tree', 'abc', '-m', 'a', '-m', 'b']
+
+        Interleaved ``-m`` / ``-F`` (Git option order):
+
+        >>> _body = Path("body.txt")
+        >>> builder.build(
+        ...     "abc", log=[("m", "header"), ("F", _body), ("m", "footer")]
+        ... ) == ["commit-tree", "abc", "-m", "header", "-F", str(_body), "-m", "footer"]
+        True
         """
         sub_cmd_args = [COMMIT_TREE_CMD]
         sub_cmd_args.append(tree)
         sub_cmd_args.extend(self.parent_args(*p))
         sub_cmd_args.extend(self.s_arg(S))
         sub_cmd_args.extend(self.no_gpg_sign_arg(no_gpg_sign))
-        sub_cmd_args.extend(self.m_args(m))
-        sub_cmd_args.extend(self.F_args(F))
+        if log is not None:
+            sub_cmd_args.extend(self.log_args(log))
+        else:
+            sub_cmd_args.extend(self.m_args(m))
+            sub_cmd_args.extend(self.F_args(F))
         return sub_cmd_args
 
     def parent_args(self, *p: str) -> list[str]:
@@ -182,4 +196,23 @@ class IndividuallyOverridableCTCAB(CommitTreeCLIArgsBuilder):
         args: list[str] = []
         for file_path in files:
             args.extend(["-F", str(file_path)])
+        return args
+
+    def log_args(self, log: list[CommitTreeLogPart] | None) -> list[str]:
+        """
+        Return ``-m`` / ``-F`` in the order given (Git composes the message in that order).
+
+        >>> IndividuallyOverridableCTCAB().log_args([("m", "a"), ("F", "-"), ("m", "b")])
+        ['-m', 'a', '-F', '-', '-m', 'b']
+        >>> IndividuallyOverridableCTCAB().log_args(None)
+        []
+        """
+        if log is None:
+            return []
+        args: list[str] = []
+        for part in log:
+            if part[0] == "m":
+                args.extend(["-m", part[1]])
+            else:
+                args.extend(["-F", str(part[1])])
         return args

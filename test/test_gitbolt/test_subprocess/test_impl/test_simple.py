@@ -2155,6 +2155,39 @@ class TestCommitTreeSubcmd:
         assert "para-a" in body
         assert "para-b" in body
 
+    def test_interleaved_m_and_F(self, repo_local, tmp_path):
+        git = _commit_tree_git(repo_local)
+        tree = _write_tree(git, repo_local)
+        body_file = tmp_path / "body.txt"
+        body_file.write_text("from-file")
+        commit = git.commit_tree_subcmd().commit_tree(
+            tree, log=[("m", "header"), ("F", body_file), ("m", "footer")]
+        )
+        body = git.subcmd_unchecked().run(["log", "-1", "--format=%B", commit], text=True).stdout
+        assert body.index("header") < body.index("from-file") < body.index("footer")
+        file_first = git.commit_tree_subcmd().commit_tree(
+            tree, log=[("F", body_file), ("m", "after")]
+        )
+        file_first_body = git.subcmd_unchecked().run(
+            ["log", "-1", "--format=%B", file_first], text=True
+        ).stdout
+        assert file_first_body.index("from-file") < file_first_body.index("after")
+
+    def test_log_f_dash_stdin(self, repo_local):
+        git = _commit_tree_git(repo_local)
+        tree = _write_tree(git, repo_local)
+        commit = git.commit_tree_subcmd().commit_tree(
+            tree, log=[("m", "header"), ("F", "-")], stdin=b"from-dash"
+        )
+        body = git.subcmd_unchecked().run(["log", "-1", "--format=%B", commit], text=True).stdout
+        assert body.index("header") < body.index("from-dash")
+
+    def test_log_exclusive_with_m(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.commit_tree_subcmd().commit_tree("abc", m="msg", log=[("m", "x")])
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
     def test_no_gpg_sign(self, repo_local):
         git = _commit_tree_git(repo_local)
         tree = _write_tree(git, repo_local)

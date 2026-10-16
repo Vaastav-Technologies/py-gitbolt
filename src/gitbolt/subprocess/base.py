@@ -24,6 +24,7 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.base import Worktree, HashObject, WritingHashObject, CommitTree
+from gitbolt.commit_tree import CommitTreeLogPart
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.hash_object import (
@@ -1397,12 +1398,25 @@ class CommitTreeCommand(CommitTree, GitSubcmdCommand, Protocol):
     ) -> str: ...
 
     @override
+    @overload
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        log: list[CommitTreeLogPart],
+        stdin: bytes | None = None,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str: ...
+
+    @override
     def commit_tree(
         self,
         tree: str,
         *p: str,
         m: str | list[str] | None = None,
         F: Path | list[Path] | Literal["-"] | None = None,
+        log: list[CommitTreeLogPart] | None = None,
         stdin: bytes | None = None,
         S: bool | str = False,
         no_gpg_sign: bool = False,
@@ -1412,6 +1426,7 @@ class CommitTreeCommand(CommitTree, GitSubcmdCommand, Protocol):
             *p,
             m=m,
             F=F,
+            log=log,
             stdin=stdin,
             S=S,
             no_gpg_sign=no_gpg_sign,
@@ -1421,12 +1436,13 @@ class CommitTreeCommand(CommitTree, GitSubcmdCommand, Protocol):
             *p,
             m=m,
             F=F,
+            log=log,
             S=S,
             no_gpg_sign=no_gpg_sign,
         )
         main_cmd_args = self.git.build_main_cmd_args()
         env_vars = self.git.build_git_envs()
-        _input = commit_tree_stdin_input(F=F, stdin=stdin)
+        _input = commit_tree_stdin_input(F=F, stdin=stdin, log=log)
         result = self.git.runner.run_git_command(
             main_cmd_args,
             sub_cmd_args,

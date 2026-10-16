@@ -33,13 +33,24 @@ new commit id. It writes to the object database, so a repository is required.
     ```shell
     $ git commit-tree <tree> -m "a" -m "b"
     ```
-7) GPG sign / countermand:
+7) `-m` and `-F` any number of times, in any order (message composed in option order).
+   GitBolt `m=` / `F=` always emit all `-m` then all `-F`. Use `log=` to interleave:
+    ```shell
+    $ git commit-tree <tree> -m "header" -F body.txt -m "footer"
+    $ git commit-tree <tree> -F first.txt -m "middle" -F second.txt
+    ```
+    ```python
+    git.commit_tree_subcmd().commit_tree(
+        tree, log=[("m", "header"), ("F", Path("body.txt")), ("m", "footer")]
+    )
+    ```
+8) GPG sign / countermand:
     ```shell
     $ git commit-tree <tree> -S -m "signed"
     $ git commit-tree <tree> -S<keyid> -m "signed"
     $ git commit-tree <tree> --no-gpg-sign -m "unsigned"
     ```
-8) Requires a git repository:
+9) Requires a git repository:
     ```shell
     $ git commit-tree <tree> -m "first"
     fatal: not a git repository (or any of the parent directories): .git

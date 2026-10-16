@@ -21,7 +21,11 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
-from gitbolt.commit_tree import CommitTreeArgsValidator, UtilCommitTreeArgsValidator
+from gitbolt.commit_tree import (
+    CommitTreeArgsValidator,
+    CommitTreeLogPart,
+    UtilCommitTreeArgsValidator,
+)
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -1022,6 +1026,34 @@ class CommitTree(GitSubCommand, RootDirOp, Protocol):
         """
         ...
 
+    @overload
+    @abstractmethod
+    def commit_tree(
+        self,
+        tree: str,
+        *p: str,
+        log: list[CommitTreeLogPart],
+        stdin: bytes | None = None,
+        S: bool | str = False,
+        no_gpg_sign: bool = False,
+    ) -> str:
+        """
+        Create a commit object with ``-m`` / ``-F`` in the order given.
+
+        Git allows ``-m`` and ``-F`` any number of times, in any order. The log
+        message is composed in that option order. Use ``log`` when those options
+        must be interleaved; ``m`` and ``F`` cannot express mixed order.
+
+        :param tree: Existing tree object id.
+        :param p: Parent commit object ids.
+        :param log: Ordered ``('m', text)`` / ``('F', path_or_dash)`` parts.
+        :param stdin: Required when ``log`` contains ``('F', '-')``.
+        :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid.
+        :param no_gpg_sign: Pass ``--no-gpg-sign``.
+        :return: New commit object id.
+        """
+        ...
+
     @abstractmethod
     def commit_tree(
         self,
@@ -1029,6 +1061,7 @@ class CommitTree(GitSubCommand, RootDirOp, Protocol):
         *p: str,
         m: str | list[str] | None = None,
         F: Path | list[Path] | Literal["-"] | None = None,
+        log: list[CommitTreeLogPart] | None = None,
         stdin: bytes | None = None,
         S: bool | str = False,
         no_gpg_sign: bool = False,
@@ -1039,11 +1072,18 @@ class CommitTree(GitSubCommand, RootDirOp, Protocol):
         Mirrors ``git commit-tree`` from
         `git commit-tree documentation <https://git-scm.com/docs/git-commit-tree>`_.
 
+        ``-m`` and ``-F`` can be given any number of times, in any order. The
+        commit log message is composed in the order those options are given.
+        Pass ``log`` for mixed order; ``m`` and ``F`` are shorthands for only
+        ``-m`` then only ``-F``.
+
         :param tree: Existing tree object id.
         :param p: Parent commit object ids (``-p``).
         :param m: Commit log paragraph, or a list of paragraphs.
         :param F: File(s) to read the log message from, or ``'-'`` for stdin.
-        :param stdin: Log message bytes when ``F`` is ``'-'`` or when neither ``m`` nor ``F`` is given.
+        :param log: Ordered ``('m', text)`` / ``('F', path_or_dash)`` parts.
+        :param stdin: Log message bytes when ``F`` is ``'-'``, when ``log``
+            contains ``('F', '-')``, or when neither ``m``, ``F``, nor ``log`` is given.
         :param S: GPG-sign the commit. ``True`` passes ``-S``; a string is the keyid (``-S<keyid>``).
         :param no_gpg_sign: Pass ``--no-gpg-sign``.
         :return: New commit object id.

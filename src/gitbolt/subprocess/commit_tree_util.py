@@ -8,11 +8,14 @@ Utility helpers for ``git commit-tree`` that do not belong on the command Protoc
 from pathlib import Path
 from typing import Literal
 
+from gitbolt.commit_tree import CommitTreeLogPart, log_has_f_dash
+
 
 def commit_tree_stdin_input(
     *,
     F: Path | list[Path] | Literal["-"] | None,
     stdin: bytes | None,
+    log: list[CommitTreeLogPart] | None = None,
 ) -> bytes | None:
     """
     Bytes piped to ``git commit-tree``.
@@ -21,7 +24,9 @@ def commit_tree_stdin_input(
     and when ``-F -`` is given. Always return ``stdin`` in those cases, including
     ``None``.
     """
-    if F == "-" or F is None:
+    if F == "-" or log_has_f_dash(log):
+        return stdin
+    if F is None and log is None:
         return stdin
     return None
 
