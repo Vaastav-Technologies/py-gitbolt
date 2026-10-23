@@ -17,12 +17,15 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.base import GitSession
 from gitbolt.hash_object import UtilHashObjectArgsValidator
+from gitbolt.config import UtilConfigArgsValidator
 from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
+from gitbolt.subprocess.config import IndividuallyOverridableCCAB
 from gitbolt.subprocess.impl.simple import (
     SimpleGitCommand,
     CLISimpleGitCommand,
     HashObjectCommandImpl,
     WritingHashObjectCommandImpl,
+    ConfigCommandImpl,
 )
 from gitbolt.subprocess.utils.session import cat_file_data, cat_file_tree_data, cat_file_commit_content
 
@@ -2084,6 +2087,119 @@ class TestHashObjectSubcmd:
         assert builder.file_path_args(None) == []
 
 
+class TestConfigSubcmd:
+    def test_set_get_list_unset_via_file(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("gitbolt.test.key", "alpha", file=cfg)
+        assert config.get("gitbolt.test.key", file=cfg) == "alpha"
+        listed = config.list(file=cfg)
+        assert "gitbolt.test.key=alpha" in listed
+        config.unset("gitbolt.test.key", file=cfg)
+        with pytest.raises(GitCmdException):
+            config.get("gitbolt.test.key", file=cfg)
+
+    def test_append_and_get_all(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("gitbolt.test.proxy", "first", file=cfg)
+        config.set("gitbolt.test.proxy", "second", file=cfg, append=True)
+        values = config.get("gitbolt.test.proxy", file=cfg, all=True)
+        assert "first" in values
+        assert "second" in values
+        last = config.get("gitbolt.test.proxy", file=cfg)
+        assert last == "second"
+
+    def test_type_bool(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("gitbolt.test.flag", "yes", file=cfg, type="bool")
+        assert config.get("gitbolt.test.flag", file=cfg, type="bool") == "true"
+
+    def test_default(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        cfg.write_text("")
+        got = git.config_subcmd().get("gitbolt.missing.key", file=cfg, default="fallback")
+        assert got == "fallback"
+
+    def test_rename_and_remove_section(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("section.key", "v", file=cfg)
+        config.rename_section("section", "other", file=cfg)
+        assert config.get("other.key", file=cfg) == "v"
+        with pytest.raises(GitCmdException):
+            config.get("section.key", file=cfg)
+        config.remove_section("other", file=cfg)
+        with pytest.raises(GitCmdException):
+            config.get("other.key", file=cfg)
+
+    def test_file_options_exclusive(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.config_subcmd().get("core.filemode", system=True, global_=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_name_required(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.config_subcmd().get("")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_does_not_write_user_or_repo_config(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        repo_config = Path(repo_local, ".git", "config")
+        before = repo_config.read_text(encoding="utf-8")
+        git.config_subcmd().set("gitbolt.isolated.key", "only-file", file=cfg)
+        assert repo_config.read_text(encoding="utf-8") == before
+        assert git.config_subcmd().get("gitbolt.isolated.key", file=cfg) == "only-file"
+
+    def test_str(self):
+        git = SimpleGitCommand()
+        assert str(git.config_subcmd()).endswith("config")
+
+    def test_cli_simple_git_command(self, repo_local, tmp_path):
+        git = CLISimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        git.config_subcmd().set("gitbolt.cli.key", "cli", file=cfg)
+        cloned = git.clone()
+        assert cloned.config_subcmd().get("gitbolt.cli.key", file=cfg) == "cli"
+
+    def test_subcmd_from_git(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        cmd = git.config_subcmd()
+        assert cmd._subcmd_from_git(git) is not None
+
+    def test_args_validator_injection(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        validator = UtilConfigArgsValidator()
+        cmd = ConfigCommandImpl(repo_local, git, args_validator=validator)
+        assert cmd.clone().args_validator() is validator
+
+    def test_cli_builder_helpers(self, tmp_path):
+        builder = IndividuallyOverridableCCAB()
+        cfg = tmp_path / "cfg"
+        assert builder.true_flag(True, "--all") == ["--all"]
+        assert builder.true_flag(False, "--all") == []
+        assert builder.file_option_args(
+            system=False, global_=False, local=False, worktree=False, file=None, blob=None
+        ) == []
+        assert builder.file_option_args(
+            system=False, global_=True, local=False, worktree=False, file=None, blob=None
+        ) == ["--global"]
+        assert builder.file_option_args(
+            system=False, global_=False, local=False, worktree=False, file=cfg, blob=None
+        ) == ["--file", str(cfg)]
+        assert builder.includes_args(includes=True, no_includes=False) == ["--includes"]
+        assert builder.type_args(type="bool", no_type=False) == ["--type=bool"]
+
+
 @pytest.mark.parametrize(
     "subcmd",
     [
@@ -2092,6 +2208,7 @@ class TestHashObjectSubcmd:
         "ls_tree_subcmd",
         "hash_object_subcmd",
         "writing_hash_object_subcmd",
+        "config_subcmd",
         "subcmd_unchecked",
     ],
 )

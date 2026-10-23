@@ -21,6 +21,7 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.config import ConfigArgsValidator, UtilConfigArgsValidator, ConfigType
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +895,173 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class Config(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git config`` subcommand.
+
+    Uses Git's current subcommands (``list``, ``get``, ``set``, ``unset``,
+    ``rename-section``, ``remove-section``). Deprecated modes such as
+    ``git config <name> <value>`` are not exposed.
+
+    ``global_`` maps to ``--global`` (``global`` is a Python keyword). File-option
+    flags are omitted unless set, so Git keeps its default read/write scopes.
+    ``edit`` is not wrapped because it opens an interactive editor.
+    """
+
+    @abstractmethod
+    def list(
+        self,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        blob: str | None = None,
+        includes: bool = False,
+        no_includes: bool = False,
+        type: ConfigType | None = None,
+        no_type: bool = False,
+        name_only: bool = False,
+        show_origin: bool = False,
+        show_scope: bool = False,
+        z: bool = False,
+    ) -> str:
+        """
+        List variables set in config file(s), along with their values.
+
+        Mirrors ``git config list`` from
+        `git config documentation <https://git-scm.com/docs/git-config>`_.
+        """
+        ...
+
+    @abstractmethod
+    def get(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        blob: str | None = None,
+        includes: bool = False,
+        no_includes: bool = False,
+        all: bool = False,
+        regexp: bool = False,
+        value: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+        default: str | None = None,
+        url: str | None = None,
+        type: ConfigType | None = None,
+        no_type: bool = False,
+        name_only: bool = False,
+        show_names: bool = False,
+        no_show_names: bool = False,
+        show_origin: bool = False,
+        show_scope: bool = False,
+        z: bool = False,
+    ) -> str:
+        """
+        Emit the value of ``name``. Last value wins unless ``all`` is set.
+
+        Mirrors ``git config get``.
+        """
+        ...
+
+    @abstractmethod
+    def set(
+        self,
+        name: str,
+        value: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        type: ConfigType | None = None,
+        all: bool = False,
+        append: bool = False,
+        value_pattern: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+        comment: str | None = None,
+    ) -> str:
+        """
+        Set ``name`` to ``value``.
+
+        Writes the repository ``.git/config`` unless a file option is given.
+        ``append`` adds a line; ``all`` replaces every matching multi-value.
+        """
+        ...
+
+    @abstractmethod
+    def unset(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        all: bool = False,
+        value: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+    ) -> str:
+        """
+        Unset ``name``. Use ``all`` or ``value`` for multi-valued keys.
+        """
+        ...
+
+    @abstractmethod
+    def rename_section(
+        self,
+        old_name: str,
+        new_name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+    ) -> str:
+        """
+        Rename a configuration section.
+        """
+        ...
+
+    @abstractmethod
+    def remove_section(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+    ) -> str:
+        """
+        Remove a configuration section.
+        """
+        ...
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Config:
+        return git.config_subcmd()
+
+    def args_validator(self) -> ConfigArgsValidator:
+        """
+        The argument validator for ``git config`` subcommand.
+        """
+        return UtilConfigArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -972,6 +1140,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def worktree_subcmd(self) -> Worktree:
         """
         :return: ``git worktree`` subcommand.
+        """
+        ...
+
+    @abstractmethod
+    def config_subcmd(self) -> Config:
+        """
+        :return: ``git config`` subcommand.
         """
         ...
 
