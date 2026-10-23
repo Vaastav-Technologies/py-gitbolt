@@ -9,6 +9,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.12", "3.13", "3.x"]
@@ -29,10 +30,19 @@ jobs:
           python -m pip install -e . --group test
 
       - name: 🧪 Run Doctests and Coverage
+        if: ${{ !(matrix.os == 'windows-latest' && matrix.python-version == '3.x') }}
         run: |
           pytest --cov --cov-branch --cov-report=xml --doctest-modules .
 
+      # coverage.py tracing is unreliable on Windows + latest CPython (3.x).
+      # Still run the suite; ubuntu/mac 3.x and Windows 3.12/3.13 upload coverage.
+      - name: 🧪 Run Doctests
+        if: ${{ matrix.os == 'windows-latest' && matrix.python-version == '3.x' }}
+        run: |
+          pytest --doctest-modules .
+
       - name: 📈 Upload to Codecov
+        if: ${{ !(matrix.os == 'windows-latest' && matrix.python-version == '3.x') }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
