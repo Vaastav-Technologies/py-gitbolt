@@ -7,7 +7,7 @@ Helper interfaces for ``git config`` subcommand with default implementation for 
 
 from abc import abstractmethod
 from pathlib import Path
-from typing import Protocol, override, Literal
+from typing import Protocol, override
 
 from gitbolt.config import ConfigType
 from gitbolt.subprocess.constants import (
@@ -21,7 +21,7 @@ from gitbolt.subprocess.constants import (
 )
 
 
-class ConfigCLIArgsBuilder(Protocol):
+class ConfigCLIArgsBuilder(Protocol):  # pragma: no cover
     """
     Interface to facilitate building of cli arguments for ``git config`` subcommand.
     """

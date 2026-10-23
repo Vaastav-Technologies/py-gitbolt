@@ -18,7 +18,7 @@ CONFIG_TYPES = ("bool", "int", "bool-or-int", "path", "expiry-date", "color")
 ConfigType = Literal["bool", "int", "bool-or-int", "path", "expiry-date", "color"]
 
 
-class ConfigArgsValidator(Protocol):
+class ConfigArgsValidator(Protocol):  # pragma: no cover
     """
     The argument validator for ``git config`` subcommand.
     """

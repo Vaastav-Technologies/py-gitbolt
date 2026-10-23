@@ -895,7 +895,7 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
-class Config(GitSubCommand, RootDirOp, Protocol):
+class Config(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
     """
     Interface for ``git config`` subcommand.
 

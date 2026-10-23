@@ -20,6 +20,7 @@ from gitbolt.hash_object import UtilHashObjectArgsValidator
 from gitbolt.config import UtilConfigArgsValidator
 from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
 from gitbolt.subprocess.config import IndividuallyOverridableCCAB
+from gitbolt.subprocess.config_util import config_stdout
 from gitbolt.subprocess.impl.simple import (
     SimpleGitCommand,
     CLISimpleGitCommand,
@@ -2122,7 +2123,7 @@ class TestConfigSubcmd:
     def test_default(self, repo_local, tmp_path):
         git = SimpleGitCommand(repo_local)
         cfg = tmp_path / "gitbolt.config"
-        cfg.write_text("")
+        cfg.write_text("", encoding="utf-8")
         got = git.config_subcmd().get("gitbolt.missing.key", file=cfg, default="fallback")
         assert got == "fallback"
 
@@ -2198,6 +2199,175 @@ class TestConfigSubcmd:
         ) == ["--file", str(cfg)]
         assert builder.includes_args(includes=True, no_includes=False) == ["--includes"]
         assert builder.type_args(type="bool", no_type=False) == ["--type=bool"]
+        assert builder.type_args(type="bool", no_type=True) == ["--type=bool", "--no-type"]
+        assert builder.includes_args(includes=False, no_includes=True) == ["--no-includes"]
+        assert builder.includes_args(includes=False, no_includes=False) == []
+        assert builder.file_option_args(
+            system=True, global_=False, local=False, worktree=False, file=None, blob=None
+        ) == ["--system"]
+        assert builder.file_option_args(
+            system=False, global_=False, local=True, worktree=False, file=None, blob=None
+        ) == ["--local"]
+        assert builder.file_option_args(
+            system=False, global_=False, local=False, worktree=True, file=None, blob=None
+        ) == ["--worktree"]
+        assert builder.file_option_args(
+            system=False, global_=False, local=False, worktree=False, file=None, blob="HEAD:path"
+        ) == ["--blob", "HEAD:path"]
+        assert builder.value_match_args(
+            value="old", no_value=False, fixed_value=True
+        ) == ["--value=old", "--fixed-value"]
+        assert builder.value_match_args(
+            value=None, no_value=True, fixed_value=False
+        ) == ["--no-value"]
+        assert builder.build_list(
+            local=True, includes=True, type="int", show_origin=True, show_scope=True
+        ) == [
+            "config",
+            "list",
+            "--local",
+            "--includes",
+            "--type=int",
+            "--show-origin",
+            "--show-scope",
+        ]
+        assert builder.build_get(
+            "core.gitproxy",
+            regexp=True,
+            value="ssh",
+            url="https://example.com",
+            name_only=True,
+            no_show_names=True,
+            show_origin=True,
+            show_scope=True,
+            z=True,
+        ) == [
+            "config",
+            "get",
+            "--regexp",
+            "--value=ssh",
+            "--url=https://example.com",
+            "--name-only",
+            "--no-show-names",
+            "--show-origin",
+            "--show-scope",
+            "-z",
+            "core.gitproxy",
+        ]
+        assert builder.build_set(
+            "core.filemode",
+            "true",
+            type="bool",
+            all=True,
+            comment="why",
+            value_pattern="false",
+            fixed_value=True,
+        ) == [
+            "config",
+            "set",
+            "--type=bool",
+            "--all",
+            "--value=false",
+            "--fixed-value",
+            "--comment",
+            "why",
+            "core.filemode",
+            "true",
+        ]
+        assert builder.build_unset("core.gitproxy", value="ssh", fixed_value=True) == [
+            "config",
+            "unset",
+            "--value=ssh",
+            "--fixed-value",
+            "core.gitproxy",
+        ]
+        assert builder.build_rename_section("old", "new", local=True) == [
+            "config",
+            "rename-section",
+            "--local",
+            "old",
+            "new",
+        ]
+        assert builder.build_remove_section("section", local=True) == [
+            "config",
+            "remove-section",
+            "--local",
+            "section",
+        ]
+
+    def test_config_stdout_strips_crlf_but_keeps_nul(self):
+        assert config_stdout("true\n") == "true"
+        assert config_stdout("true\r\n") == "true"
+        assert config_stdout(" spaced ") == " spaced "
+        assert config_stdout("keep\0", z=True) == "keep\0"
+
+    def test_validator_error_branches(self):
+        v = UtilConfigArgsValidator()
+        with pytest.raises(GitExitingException) as e:
+            v.validate_list(includes=True, no_includes=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_get("core.filemode", show_names=True, no_show_names=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_get("core.filemode", type="not-a-type")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_list(no_type=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_list(blob="")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v._validate_file_options(
+                system=False,
+                global_=False,
+                local=False,
+                worktree=False,
+                file=None,
+                blob="HEAD:path",
+                allow_blob=False,
+            )
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_list(file="cfg")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+        with pytest.raises(GitExitingException) as e:
+            v.validate_get("core.gitproxy", value="ssh", no_value=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_unset("core.gitproxy", fixed_value=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_set("core.filemode", "true", comment="line\nfeed")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate_rename_section("", "other")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        v.validate_list(type="bool", no_type=True)
+        v.validate_get("core.filemode", default="x", url="https://example.com")
+        v.validate_unset("core.gitproxy", no_value=True, fixed_value=True)
+
+    def test_list_name_only_and_comment(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("gitbolt.test.commented", "v", file=cfg, comment="note")
+        names = config.list(file=cfg, name_only=True)
+        assert "gitbolt.test.commented" in names
+        config.unset("gitbolt.test.commented", file=cfg, all=True)
+
+    def test_get_regexp_and_z(self, repo_local, tmp_path):
+        git = SimpleGitCommand(repo_local)
+        cfg = tmp_path / "gitbolt.config"
+        config = git.config_subcmd()
+        config.set("gitbolt.re.one", "a", file=cfg)
+        config.set("gitbolt.re.two", "b", file=cfg)
+        listed = config.get("gitbolt.re.", file=cfg, regexp=True, all=True)
+        assert "a" in listed
+        assert "b" in listed
+        z_val = config.get("gitbolt.re.one", file=cfg, z=True)
+        assert "a" in z_val
 
 
 @pytest.mark.parametrize(
