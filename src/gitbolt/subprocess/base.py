@@ -10,7 +10,7 @@ from __future__ import annotations
 import abc
 import sys
 from abc import abstractmethod, ABC
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +23,8 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from gitbolt.base import Worktree, HashObject, WritingHashObject
+from gitbolt.base import Worktree, HashObject, WritingHashObject, Config
+from gitbolt.config import ConfigType
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.hash_object import (
@@ -45,8 +46,13 @@ from gitbolt.subprocess.ls_tree import (
 from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
+from gitbolt.subprocess.config import (
+    ConfigCLIArgsBuilder,
+    IndividuallyOverridableCCAB,
+)
+from gitbolt.subprocess.config_util import config_stdout
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD, CONFIG_CMD
 from gitbolt.subprocess.utils.session import _close_session_popen
 
 
@@ -397,6 +403,10 @@ class GitCommand(Git, ABC):
     @override
     @abstractmethod
     def worktree_subcmd(self) -> WorktreeCommand: ...
+
+    @override
+    @abstractmethod
+    def config_subcmd(self) -> ConfigCommand: ...
 
     @abstractmethod
     def subcmd_unchecked(self) -> UncheckedSubcmd:
@@ -1321,6 +1331,344 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
     @override
     def writing(self) -> WritingHashObject:
         return self
+
+
+class ConfigCommand(Config, GitSubcmdCommand, Protocol):
+    """
+    A composable class for building arguments for the `git config` subcommand, which is run later in a subprocess.
+    """
+
+    @override
+    def list(
+        self,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        blob: str | None = None,
+        includes: bool = False,
+        no_includes: bool = False,
+        type: ConfigType | None = None,
+        no_type: bool = False,
+        name_only: bool = False,
+        show_origin: bool = False,
+        show_scope: bool = False,
+        z: bool = False,
+    ) -> str:
+        self.args_validator().validate_list(
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            blob=blob,
+            includes=includes,
+            no_includes=no_includes,
+            type=type,
+            no_type=no_type,
+            name_only=name_only,
+            show_origin=show_origin,
+            show_scope=show_scope,
+            z=z,
+        )
+        sub_cmd_args = self.cli_args_builder.build_list(
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            blob=blob,
+            includes=includes,
+            no_includes=no_includes,
+            type=type,
+            no_type=no_type,
+            name_only=name_only,
+            show_origin=show_origin,
+            show_scope=show_scope,
+            z=z,
+        )
+        return self._run_config(sub_cmd_args, z=z)
+
+    @override
+    def get(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        blob: str | None = None,
+        includes: bool = False,
+        no_includes: bool = False,
+        all: bool = False,
+        regexp: bool = False,
+        value: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+        default: str | None = None,
+        url: str | None = None,
+        type: ConfigType | None = None,
+        no_type: bool = False,
+        name_only: bool = False,
+        show_names: bool = False,
+        no_show_names: bool = False,
+        show_origin: bool = False,
+        show_scope: bool = False,
+        z: bool = False,
+    ) -> str:
+        self.args_validator().validate_get(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            blob=blob,
+            includes=includes,
+            no_includes=no_includes,
+            all=all,
+            regexp=regexp,
+            value=value,
+            no_value=no_value,
+            fixed_value=fixed_value,
+            default=default,
+            url=url,
+            type=type,
+            no_type=no_type,
+            name_only=name_only,
+            show_names=show_names,
+            no_show_names=no_show_names,
+            show_origin=show_origin,
+            show_scope=show_scope,
+            z=z,
+        )
+        sub_cmd_args = self.cli_args_builder.build_get(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            blob=blob,
+            includes=includes,
+            no_includes=no_includes,
+            all=all,
+            regexp=regexp,
+            value=value,
+            no_value=no_value,
+            fixed_value=fixed_value,
+            default=default,
+            url=url,
+            type=type,
+            no_type=no_type,
+            name_only=name_only,
+            show_names=show_names,
+            no_show_names=no_show_names,
+            show_origin=show_origin,
+            show_scope=show_scope,
+            z=z,
+        )
+        return self._run_config(sub_cmd_args, z=z)
+
+    @override
+    def set(
+        self,
+        name: str,
+        value: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        type: ConfigType | None = None,
+        all: bool = False,
+        append: bool = False,
+        value_pattern: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+        comment: str | None = None,
+    ) -> str:
+        self.args_validator().validate_set(
+            name,
+            value,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            type=type,
+            all=all,
+            append=append,
+            value_pattern=value_pattern,
+            no_value=no_value,
+            fixed_value=fixed_value,
+            comment=comment,
+        )
+        sub_cmd_args = self.cli_args_builder.build_set(
+            name,
+            value,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            type=type,
+            all=all,
+            append=append,
+            value_pattern=value_pattern,
+            no_value=no_value,
+            fixed_value=fixed_value,
+            comment=comment,
+        )
+        return self._run_config(sub_cmd_args)
+
+    @override
+    def unset(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+        all: bool = False,
+        value: str | None = None,
+        no_value: bool = False,
+        fixed_value: bool = False,
+    ) -> str:
+        self.args_validator().validate_unset(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            all=all,
+            value=value,
+            no_value=no_value,
+            fixed_value=fixed_value,
+        )
+        sub_cmd_args = self.cli_args_builder.build_unset(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+            all=all,
+            value=value,
+            no_value=no_value,
+            fixed_value=fixed_value,
+        )
+        return self._run_config(sub_cmd_args)
+
+    @override
+    def rename_section(
+        self,
+        old_name: str,
+        new_name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+    ) -> str:
+        self.args_validator().validate_rename_section(
+            old_name,
+            new_name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+        )
+        sub_cmd_args = self.cli_args_builder.build_rename_section(
+            old_name,
+            new_name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+        )
+        return self._run_config(sub_cmd_args)
+
+    @override
+    def remove_section(
+        self,
+        name: str,
+        *,
+        system: bool = False,
+        global_: bool = False,
+        local: bool = False,
+        worktree: bool = False,
+        file: Path | None = None,
+    ) -> str:
+        self.args_validator().validate_remove_section(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+        )
+        sub_cmd_args = self.cli_args_builder.build_remove_section(
+            name,
+            system=system,
+            global_=global_,
+            local=local,
+            worktree=worktree,
+            file=file,
+        )
+        return self._run_config(sub_cmd_args)
+
+    def _run_config(self, sub_cmd_args: Sequence[str], *, z: bool = False) -> str:
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        result = self.git.runner.run_git_command(
+            main_cmd_args,
+            [*sub_cmd_args],
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=self.root_dir,
+            env=env_vars,
+        )
+        return config_stdout(result.stdout, z=z)
+
+    @override
+    @abstractmethod
+    def clone(self) -> Self: ...
+
+    @property
+    def cli_args_builder(self) -> ConfigCLIArgsBuilder:
+        """
+        The builder assembles the subcommand CLI portion of the git command invocation, such as
+        in ``git --no-pager config get core.filemode``, where ``get core.filemode`` is the
+        subcommand argument list.
+        """
+        return IndividuallyOverridableCCAB()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.config_subcmd()) == f"{GIT_CMD} {CONFIG_CMD}"
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.config_subcmd()) == f"{GIT_CMD} {CONFIG_CMD}"
+        >>> assert str(_b_git.config_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {CONFIG_CMD}"
+        """
+        return " ".join([str(self.git), CONFIG_CMD])
 
 
 class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
