@@ -17,12 +17,15 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.base import GitSession
 from gitbolt.hash_object import UtilHashObjectArgsValidator
+from gitbolt.replace import UtilReplaceArgsValidator
 from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
+from gitbolt.subprocess.replace import IndividuallyOverridableRCAB
 from gitbolt.subprocess.impl.simple import (
     SimpleGitCommand,
     CLISimpleGitCommand,
     HashObjectCommandImpl,
     WritingHashObjectCommandImpl,
+    ReplaceCommandImpl,
 )
 from gitbolt.subprocess.utils.session import cat_file_data, cat_file_tree_data, cat_file_commit_content
 
@@ -2084,6 +2087,132 @@ class TestHashObjectSubcmd:
         assert builder.file_path_args(None) == []
 
 
+class TestReplaceSubcmd:
+    def _written_blobs(self, repo_local, *payloads: bytes) -> list[str]:
+        git = SimpleGitCommand(repo_local)
+        return [
+            git.writing_hash_object_subcmd().hash_object(stdin=payload, w=True)
+            for payload in payloads
+        ]
+
+    def test_replace_list_delete(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        obj, repl = self._written_blobs(repo_local, b"orig", b"repl")
+        replace = git.replace_subcmd()
+        replace.replace(obj, repl)
+        listed = replace.list()
+        assert obj in listed
+        medium = replace.list(format_="medium")
+        assert obj in medium
+        assert repl in medium
+        replace.delete(obj)
+        assert obj not in replace.list()
+
+    def test_force_overwrites(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        obj, first, second = self._written_blobs(repo_local, b"obj", b"first", b"second")
+        replace = git.replace_subcmd()
+        replace.replace(obj, first)
+        with pytest.raises(GitCmdException):
+            replace.replace(obj, second)
+        replace.replace(obj, second, force=True)
+        medium = replace.list(format_="medium")
+        assert second in medium
+        replace.delete(obj)
+
+    def test_list_pattern(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        obj, repl = self._written_blobs(repo_local, b"pat-a", b"pat-b")
+        git.replace_subcmd().replace(obj, repl)
+        assert obj in git.replace_subcmd().list(obj)
+        git.replace_subcmd().delete(obj)
+
+    def test_graft(self, repo_local):
+        git = SimpleGitCommand(repo_local).git_envs_override(
+            GIT_AUTHOR_NAME="ss",
+            GIT_AUTHOR_EMAIL="ss@ss.ss",
+            GIT_COMMITTER_NAME="ss",
+            GIT_COMMITTER_EMAIL="ss@ss.ss",
+        )
+        git.subcmd_unchecked().run(["commit", "--allow-empty", "-m", "one"])
+        git.subcmd_unchecked().run(["commit", "--allow-empty", "-m", "two"])
+        head = git.subcmd_unchecked().run(
+            ["rev-parse", "HEAD"], text=True
+        ).stdout.strip()
+        git.replace_subcmd().graft(head)
+        listed = git.replace_subcmd().list(format_="long")
+        assert head in listed
+        git.replace_subcmd().delete(head)
+
+    def test_convert_graft_file(self, repo_local):
+        git = SimpleGitCommand(repo_local).git_envs_override(
+            GIT_AUTHOR_NAME="ss",
+            GIT_AUTHOR_EMAIL="ss@ss.ss",
+            GIT_COMMITTER_NAME="ss",
+            GIT_COMMITTER_EMAIL="ss@ss.ss",
+        )
+        git.subcmd_unchecked().run(["commit", "--allow-empty", "-m", "root"])
+        git.subcmd_unchecked().run(["commit", "--allow-empty", "-m", "child"])
+        child = git.subcmd_unchecked().run(
+            ["rev-parse", "HEAD"], text=True
+        ).stdout.strip()
+        grafts = Path(repo_local, ".git", "info", "grafts")
+        grafts.parent.mkdir(parents=True, exist_ok=True)
+        # Make `child` a root in the grafts file so conversion must create a replace ref.
+        grafts.write_text(f"{child}\n", encoding="utf-8")
+        git.replace_subcmd().convert_graft_file()
+        assert not grafts.exists()
+        assert child in git.replace_subcmd().list()
+        git.replace_subcmd().delete(child)
+
+    def test_name_required(self, repo_local):
+        with pytest.raises(GitExitingException) as e:
+            SimpleGitCommand(repo_local).replace_subcmd().replace("", "abc")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_invalid_format(self, repo_local):
+        with pytest.raises(GitExitingException) as e:
+            SimpleGitCommand(repo_local).replace_subcmd().list(format_="wide")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_str(self):
+        git = SimpleGitCommand()
+        assert str(git.replace_subcmd()).endswith("replace")
+
+    def test_cli_simple_git_command(self, repo_local):
+        git = CLISimpleGitCommand(repo_local)
+        obj, repl = self._written_blobs(repo_local, b"cli-a", b"cli-b")
+        git.replace_subcmd().replace(obj, repl)
+        cloned = git.clone()
+        assert obj in cloned.replace_subcmd().list()
+        cloned.replace_subcmd().delete(obj)
+
+    def test_subcmd_from_git(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        cmd = git.replace_subcmd()
+        assert cmd._subcmd_from_git(git) is not None
+
+    def test_args_validator_injection(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        validator = UtilReplaceArgsValidator()
+        cmd = ReplaceCommandImpl(repo_local, git, args_validator=validator)
+        assert cmd.clone().args_validator() is validator
+
+    def test_cli_builder_helpers(self):
+        builder = IndividuallyOverridableRCAB()
+        assert builder.force_arg(True) == ["--force"]
+        assert builder.force_arg(False) == []
+        assert builder.build_replace("a", "b") == ["replace", "a", "b"]
+        assert builder.build_delete("a", "b") == ["replace", "-d", "a", "b"]
+        assert builder.build_list() == ["replace"]
+        assert builder.build_graft("c", "p") == ["replace", "--graft", "c", "p"]
+        assert builder.build_convert_graft_file(force=True) == [
+            "replace",
+            "--force",
+            "--convert-graft-file",
+        ]
+
+
 @pytest.mark.parametrize(
     "subcmd",
     [
@@ -2092,6 +2221,7 @@ class TestHashObjectSubcmd:
         "ls_tree_subcmd",
         "hash_object_subcmd",
         "writing_hash_object_subcmd",
+        "replace_subcmd",
         "subcmd_unchecked",
     ],
 )
