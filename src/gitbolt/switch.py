@@ -19,7 +19,7 @@ ConflictStyle = Literal["merge", "diff3", "zdiff3"]
 TrackMode = Literal["direct", "inherit"]
 
 
-class SwitchArgsValidator(Protocol):
+class SwitchArgsValidator(Protocol):  # pragma: no cover
     """
     The argument validator for ``git switch`` subcommand.
     """

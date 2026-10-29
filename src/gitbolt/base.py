@@ -900,7 +900,7 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
-class Switch(GitSubCommand, RootDirOp, Protocol):
+class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
     """
     Interface for ``git switch`` subcommand.
 

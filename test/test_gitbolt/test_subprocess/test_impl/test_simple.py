@@ -2208,8 +2208,70 @@ class TestSwitchSubcmd:
         ]
         assert builder.build("t", track="direct") == ["switch", "--track=direct", "t"]
         assert builder.build("t", force=True) == ["switch", "--discard-changes", "t"]
+        assert builder.build(orphan="blank", guess=True, progress=False, track=True) == [
+            "switch",
+            "--orphan",
+            "blank",
+            "--guess",
+            "--no-progress",
+            "--track",
+        ]
+        assert builder.build(
+            "t",
+            no_track=True,
+            ignore_other_worktrees=True,
+            recurse_submodules=True,
+            conflict="diff3",
+        ) == [
+            "switch",
+            "--conflict=diff3",
+            "--no-track",
+            "--ignore-other-worktrees",
+            "--recurse-submodules",
+            "t",
+        ]
+        assert builder.build(force_create="topic", start_point="HEAD") == [
+            "switch",
+            "--force-create",
+            "topic",
+            "HEAD",
+        ]
         assert builder.optional_bool_flag(None, "--guess", "--no-guess") == []
         assert builder.true_flag(False, "--quiet") == []
+        assert builder.create_arg(None) == []
+        assert builder.track_arg(None) == []
+
+    def test_validator_error_branches(self):
+        v = UtilSwitchArgsValidator()
+        with pytest.raises(GitExitingException) as e:
+            v.validate("")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate(create="a", force_create="b")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", merge=True, force=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track=True, no_track=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track=False)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", conflict="ours")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track="upstream")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", start_point="HEAD")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate(orphan="blank", start_point="HEAD")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        v.validate("t", guess=True, progress=False, recurse_submodules=True, conflict="zdiff3")
+        v.validate(detach=True)
 
 
 @pytest.mark.parametrize(

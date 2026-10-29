@@ -12,7 +12,7 @@ from gitbolt.switch import ConflictStyle, TrackMode
 from gitbolt.subprocess.constants import SWITCH_CMD
 
 
-class SwitchCLIArgsBuilder(Protocol):
+class SwitchCLIArgsBuilder(Protocol):  # pragma: no cover
     """
     Interface to facilitate building of cli arguments for ``git switch`` subcommand.
     """
