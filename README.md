@@ -427,6 +427,7 @@ Transformers for formatting/parsing can be added later.
 ## Notes
 
 - 0.0.0: `git hash-object` is available as `hash_object_subcmd()` / `writing_hash_object_subcmd()`. Use `writing()` (or `w=True`) to write objects; use `multi_hash_objects` to hash several stdin payloads in one process. Hashing works outside a repository; `-w` requires a repository.
+- 0.0.0: `git switch` is available as `switch_subcmd()`. Use `switch` to change branch, `create` / `force_create`, `detach`, or `orphan`. `force` is Git's alias for `--discard-changes`. Flags are omitted unless set so Git keeps defaults such as `--guess`.
 - 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---

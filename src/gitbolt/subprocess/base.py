@@ -23,12 +23,17 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from gitbolt.base import Worktree, HashObject, WritingHashObject
+from gitbolt.base import Worktree, HashObject, WritingHashObject, Switch
+from gitbolt.switch import ConflictStyle, TrackMode
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.hash_object import (
     HashObjectCLIArgsBuilder,
     IndividuallyOverridableHOCAB,
+)
+from gitbolt.subprocess.switch import (
+    SwitchCLIArgsBuilder,
+    IndividuallyOverridableSCAB,
 )
 from gitbolt.subprocess.hash_object_util import (
     as_hash_list,
@@ -46,7 +51,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, SWITCH_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 from gitbolt.subprocess.utils.session import _close_session_popen
 
 
@@ -393,6 +398,10 @@ class GitCommand(Git, ABC):
     @override
     @abstractmethod
     def writing_hash_object_subcmd(self) -> WritingHashObjectCommand: ...
+
+    @override
+    @abstractmethod
+    def switch_subcmd(self) -> SwitchCommand: ...
 
     @override
     @abstractmethod
@@ -1321,6 +1330,125 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
     @override
     def writing(self) -> WritingHashObject:
         return self
+
+
+class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
+    """
+    A composable class for building arguments for the ``git switch`` subcommand,
+    which is run later in a subprocess.
+    """
+
+    @override
+    def switch(
+        self,
+        branch: str | None = None,
+        *,
+        start_point: str | None = None,
+        create: str | None = None,
+        force_create: str | None = None,
+        detach: bool = False,
+        orphan: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        self.args_validator().validate(
+            branch,
+            start_point=start_point,
+            create=create,
+            force_create=force_create,
+            detach=detach,
+            orphan=orphan,
+            guess=guess,
+            discard_changes=discard_changes,
+            force=force,
+            merge=merge,
+            conflict=conflict,
+            quiet=quiet,
+            progress=progress,
+            track=track,
+            no_track=no_track,
+            ignore_other_worktrees=ignore_other_worktrees,
+            recurse_submodules=recurse_submodules,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            branch,
+            start_point=start_point,
+            create=create,
+            force_create=force_create,
+            detach=detach,
+            orphan=orphan,
+            guess=guess,
+            discard_changes=discard_changes,
+            force=force,
+            merge=merge,
+            conflict=conflict,
+            quiet=quiet,
+            progress=progress,
+            track=track,
+            no_track=no_track,
+            ignore_other_worktrees=ignore_other_worktrees,
+            recurse_submodules=recurse_submodules,
+        )
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        result = self.git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=self.root_dir,
+            env=env_vars,
+        )
+        return result.stdout.rstrip("\r\n")
+
+    @override
+    @abstractmethod
+    def clone(self) -> Self: ...
+
+    @property
+    def cli_args_builder(self) -> SwitchCLIArgsBuilder:
+        return IndividuallyOverridableSCAB()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.switch_subcmd()) == f"{GIT_CMD} {SWITCH_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.switch_subcmd()) == f"{GIT_CMD} {SWITCH_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.switch_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {SWITCH_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.switch_subcmd()) == f"{GIT_CMD} {SWITCH_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.switch_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {SWITCH_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.switch_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {SWITCH_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), SWITCH_CMD])
 
 
 class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):

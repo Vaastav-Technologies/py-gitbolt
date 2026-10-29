@@ -21,6 +21,12 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.switch import (
+    SwitchArgsValidator,
+    UtilSwitchArgsValidator,
+    ConflictStyle,
+    TrackMode,
+)
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +900,71 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class Switch(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git switch`` subcommand.
+
+    Mirrors `git switch documentation <https://git-scm.com/docs/git-switch>`_.
+    ``force`` is Git's alias for ``--discard-changes``. Flags are omitted unless
+    set, so Git keeps defaults such as ``--guess``.
+    """
+
+    @abstractmethod
+    def switch(
+        self,
+        branch: str | None = None,
+        *,
+        start_point: str | None = None,
+        create: str | None = None,
+        force_create: str | None = None,
+        detach: bool = False,
+        orphan: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Switch branches, optionally creating, detaching, or starting an orphan branch.
+
+        :param branch: Branch to switch to (or ``-`` for ``@{-1}``).
+        :param start_point: Start point for ``create`` / ``force_create`` / ``detach``.
+        :param create: ``--create`` / ``-c`` new branch name.
+        :param force_create: ``--force-create`` / ``-C`` new branch name.
+        :param detach: ``--detach``.
+        :param orphan: ``--orphan`` new branch name.
+        :param guess: ``True`` emits ``--guess``, ``False`` emits ``--no-guess``.
+        :param discard_changes: ``--discard-changes``.
+        :param force: Alias of ``discard_changes`` (Git ``-f``).
+        :param merge: ``--merge``.
+        :param conflict: ``--conflict=<style>``.
+        :param quiet: ``--quiet``.
+        :param progress: ``True`` emits ``--progress``, ``False`` emits ``--no-progress``.
+        :param track: ``True`` emits ``--track``; ``direct`` / ``inherit`` emit ``--track=<mode>``.
+        :param no_track: ``--no-track``.
+        :param ignore_other_worktrees: ``--ignore-other-worktrees``.
+        :param recurse_submodules: ``True`` / ``False`` emit recurse flags.
+        """
+        ...
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Switch:
+        return git.switch_subcmd()
+
+    def args_validator(self) -> SwitchArgsValidator:
+        """
+        The argument validator for ``git switch`` subcommand.
+        """
+        return UtilSwitchArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -965,6 +1036,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
         :return: ``git hash-object`` subcommand. Can write objects to the git database.
+        """
+        ...
+
+    @abstractmethod
+    def switch_subcmd(self) -> Switch:
+        """
+        :return: ``git switch`` subcommand.
         """
         ...
 
