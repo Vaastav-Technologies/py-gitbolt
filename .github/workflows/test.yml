@@ -9,13 +9,15 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.12", "3.13", "3.x"]
         exclude:
-          # Latest CPython (3.x) on GitHub-hosted Ubuntu/Windows fails this suite
-          # in ~20–40s. 3.12/3.13 still cover those OSes; macOS covers 3.x.
+          # TODO: revert once ubuntu-latest / windows-latest + Python 3.x is diagnosed.
+          # pytest --cov --doctest-modules exits 1 in ~22s (ubuntu 3.x) / ~40s
+          # (windows 3.x) on "Run Doctests and Coverage". The same runner images
+          # pass 3.12 and 3.13; macos-latest 3.x passes. Job logs need a signed-in
+          # GitHub Actions session (unauthenticated log download is 403).
           - os: windows-latest
             python-version: "3.x"
           - os: ubuntu-latest

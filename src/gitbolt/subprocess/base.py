@@ -1409,7 +1409,7 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
             cwd=self.root_dir,
             env=env_vars,
         )
-        return result.stdout.rstrip("\r\n")
+        return result.stdout.rstrip()
 
     @override
     @abstractmethod
