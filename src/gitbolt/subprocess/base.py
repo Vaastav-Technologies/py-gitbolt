@@ -24,7 +24,7 @@ from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
 from gitbolt.base import Worktree, HashObject, WritingHashObject, Switch
-from gitbolt.switch import ConflictStyle, TrackMode
+from gitbolt.switch import ConflictStyle, TrackMode, SwitchBranch
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.hash_object import (
@@ -1339,9 +1339,107 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
     """
 
     @override
+    @overload
     def switch(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch,
+        *,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        *,
+        create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        *,
+        force_create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        *,
+        detach: Literal[True],
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        *,
+        orphan: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    def switch(
+        self,
+        branch: SwitchBranch | None = None,
         *,
         start_point: str | None = None,
         create: str | None = None,

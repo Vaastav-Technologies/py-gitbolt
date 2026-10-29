@@ -17,6 +17,7 @@ CONFLICT_STYLES = ("merge", "diff3", "zdiff3")
 TRACK_MODES = ("direct", "inherit")
 ConflictStyle = Literal["merge", "diff3", "zdiff3"]
 TrackMode = Literal["direct", "inherit"]
+SwitchBranch = str | Literal["-"]
 
 
 class SwitchArgsValidator(Protocol):  # pragma: no cover
@@ -27,7 +28,7 @@ class SwitchArgsValidator(Protocol):  # pragma: no cover
     @abstractmethod
     def validate(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch | None = None,
         *,
         start_point: str | None = None,
         create: str | None = None,
@@ -59,7 +60,7 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
     @override
     def validate(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch | None = None,
         *,
         start_point: str | None = None,
         create: str | None = None,

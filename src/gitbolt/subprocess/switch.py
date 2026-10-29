@@ -8,7 +8,7 @@ Helper interfaces for ``git switch`` subcommand with default implementation for 
 from abc import abstractmethod
 from typing import Protocol, override
 
-from gitbolt.switch import ConflictStyle, TrackMode
+from gitbolt.switch import ConflictStyle, TrackMode, SwitchBranch
 from gitbolt.subprocess.constants import SWITCH_CMD
 
 
@@ -20,7 +20,7 @@ class SwitchCLIArgsBuilder(Protocol):  # pragma: no cover
     @abstractmethod
     def build(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch | None = None,
         *,
         start_point: str | None = None,
         create: str | None = None,
@@ -53,7 +53,7 @@ class IndividuallyOverridableSCAB(SwitchCLIArgsBuilder):
     @override
     def build(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch | None = None,
         *,
         start_point: str | None = None,
         create: str | None = None,

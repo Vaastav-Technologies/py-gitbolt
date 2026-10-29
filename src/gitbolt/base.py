@@ -26,6 +26,7 @@ from gitbolt.switch import (
     UtilSwitchArgsValidator,
     ConflictStyle,
     TrackMode,
+    SwitchBranch,
 )
 
 
@@ -909,16 +910,13 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
     set, so Git keeps defaults such as ``--guess``.
     """
 
+    # region switch and overloads
+    @overload
     @abstractmethod
     def switch(
         self,
-        branch: str | None = None,
+        branch: SwitchBranch,
         *,
-        start_point: str | None = None,
-        create: str | None = None,
-        force_create: str | None = None,
-        detach: bool = False,
-        orphan: str | None = None,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -932,27 +930,116 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         recurse_submodules: bool | None = None,
     ) -> str:
         """
-        Switch branches, optionally creating, detaching, or starting an orphan branch.
+        Switch to ``branch``.
 
-        :param branch: Branch to switch to (or ``-`` for ``@{-1}``).
-        :param start_point: Start point for ``create`` / ``force_create`` / ``detach``.
-        :param create: ``--create`` / ``-c`` new branch name.
-        :param force_create: ``--force-create`` / ``-C`` new branch name.
-        :param detach: ``--detach``.
-        :param orphan: ``--orphan`` new branch name.
-        :param guess: ``True`` emits ``--guess``, ``False`` emits ``--no-guess``.
-        :param discard_changes: ``--discard-changes``.
-        :param force: Alias of ``discard_changes`` (Git ``-f``).
-        :param merge: ``--merge``.
-        :param conflict: ``--conflict=<style>``.
-        :param quiet: ``--quiet``.
-        :param progress: ``True`` emits ``--progress``, ``False`` emits ``--no-progress``.
-        :param track: ``True`` emits ``--track``; ``direct`` / ``inherit`` emit ``--track=<mode>``.
-        :param no_track: ``--no-track``.
-        :param ignore_other_worktrees: ``--ignore-other-worktrees``.
-        :param recurse_submodules: ``True`` / ``False`` emit recurse flags.
+        Mirrors ``git switch [<options>] [--no-guess] <branch>``.
+        ``-`` is synonymous with ``@{-1}``.
         """
         ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Create ``create`` at ``start_point`` and switch to it.
+
+        Mirrors ``git switch [<options>] -c <new-branch> [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        force_create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Reset ``force_create`` to ``start_point`` if it exists, then switch to it.
+
+        Mirrors ``git switch [<options>] -C <new-branch> [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        detach: Literal[True],
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Detach HEAD at ``start_point`` (or HEAD).
+
+        Mirrors ``git switch [<options>] --detach [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        orphan: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Create unborn branch ``orphan`` and switch to it.
+
+        Mirrors ``git switch [<options>] --orphan <new-branch>``.
+        """
+        ...
+    # endregion
 
     @override
     def _subcmd_from_git(self, git: "Git") -> Switch:
