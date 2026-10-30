@@ -17,12 +17,15 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.base import GitSession
 from gitbolt.hash_object import UtilHashObjectArgsValidator
+from gitbolt.switch import UtilSwitchArgsValidator
 from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
+from gitbolt.subprocess.switch import IndividuallyOverridableSCAB
 from gitbolt.subprocess.impl.simple import (
     SimpleGitCommand,
     CLISimpleGitCommand,
     HashObjectCommandImpl,
     WritingHashObjectCommandImpl,
+    SwitchCommandImpl,
 )
 from gitbolt.subprocess.utils.session import cat_file_data, cat_file_tree_data, cat_file_commit_content
 
@@ -2084,6 +2087,193 @@ class TestHashObjectSubcmd:
         assert builder.file_path_args(None) == []
 
 
+class TestSwitchSubcmd:
+    def _git(self, repo_local):
+        return SimpleGitCommand(repo_local).git_envs_override(
+            GIT_AUTHOR_NAME="ss",
+            GIT_AUTHOR_EMAIL="ss@ss.ss",
+            GIT_COMMITTER_NAME="ss",
+            GIT_COMMITTER_EMAIL="ss@ss.ss",
+        )
+
+    def _commit(self, git, message):
+        git.subcmd_unchecked().run(["commit", "--allow-empty", "-m", message])
+
+    def _branch(self, git):
+        return git.subcmd_unchecked().run(
+            ["branch", "--show-current"], text=True
+        ).stdout.strip()
+
+    def test_switch_create_and_back(self, repo_local):
+        git = self._git(repo_local)
+        self._commit(git, "initial")
+        home = self._branch(git)
+        git.switch_subcmd().switch(create="topic")
+        assert self._branch(git) == "topic"
+        git.switch_subcmd().switch(home)
+        assert self._branch(git) == home
+        git.switch_subcmd().switch("-")
+        assert self._branch(git) == "topic"
+
+    def test_force_create(self, repo_local):
+        git = self._git(repo_local)
+        self._commit(git, "one")
+        home = self._branch(git)
+        git.switch_subcmd().switch(create="topic")
+        git.switch_subcmd().switch(home)
+        self._commit(git, "two")
+        git.switch_subcmd().switch(force_create="topic")
+        assert self._branch(git) == "topic"
+
+    def test_detach(self, repo_local):
+        git = self._git(repo_local)
+        self._commit(git, "initial")
+        git.switch_subcmd().switch(detach=True, start_point="HEAD")
+        detached = git.subcmd_unchecked().run(
+            ["rev-parse", "--abbrev-ref", "HEAD"], text=True
+        ).stdout.strip()
+        assert detached == "HEAD"
+
+    def test_orphan(self, repo_local):
+        git = self._git(repo_local)
+        self._commit(git, "initial")
+        git.switch_subcmd().switch(orphan="blank")
+        assert self._branch(git) == "blank"
+
+    def test_discard_changes(self, repo_local):
+        git = self._git(repo_local)
+        Path(repo_local, "tracked.txt").write_text("a", encoding="utf-8")
+        git.add_subcmd().add("tracked.txt")
+        self._commit(git, "tracked")
+        home = self._branch(git)
+        git.switch_subcmd().switch(create="other")
+        git.switch_subcmd().switch(home)
+        Path(repo_local, "tracked.txt").write_text("dirty", encoding="utf-8")
+        git.switch_subcmd().switch("other", discard_changes=True)
+        assert self._branch(git) == "other"
+
+    def test_requires_destination(self, repo_local):
+        with pytest.raises(GitExitingException) as e:
+            SimpleGitCommand(repo_local).switch_subcmd().switch()
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_exclusive_modes(self, repo_local):
+        with pytest.raises(GitExitingException) as e:
+            SimpleGitCommand(repo_local).switch_subcmd().switch("master", create="x")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_str(self):
+        git = SimpleGitCommand()
+        assert str(git.switch_subcmd()).endswith("switch")
+
+    def test_cli_simple_git_command(self, repo_local):
+        git = CLISimpleGitCommand(repo_local).git_envs_override(
+            GIT_AUTHOR_NAME="ss",
+            GIT_AUTHOR_EMAIL="ss@ss.ss",
+            GIT_COMMITTER_NAME="ss",
+            GIT_COMMITTER_EMAIL="ss@ss.ss",
+        )
+        self._commit(git, "initial")
+        git.switch_subcmd().switch(create="cli-topic")
+        cloned = git.clone()
+        assert cloned.switch_subcmd()._subcmd_from_git(cloned) is not None
+        cloned.switch_subcmd().switch("-")
+
+    def test_subcmd_from_git(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        assert git.switch_subcmd()._subcmd_from_git(git) is not None
+
+    def test_args_validator_injection(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        validator = UtilSwitchArgsValidator()
+        cmd = SwitchCommandImpl(repo_local, git, args_validator=validator)
+        assert cmd.clone().args_validator() is validator
+
+    def test_cli_builder_helpers(self):
+        builder = IndividuallyOverridableSCAB()
+        assert builder.build("master") == ["switch", "master"]
+        assert builder.build(create="fixup", start_point="HEAD~3") == [
+            "switch",
+            "--create",
+            "fixup",
+            "HEAD~3",
+        ]
+        assert builder.build(detach=True) == ["switch", "--detach"]
+        assert builder.build("t", guess=False, quiet=True, merge=True) == [
+            "switch",
+            "--no-guess",
+            "--merge",
+            "--quiet",
+            "t",
+        ]
+        assert builder.build("t", track="direct") == ["switch", "--track=direct", "t"]
+        assert builder.build("t", force=True) == ["switch", "--discard-changes", "t"]
+        assert builder.build(orphan="blank", guess=True, progress=False, track=True) == [
+            "switch",
+            "--orphan",
+            "blank",
+            "--guess",
+            "--no-progress",
+            "--track",
+        ]
+        assert builder.build(
+            "t",
+            no_track=True,
+            ignore_other_worktrees=True,
+            recurse_submodules=True,
+            conflict="diff3",
+        ) == [
+            "switch",
+            "--conflict=diff3",
+            "--no-track",
+            "--ignore-other-worktrees",
+            "--recurse-submodules",
+            "t",
+        ]
+        assert builder.build(force_create="topic", start_point="HEAD") == [
+            "switch",
+            "--force-create",
+            "topic",
+            "HEAD",
+        ]
+        assert builder.optional_bool_flag(None, "--guess", "--no-guess") == []
+        assert builder.true_flag(False, "--quiet") == []
+        assert builder.create_arg(None) == []
+        assert builder.track_arg(None) == []
+
+    def test_validator_error_branches(self):
+        v = UtilSwitchArgsValidator()
+        with pytest.raises(GitExitingException) as e:
+            v.validate("")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate(create="a", force_create="b")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", merge=True, force=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track=True, no_track=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track=False)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", conflict="ours")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", track="upstream")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate("t", start_point="HEAD")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        with pytest.raises(GitExitingException) as e:
+            v.validate(orphan="blank", start_point="HEAD")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+        v.validate("t", guess=True, progress=False, recurse_submodules=True, conflict="zdiff3")
+        v.validate(detach=True)
+
+
 @pytest.mark.parametrize(
     "subcmd",
     [
@@ -2092,6 +2282,7 @@ class TestHashObjectSubcmd:
         "ls_tree_subcmd",
         "hash_object_subcmd",
         "writing_hash_object_subcmd",
+        "switch_subcmd",
         "subcmd_unchecked",
     ],
 )

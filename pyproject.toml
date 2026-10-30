@@ -38,7 +38,7 @@ classifiers = [
 ]
 dependencies = [
   "vt-err-hndlr >= 0.0.0dev6",
-  "vt-commons >= 0.0.1.dev11",
+  "vt-commons >= 0.0.2.dev0",
 ]
 
 [project.optional-dependencies]
@@ -46,7 +46,7 @@ pygit2 = ['pygit2']
 test = ['pytest']
 
 [dependency-groups]
-dev = ["mypy", "ruff"]
+dev = ["mypy", "ruff==0.11.10"]
 doc = ['sphinx', 'sphinx-argparse']
 test = ["pytest", 'pytest-cov', "pytest-xdist"]
 multitest = ['tox']

@@ -21,6 +21,13 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.switch import (
+    SwitchArgsValidator,
+    UtilSwitchArgsValidator,
+    ConflictStyle,
+    TrackMode,
+    SwitchBranch,
+)
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +901,157 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
+    """
+    Interface for ``git switch`` subcommand.
+
+    Mirrors `git switch documentation <https://git-scm.com/docs/git-switch>`_.
+    ``force`` is Git's alias for ``--discard-changes``. Flags are omitted unless
+    set, so Git keeps defaults such as ``--guess``.
+    """
+
+    # region switch and overloads
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        branch: SwitchBranch,
+        *,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Switch to ``branch``.
+
+        Mirrors ``git switch [<options>] [--no-guess] <branch>``.
+        ``-`` is synonymous with ``@{-1}``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Create ``create`` at ``start_point`` and switch to it.
+
+        Mirrors ``git switch [<options>] -c <new-branch> [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        force_create: str,
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Reset ``force_create`` to ``start_point`` if it exists, then switch to it.
+
+        Mirrors ``git switch [<options>] -C <new-branch> [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        detach: Literal[True],
+        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Detach HEAD at ``start_point`` (or HEAD).
+
+        Mirrors ``git switch [<options>] --detach [<start-point>]``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        orphan: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Create unborn branch ``orphan`` and switch to it.
+
+        Mirrors ``git switch [<options>] --orphan <new-branch>``.
+        """
+        ...
+    # endregion
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Switch:
+        return git.switch_subcmd()
+
+    def args_validator(self) -> SwitchArgsValidator:
+        """
+        The argument validator for ``git switch`` subcommand.
+        """
+        return UtilSwitchArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -965,6 +1123,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
         :return: ``git hash-object`` subcommand. Can write objects to the git database.
+        """
+        ...
+
+    @abstractmethod
+    def switch_subcmd(self) -> Switch:
+        """
+        :return: ``git switch`` subcommand.
         """
         ...
 
