@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [[package]]
@@ -273,7 +273,7 @@ test = [
 requires-dist = [
     { name = "pygit2", marker = "extra == 'pygit2'" },
     { name = "pytest", marker = "extra == 'test'" },
-    { name = "vt-commons", specifier = ">=0.0.1.dev11" },
+    { name = "vt-commons", specifier = ">=0.0.2.dev0" },
     { name = "vt-err-hndlr", specifier = ">=0.0.0.dev6" },
 ]
 provides-extras = ["pygit2", "test"]
@@ -736,11 +736,14 @@ wheels = [
 
 [[package]]
 name = "vt-commons"
-version = "0.0.1.dev11"
+version = "0.0.2.dev0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8c/96/7299687d5c235f3474a61b918664c2df420dd7f0ee7a425e1f139758129f/vt_commons-0.0.1.dev11.tar.gz", hash = "sha256:692028a825d51bf6379e8bf77d5b85b26bfe2d9718189be9e375f4e85be87dcb", size = 20528, upload-time = "2026-05-25T19:07:36.857Z" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/b4/f575c8b32bb9350baa27b3c4c305a0c5690bef40eb4864773bd136b1ae18/vt_commons-0.0.2.dev0.tar.gz", hash = "sha256:4245e462323a9f0199bb861c3932bd030203b53026aff17fae89a4d642e43b56", size = 21742, upload-time = "2026-10-30T09:06:02.62Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/be/619d672a8fbb31f6ef4609b49b25e397131e7c5adcc558be89ad6f04a94f/vt_commons-0.0.1.dev11-py3-none-any.whl", hash = "sha256:38cc7ee3ee88054123bba526b249c4a40cdce94b6099b969b08a67745bf818c7", size = 24792, upload-time = "2026-05-25T19:07:35.282Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/30/2ea2a98733bf970624f080cb0b3aae10b84b7e1d14616337cdccc5055096/vt_commons-0.0.2.dev0-py3-none-any.whl", hash = "sha256:8d8db598e1e9b4e7be757b71b3ac26c2da201ee7ef8ec3d27eef59add43e528e", size = 25319, upload-time = "2026-10-30T09:06:01.382Z" },
 ]
 
 [[package]]

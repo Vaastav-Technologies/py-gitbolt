@@ -9,7 +9,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, Iterable
 
-from vt.utils.commons.commons.core_py import Unset, UNSET
+from vt.utils.commons.commons.core_py import (
+    Unset,
+    UNSET,  # noqa: F401 - not used by the code, but the module doctests use it
+    is_unset,
+)
 
 from gitbolt.subprocess.constants import WORKTREE_CMD, WORKTREE_LIST_CMD, WORKTREE_ADD_CMD, \
     WORKTREE_MOVE_CMD, WORKTREE_REMOVE_CMD, WORKTREE_LOCK_CMD
@@ -68,7 +72,7 @@ def handle_bool_opt(arg: bool | Unset, opt_str: str) -> str | Unset:
         return f"--{opt_str}"
     elif arg is False:
         return f"--no-{opt_str}"
-    elif arg == UNSET:
+    elif is_unset(arg):
         return arg
     else:
         raise ValueError(f"{opt_str} must either be a bool or remain Unset.")
@@ -110,7 +114,7 @@ def handle_true_opt(arg: Literal[True] | Unset, opt_str: str, single_dash: bool 
 def handle_str_bool_opt(arg: bool | Unset | str, opt_str: str) -> list[str] | Unset:
     if arg is False:
         return [f"--no-{opt_str}"]
-    elif arg == UNSET:
+    elif is_unset(arg):
         return arg
     elif isinstance(arg, str):
         return [f"--{opt_str}", arg]
@@ -256,7 +260,7 @@ class WorktreeCLIArgsBuilder(abc.ABC):
 
     def _new_branch_option_helper(self, new_branch: str | Unset, commit_ish: str | None,
                                   opt_str: str) -> list[str] | Unset:
-        if new_branch==UNSET:
+        if is_unset(new_branch):
             return new_branch
         elif isinstance(new_branch, str):
             if commit_ish is not None:
