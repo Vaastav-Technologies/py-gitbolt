@@ -2580,3 +2580,28 @@ def test_list_worktree(git_fact, repo_local):
         assert ".git/.nb-worktree" in  worktree_str
         assert " [master]" in worktree_str
         git.worktree_subcmd().remove_subcmd().remove(Path(".git", ".nb-worktree"), force=True)
+
+
+@pytest.mark.parametrize("new_branch_kwarg", ["new_branch", "new_branch_force"])
+@pytest.mark.parametrize("git_fact", [SimpleGitCommand, CLISimpleGitCommand])
+def test_add_worktree_on_new_branch(git_fact, new_branch_kwarg, repo_local):
+    """
+    - Adds a worktree on a new branch started at a commit-ish.
+    - Verifies the branch is created with the given name, at that commit-ish, and checked out in the worktree.
+    """
+    git = git_fact(repo_local)
+    ident_git = git.git_envs_override(
+        GIT_AUTHOR_NAME="ss",
+        GIT_AUTHOR_EMAIL="ss@ss.ss",
+        GIT_COMMITTER_NAME="ss",
+        GIT_COMMITTER_EMAIL="ss@ss.ss",
+    )
+    ident_git.subcmd_unchecked().run(["commit", "-m", "first", "--allow-empty"])
+    first = git.subcmd_unchecked().run(["rev-parse", "HEAD"], text=True).stdout.strip()
+    ident_git.subcmd_unchecked().run(["commit", "-m", "second", "--allow-empty"])
+    worktree = Path(".git", ".feat-worktree")
+    with pytest.warns(match="Worktree implementations are not stable. Use subcmd_unchecked instead."):
+        git.worktree_subcmd().add_subcmd().add(worktree, first, **{new_branch_kwarg: "feat"})
+        assert git.subcmd_unchecked().run(["rev-parse", "feat"], text=True).stdout.strip() == first
+        assert " [feat]" in git.worktree_subcmd().list_subcmd().list()
+        git.worktree_subcmd().remove_subcmd().remove(worktree, force=True)

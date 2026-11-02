@@ -174,15 +174,14 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                 reason: str | Literal[False] | Unset, quiet: bool | Unset,
                 track: bool | Unset, guess_remote: bool | Unset,
                 relative_paths: bool | Unset) -> list[str]:
-        cmd_list = [WORKTREE_CMD, WORKTREE_ADD_CMD, str(worktree), ]
-        if commit_ish is not None:
-            cmd_list.append(commit_ish)
+        # git worktree add [<options>] <path> [<commit-ish>]: options first, then the positionals.
+        cmd_list = [WORKTREE_CMD, WORKTREE_ADD_CMD, ]
         cmd_list.extend(
                 build_non_none_list(
                     self._handle_force_option(force),
                     self._handle_reforce_option(reforce),
-                    self._handle_new_branch_option(new_branch, commit_ish),
-                    self._handle_new_branch_force_option(new_branch_force, commit_ish),
+                    self._handle_new_branch_option(new_branch),
+                    self._handle_new_branch_force_option(new_branch_force),
                     self._handle_orphan_option(orphan),
                     self._handle_detach_option(detach),
                     self._handle_checkout_option(checkout),
@@ -193,6 +192,9 @@ class WorktreeCLIArgsBuilder(abc.ABC):
                     self._handle_guess_remote_option(guess_remote),
                     self._handle_relative_paths_option(relative_paths),
                 ))
+        cmd_list.append(str(worktree))
+        if commit_ish is not None:
+            cmd_list.append(commit_ish)
         return cmd_list
 
     def _handle_verbose_option(self, verbose: bool | Unset) -> str | Unset:
@@ -230,12 +232,11 @@ class WorktreeCLIArgsBuilder(abc.ABC):
         else:
             raise ValueError(f"{expire} must either have a datetime value, int value, be False or remain Unset.")
 
-    def _handle_new_branch_option(self, new_branch: str | Unset, commit_ish: str | None) -> list[str] | Unset:
-        return self._new_branch_option_helper(new_branch, commit_ish, "-b")
+    def _handle_new_branch_option(self, new_branch: str | Unset) -> list[str] | Unset:
+        return self._new_branch_option_helper(new_branch, "-b")
 
-    def _handle_new_branch_force_option(self, new_branch_force: str | Unset,
-                                        commit_ish: str | None) -> list[str] | Unset:
-        return self._new_branch_option_helper(new_branch_force, commit_ish, "-B")
+    def _handle_new_branch_force_option(self, new_branch_force: str | Unset) -> list[str] | Unset:
+        return self._new_branch_option_helper(new_branch_force, "-B")
 
     def _handle_orphan_option(self, orphan: Literal[True] | Unset) -> str | Unset:
         return handle_true_opt(orphan, "orphan")
@@ -258,13 +259,11 @@ class WorktreeCLIArgsBuilder(abc.ABC):
     def _handle_guess_remote_option(self, guess_remote: bool | Unset) -> str | Unset:
         return handle_bool_opt(guess_remote, "guess-remote")
 
-    def _new_branch_option_helper(self, new_branch: str | Unset, commit_ish: str | None,
-                                  opt_str: str) -> list[str] | Unset:
+    def _new_branch_option_helper(self, new_branch: str | Unset, opt_str: str) -> list[str] | Unset:
         if is_unset(new_branch):
             return new_branch
         elif isinstance(new_branch, str):
-            if commit_ish is not None:
-                return [opt_str, commit_ish]
-            return [opt_str]
+            # The branch name is the option's value; commit-ish is a positional placed after <path>.
+            return [opt_str, new_branch]
         else:
             raise ValueError(f"{opt_str} must either have a branch-name value or remain Unset.")
