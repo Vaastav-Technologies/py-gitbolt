@@ -225,7 +225,7 @@ class Version(GitSubCommand, Protocol):
     Interface for ``git version`` command.
     """
 
-    class VersionInfo:
+    class VersionInfo(Protocol):
         @abstractmethod
         def version(self) -> str: ...
 
