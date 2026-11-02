@@ -174,3 +174,5 @@ cython_debug/
 .pypirc
 
 release-msg.md
+
+.mcp.json
