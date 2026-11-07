@@ -21,6 +21,7 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.update_ref import UpdateRefArgsValidator, UtilUpdateRefArgsValidator
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +895,127 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class UpdateRef(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git update-ref`` subcommand.
+
+    Updates the object name stored in a ref safely. A repository is required.
+    """
+
+    @overload
+    @abstractmethod
+    def update_ref(
+        self,
+        ref: str,
+        new_oid: str,
+        old_oid: str | None = None,
+        *,
+        m: str | None = None,
+        no_deref: bool = False,
+        create_reflog: bool = False,
+    ) -> str:
+        """
+        Store ``new_oid`` in ``ref``, optionally verifying ``old_oid``.
+
+        Mirrors ``git update-ref`` from
+        `git update-ref documentation <https://git-scm.com/docs/git-update-ref>`_.
+
+        :param ref: Ref to update.
+        :param new_oid: Object name to store. Forty ``0`` characters deletes the ref.
+        :param old_oid: If given, the ref must currently have this value (or not exist if zero/empty).
+        :param m: Reflog reason (``-m``).
+        :param no_deref: Overwrite the ref itself rather than following symbolic refs.
+        :param create_reflog: Create a reflog even if one would not ordinarily be created.
+        :return: ``git update-ref`` stdout (usually empty).
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def update_ref(
+        self,
+        ref: str,
+        *,
+        d: Literal[True],
+        old_oid: str | None = None,
+        m: str | None = None,
+        no_deref: bool = False,
+    ) -> str:
+        """
+        Delete ``ref`` (``-d``), optionally verifying ``old_oid``.
+
+        :param ref: Ref to delete.
+        :param d: Must be ``True`` to delete.
+        :param old_oid: If given, the ref must currently have this value.
+        :param m: Reflog reason (``-m``).
+        :param no_deref: Overwrite the ref itself rather than following symbolic refs.
+        :return: ``git update-ref`` stdout (usually empty).
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def update_ref(
+        self,
+        *,
+        stdin: bytes,
+        z: bool = False,
+        batch_updates: bool = False,
+        m: str | None = None,
+        no_deref: bool = False,
+    ) -> str:
+        """
+        Apply ``update-ref`` instructions from stdin (``--stdin``).
+
+        GitBolt requires ``stdin`` so the process does not hang.
+
+        :param stdin: Instruction bytes (LF format, or NUL with ``z=True``).
+        :param z: NUL-terminated stdin format (``-z``).
+        :param batch_updates: Apply successful updates even if some fail (``--batch-updates``).
+        :param m: Reflog reason (``-m``).
+        :param no_deref: Default ``no-deref`` for the stdin session.
+        :return: ``git update-ref`` stdout.
+        """
+        ...
+
+    @abstractmethod
+    def update_ref(
+        self,
+        ref: str | None = None,
+        new_oid: str | None = None,
+        old_oid: str | None = None,
+        *,
+        d: bool = False,
+        m: str | None = None,
+        no_deref: bool = False,
+        create_reflog: bool = False,
+        stdin: bytes | None = None,
+        z: bool = False,
+        batch_updates: bool = False,
+    ) -> str:
+        """
+        Update, delete, or batch-update refs.
+
+        Mirrors ``git update-ref`` from
+        `git update-ref documentation <https://git-scm.com/docs/git-update-ref>`_.
+
+        :return: ``git update-ref`` stdout (usually empty).
+        """
+        ...
+
+    @override
+    def _subcmd_from_git(self, git: 'Git') -> UpdateRef:
+        return git.update_ref_subcmd()
+
+    def args_validator(self) -> UpdateRefArgsValidator:
+        """
+        The argument validator for ``git update-ref`` subcommand.
+
+        :return: a validator for update_ref subcommand arguments.
+        """
+        return UtilUpdateRefArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -965,6 +1087,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
         :return: ``git hash-object`` subcommand. Can write objects to the git database.
+        """
+        ...
+
+    @abstractmethod
+    def update_ref_subcmd(self) -> UpdateRef:
+        """
+        :return: ``git update-ref`` subcommand.
         """
         ...
 

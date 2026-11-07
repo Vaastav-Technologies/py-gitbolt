@@ -17,12 +17,15 @@ from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.exceptions import GitCmdException
 from gitbolt.subprocess.base import GitSession
 from gitbolt.hash_object import UtilHashObjectArgsValidator
+from gitbolt.update_ref import UtilUpdateRefArgsValidator
 from gitbolt.subprocess.hash_object import IndividuallyOverridableHOCAB
+from gitbolt.subprocess.update_ref import IndividuallyOverridableURCAB
 from gitbolt.subprocess.impl.simple import (
     SimpleGitCommand,
     CLISimpleGitCommand,
     HashObjectCommandImpl,
     WritingHashObjectCommandImpl,
+    UpdateRefCommandImpl,
 )
 from gitbolt.subprocess.utils.session import cat_file_data, cat_file_tree_data, cat_file_commit_content
 
@@ -2084,6 +2087,162 @@ class TestHashObjectSubcmd:
         assert builder.file_path_args(None) == []
 
 
+def _ident_git(repo_local: Path, cls=SimpleGitCommand) -> SimpleGitCommand:
+    return cls(repo_local).git_envs_override(
+        GIT_AUTHOR_NAME="ss",
+        GIT_AUTHOR_EMAIL="ss@ss.ss",
+        GIT_COMMITTER_NAME="ss",
+        GIT_COMMITTER_EMAIL="ss@ss.ss",
+    )
+
+
+def _commit_oid(git: SimpleGitCommand, repo_local: Path, name: str = "a-file") -> str:
+    Path(repo_local, name).write_text(name)
+    git.add_subcmd().add(name)
+    git.subcmd_unchecked().run(["commit", "-m", name])
+    return git.subcmd_unchecked().run(["rev-parse", "HEAD"], text=True).stdout.strip()
+
+
+def _rev_parse(git: SimpleGitCommand, rev: str) -> str:
+    return git.subcmd_unchecked().run(["rev-parse", rev], text=True).stdout.strip()
+
+
+class TestUpdateRefSubcmd:
+    def test_update(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", oid)
+        assert _rev_parse(git, "refs/heads/topic") == oid
+
+    def test_update_with_old_oid(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", oid)
+        oid2 = _commit_oid(git, repo_local, "b-file")
+        git.update_ref_subcmd().update_ref("refs/heads/topic", oid2, oid)
+        assert _rev_parse(git, "refs/heads/topic") == oid2
+
+    def test_delete(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", oid)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", d=True)
+        with pytest.raises(GitCmdException):
+            _rev_parse(git, "refs/heads/topic")
+
+    def test_delete_with_old_oid(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", oid)
+        git.update_ref_subcmd().update_ref("refs/heads/topic", d=True, old_oid=oid)
+        with pytest.raises(GitCmdException):
+            _rev_parse(git, "refs/heads/topic")
+
+    def test_message_and_create_reflog(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref(
+            "refs/heads/logged", oid, m="create topic", create_reflog=True
+        )
+        log = git.subcmd_unchecked().run(
+            ["reflog", "show", "refs/heads/logged"], text=True
+        ).stdout
+        assert "create topic" in log
+
+    def test_stdin_create(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref(
+            stdin=f"create refs/heads/from-stdin {oid}\n".encode()
+        )
+        assert _rev_parse(git, "refs/heads/from-stdin") == oid
+
+    def test_stdin_z(self, repo_local):
+        git = _ident_git(repo_local)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref(
+            stdin=f"create refs/heads/from-z\0{oid}\0".encode(), z=True
+        )
+        assert _rev_parse(git, "refs/heads/from-z") == oid
+
+    def test_requires_repository(self, tmp_path):
+        git = SimpleGitCommand(tmp_path)
+        with pytest.raises(GitCmdException):
+            git.update_ref_subcmd().update_ref("refs/heads/x", "0" * 40)
+
+    def test_ref_or_stdin_required(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref()
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_new_oid_required(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref("refs/heads/x")
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_ref_must_be_str(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref(1, "abc")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+    def test_stdin_must_be_bytes(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref(stdin="create x")  # type: ignore[arg-type]
+        assert e.value.exit_code == ERR_DATA_FORMAT_ERR
+
+    def test_d_and_new_oid_exclusive(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref("refs/heads/x", "abc", d=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_z_requires_stdin(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        with pytest.raises(GitExitingException) as e:
+            git.update_ref_subcmd().update_ref(z=True)
+        assert e.value.exit_code == ERR_INVALID_USAGE
+
+    def test_str(self):
+        git = SimpleGitCommand()
+        assert str(git.update_ref_subcmd()).endswith("update-ref")
+
+    def test_cli_simple_git_command(self, repo_local):
+        git = _ident_git(repo_local, CLISimpleGitCommand)
+        oid = _commit_oid(git, repo_local)
+        git.update_ref_subcmd().update_ref("refs/heads/cli", oid)
+        cloned = git.clone()
+        cloned.update_ref_subcmd().update_ref("refs/heads/cli-clone", oid)
+        assert _rev_parse(cloned, "refs/heads/cli-clone") == oid
+
+    def test_subcmd_from_git(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        assert git.update_ref_subcmd()._subcmd_from_git(git) is not None
+
+    def test_args_validator_injection(self, repo_local):
+        git = SimpleGitCommand(repo_local)
+        validator = UtilUpdateRefArgsValidator()
+        cmd = UpdateRefCommandImpl(repo_local, git, args_validator=validator)
+        assert cmd.clone().args_validator() is validator
+        assert cmd.clone().root_dir == repo_local
+
+    def test_cli_builder_helpers(self):
+        builder = IndividuallyOverridableURCAB()
+        assert builder.m_arg("reason") == ["-m", "reason"]
+        assert builder.m_arg(None) == []
+        assert builder.no_deref_arg(True) == ["--no-deref"]
+        assert builder.create_reflog_arg(True) == ["--create-reflog"]
+        assert builder.stdin_arg(b"x") == ["--stdin"]
+        assert builder.z_arg(True) == ["-z"]
+        assert builder.batch_updates_arg(True) == ["--batch-updates"]
+        assert builder.d_arg(True) == ["-d"]
+        assert builder.operand_args("r", "n", "o", d=False, stdin=None) == ["r", "n", "o"]
+        assert builder.operand_args("r", None, "o", d=True, stdin=None) == ["r", "o"]
+
+
 @pytest.mark.parametrize(
     "subcmd",
     [
@@ -2092,6 +2251,7 @@ class TestHashObjectSubcmd:
         "ls_tree_subcmd",
         "hash_object_subcmd",
         "writing_hash_object_subcmd",
+        "update_ref_subcmd",
         "subcmd_unchecked",
     ],
 )

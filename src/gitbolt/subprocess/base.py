@@ -23,7 +23,7 @@ from vt.utils.commons.commons.op import RootDirOp
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
 
 from gitbolt import Git, Version, LsTree, GitSubCommand, HasGitUnderneath, Add
-from gitbolt.base import Worktree, HashObject, WritingHashObject
+from gitbolt.base import Worktree, HashObject, WritingHashObject, UpdateRef
 from gitbolt.exceptions import GitExitingException
 from gitbolt.subprocess.add import AddCLIArgsBuilder, IndividuallyOverridableACAB
 from gitbolt.subprocess.hash_object import (
@@ -38,6 +38,14 @@ from gitbolt.subprocess.hash_object_util import (
     stdin_temp_file_paths,
     stripped_stdout_text,
 )
+from gitbolt.subprocess.update_ref import (
+    UpdateRefCLIArgsBuilder,
+    IndividuallyOverridableURCAB,
+)
+from gitbolt.subprocess.update_ref_util import (
+    stripped_update_ref_stdout,
+    update_ref_stdin_input,
+)
 from gitbolt.subprocess.ls_tree import (
     LsTreeCLIArgsBuilder,
     IndividuallyOverridableLTCAB,
@@ -46,7 +54,7 @@ from gitbolt.subprocess.runner import GitCommandRunner
 from gitbolt.models import GitOpts, GitLsTreeOpts, GitAddOpts, GitEnvVars
 from gitbolt.subprocess.worktree import WorktreeCLIArgsBuilder
 from gitbolt.utils import merge_git_opts, merge_git_envs
-from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
+from gitbolt.subprocess.constants import GIT_CMD, VERSION_CMD, LS_TREE_CMD, ADD_CMD, HASH_OBJECT_CMD, UPDATE_REF_CMD, WORKTREE_CMD, WORKTREE_ADD_CMD
 from gitbolt.subprocess.utils.session import _close_session_popen
 
 
@@ -393,6 +401,10 @@ class GitCommand(Git, ABC):
     @override
     @abstractmethod
     def writing_hash_object_subcmd(self) -> WritingHashObjectCommand: ...
+
+    @override
+    @abstractmethod
+    def update_ref_subcmd(self) -> UpdateRefCommand: ...
 
     @override
     @abstractmethod
@@ -1321,6 +1333,149 @@ class WritingHashObjectCommand(HashObjectCommand, WritingHashObject, Protocol):
     @override
     def writing(self) -> WritingHashObject:
         return self
+
+
+class UpdateRefCommand(UpdateRef, GitSubcmdCommand, Protocol):
+    """
+    A composable class for building arguments for the `git update-ref` subcommand, which is run later in a subprocess.
+    """
+
+    @override
+    @overload
+    def update_ref(
+        self,
+        ref: str,
+        new_oid: str,
+        old_oid: str | None = None,
+        *,
+        m: str | None = None,
+        no_deref: bool = False,
+        create_reflog: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def update_ref(
+        self,
+        ref: str,
+        *,
+        d: Literal[True],
+        old_oid: str | None = None,
+        m: str | None = None,
+        no_deref: bool = False,
+    ) -> str: ...
+
+    @override
+    @overload
+    def update_ref(
+        self,
+        *,
+        stdin: bytes,
+        z: bool = False,
+        batch_updates: bool = False,
+        m: str | None = None,
+        no_deref: bool = False,
+    ) -> str: ...
+
+    @override
+    def update_ref(
+        self,
+        ref: str | None = None,
+        new_oid: str | None = None,
+        old_oid: str | None = None,
+        *,
+        d: bool = False,
+        m: str | None = None,
+        no_deref: bool = False,
+        create_reflog: bool = False,
+        stdin: bytes | None = None,
+        z: bool = False,
+        batch_updates: bool = False,
+    ) -> str:
+        self.args_validator().validate(
+            ref,
+            new_oid,
+            old_oid,
+            d=d,
+            m=m,
+            no_deref=no_deref,
+            create_reflog=create_reflog,
+            stdin=stdin,
+            z=z,
+            batch_updates=batch_updates,
+        )
+        sub_cmd_args = self.cli_args_builder.build(
+            ref,
+            new_oid,
+            old_oid,
+            d=d,
+            m=m,
+            no_deref=no_deref,
+            create_reflog=create_reflog,
+            stdin=stdin,
+            z=z,
+            batch_updates=batch_updates,
+        )
+        main_cmd_args = self.git.build_main_cmd_args()
+        env_vars = self.git.build_git_envs()
+        _input = update_ref_stdin_input(stdin=stdin)
+        result = self.git.runner.run_git_command(
+            main_cmd_args,
+            sub_cmd_args,
+            _input=_input,
+            check=True,
+            text=False,
+            capture_output=True,
+            cwd=self.root_dir,
+            env=env_vars,
+        )
+        return stripped_update_ref_stdout(result.stdout)
+
+    @override
+    @abstractmethod
+    def clone(self) -> Self: ...
+
+    @property
+    def cli_args_builder(self) -> UpdateRefCLIArgsBuilder:
+        """
+        The builder assembles the subcommand CLI portion of the git command invocation, such as
+        in ``git --no-pager update-ref refs/heads/main ABC``, where ``refs/heads/main ABC`` is the
+        subcommand argument list.
+
+        :return: Builder the complete list of subcommand CLI arguments to be passed to ``git update-ref`` subprocess.
+        """
+        return IndividuallyOverridableURCAB()
+
+    @override
+    def __str__(self) -> str:
+        """
+        >>> import gitbolt
+
+        No options and envs:
+
+        >>> _a_git = gitbolt.get_git_command()
+        >>> assert str(_a_git.update_ref_subcmd()) == f"{GIT_CMD} {UPDATE_REF_CMD}"
+
+        Added main command options:
+
+        >>> _b_git = _a_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True)
+        >>> assert str(_a_git.update_ref_subcmd()) == f"{GIT_CMD} {UPDATE_REF_CMD}"    # _a_git never changed
+        >>> assert str(_b_git.update_ref_subcmd()) == f"{GIT_CMD} -C a -C b --no-advice --no-replace-objects {UPDATE_REF_CMD}"
+
+        Adding git envs:
+
+        >>> _c_git = _a_git.git_envs_override(GIT_ADVICE=False, GIT_AUTHOR_NAME="Suhas", GIT_PAGER="vi")
+        >>> assert str(_a_git.update_ref_subcmd()) == f"{GIT_CMD} {UPDATE_REF_CMD}"    # _a_git never changed
+        >>> assert str(_c_git.update_ref_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} {UPDATE_REF_CMD}"
+
+        >>> _d_git = _c_git.git_opts_override(C=[Path("a"), Path("b")], no_advice=True, no_replace_objects=True, config_env=dict(conf1="val1", glob1="val2"))
+        >>> assert str(_d_git.update_ref_subcmd()) == f"GIT_ADVICE=False GIT_AUTHOR_NAME=Suhas GIT_PAGER=vi {GIT_CMD} -C a -C b --no-advice --no-replace-objects --config-env conf1=val1 --config-env glob1=val2 {UPDATE_REF_CMD}"
+
+        Does not affect repr:
+
+        >>> assert repr(_d_git) != str(_d_git)
+        """
+        return " ".join([str(self.git), UPDATE_REF_CMD])
 
 
 class WorktreeCommand(Worktree, GitSubcmdCommand, abc.ABC):
