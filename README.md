@@ -427,6 +427,7 @@ Transformers for formatting/parsing can be added later.
 ## Notes
 
 - 0.0.0: `git hash-object` is available as `hash_object_subcmd()` / `writing_hash_object_subcmd()`. Use `writing()` (or `w=True`) to write objects; use `multi_hash_objects` to hash several stdin payloads in one process. Hashing works outside a repository; `-w` requires a repository.
+- 0.0.0: `git replace` is available as `replace_subcmd()`. Use `replace`, `delete`, `list`, `graft`, and `convert_graft_file`. Interactive `--edit` is not wrapped. `force=True` maps to `-f`; omitted flags keep Git's defaults.
 - 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
 ---

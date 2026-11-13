@@ -21,6 +21,7 @@ from gitbolt.models import GitOpts, GitAddOpts, GitLsTreeOpts, GitEnvVars
 from gitbolt.ls_tree import LsTreeArgsValidator, UtilLsTreeArgsValidator
 from gitbolt.add import AddArgsValidator, UtilAddArgsValidator
 from gitbolt.hash_object import HashObjectArgsValidator, UtilHashObjectArgsValidator
+from gitbolt.replace import ReplaceArgsValidator, UtilReplaceArgsValidator, ReplaceFormat
 
 
 class HasGitUnderneath[G: "Git"](Protocol):
@@ -894,6 +895,81 @@ class WritingHashObject(HashObject, RootDirOp, Protocol):
         return git.writing_hash_object_subcmd()
 
 
+class Replace(GitSubCommand, RootDirOp, Protocol):
+    """
+    Interface for ``git replace`` subcommand.
+
+    Uses Git's current modes (create a replace ref, delete, list, graft,
+    convert-graft-file). Interactive ``--edit`` / ``--raw`` are not wrapped
+    because they open an editor.
+    """
+
+    @abstractmethod
+    def replace(
+        self, object: str, replacement: str, *, force: bool = False
+    ) -> str:
+        """
+        Create a replace ref so ``object`` is replaced by ``replacement``.
+
+        Mirrors ``git replace [-f] <object> <replacement>`` from
+        `git replace documentation <https://git-scm.com/docs/git-replace>`_.
+
+        Both objects must be the same type unless ``force`` is set.
+        Without ``force``, the replace ref must not already exist.
+        """
+        ...
+
+    @abstractmethod
+    def delete(self, object: str, *objects: str) -> str:
+        """
+        Delete existing replace refs for the given objects.
+
+        Mirrors ``git replace -d <object>...``.
+        """
+        ...
+
+    @abstractmethod
+    def list(
+        self, pattern: str | None = None, *, format_: ReplaceFormat | None = None
+    ) -> str:
+        """
+        List replace refs, optionally filtered by ``pattern``.
+
+        Mirrors ``git replace [--format=<format>] [-l [<pattern>]]``.
+        With no arguments, lists all replace refs. ``format_`` is ``short``,
+        ``medium``, or ``long``; omitted keeps Git's default (``short``).
+        """
+        ...
+
+    @abstractmethod
+    def graft(self, commit: str, *parents: str, force: bool = False) -> str:
+        """
+        Create a graft commit with ``parents`` and a replace ref for ``commit``.
+
+        Mirrors ``git replace [-f] --graft <commit> [<parent>...]``.
+        """
+        ...
+
+    @abstractmethod
+    def convert_graft_file(self, *, force: bool = False) -> str:
+        """
+        Convert ``$GIT_DIR/info/grafts`` into replace refs and delete that file.
+
+        Mirrors ``git replace [-f] --convert-graft-file``.
+        """
+        ...
+
+    @override
+    def _subcmd_from_git(self, git: "Git") -> Replace:
+        return git.replace_subcmd()
+
+    def args_validator(self) -> ReplaceArgsValidator:
+        """
+        The argument validator for ``git replace`` subcommand.
+        """
+        return UtilReplaceArgsValidator()
+
+
 class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     """
     Class designed analogous to documentation provided on `git documentation <https://git-scm.com/docs/git>`_.
@@ -965,6 +1041,13 @@ class Git(CanOverrideGitOpts, CanOverrideGitEnvs, Protocol):
     def writing_hash_object_subcmd(self) -> WritingHashObject:
         """
         :return: ``git hash-object`` subcommand. Can write objects to the git database.
+        """
+        ...
+
+    @abstractmethod
+    def replace_subcmd(self) -> Replace:
+        """
+        :return: ``git replace`` subcommand.
         """
         ...
 
