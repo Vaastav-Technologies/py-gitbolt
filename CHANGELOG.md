@@ -13,6 +13,9 @@ Date format: YYYY-MM-DD
 
 - Making an empty tree with `mktree_tree_make()` or `mktree_tree_data_make()` no longer gives the trees made after it
   in the same session the wrong hash.
+- Trees of sha256 repositories are read correctly with `cat_file_tree_data()` and `cat_file_tree_content()`. They were
+  misread, and reading could go on forever. `parse_cat_file_tree()` takes an `id_size` for them.
+- Malformed trees are refused with an error. Reading one could go on forever.
 
 ## [0.0.0] - 2026-10-07
 
