@@ -29,6 +29,7 @@
 * 🧼 **Idiomatic Python:** Write commands in idiomatic Python at compile-time and be confident they’ll execute smoothly at runtime.
 * 🎀 **Add-ons:** Special features provided to ease programming with git. These can be added if required.
 * 💻 **CLI-cmd:** Take commands from cli and run in `gitbolt`.
+* 🔐 **SHA-256:** Sessions support SHA-256 repositories.
 
 ---
 
@@ -426,6 +427,7 @@ Transformers for formatting/parsing can be added later.
 
 ## Notes
 
+- 0.0.1.dev1: Sessions support SHA-256 repositories.
 - 0.0.0: `git hash-object` is available as `hash_object_subcmd()` / `writing_hash_object_subcmd()`. Use `writing()` (or `w=True`) to write objects; use `multi_hash_objects` to hash several stdin payloads in one process. Hashing works outside a repository; `-w` requires a repository.
 - 0.0.0.dev24: `worktree` implementations are not stable yet. Use `subcmd_unchecked` directly.
 
