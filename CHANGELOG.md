@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date format: YYYY-MM-DD
 
+## [0.0.1.dev2] - 2026-11-24
+
+### Fixed
+
+- The documented examples of `GitCmdException` are right on Python 3.15 too.
+
 ## [0.0.1.dev1] - 2026-11-24
 
 ### Fixed
