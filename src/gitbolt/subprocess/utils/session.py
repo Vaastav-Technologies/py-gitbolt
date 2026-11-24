@@ -220,10 +220,12 @@ def mktree_tree_make(mktree_popen: subprocess.Popen[bytes], mktree_null_delimite
 
     :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
     :param mktree_null_delimited_content: the tree data content as taken on stdin on ``mktree --batch -z``. These
-        contents are null (``\0``) delimited.
+        contents are null (``\0``) delimited, without a trailing null. Empty content makes the empty tree.
     :returns: the created tree hash.
     """
-    write_obj = mktree_null_delimited_content + b"\0\0"
+    # -z ends each entry with a null and each tree with one more. The empty tree has no entry to end, and another null
+    # would end a second empty tree, whose hash would be read as the next call's.
+    write_obj = mktree_null_delimited_content + b"\0\0" if mktree_null_delimited_content else b"\0"
     tree_hash = single_shot_command(mktree_popen, write_obj, True)
     return tree_hash.strip()
 
@@ -254,7 +256,8 @@ def mktree_tree_data_make(mktree_popen: subprocess.Popen[bytes], mktree_entries:
     Natively supports null-terminated tree entries or ``git mktree --batch -z`` mode.
 
     :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
-    :param mktree_entries: tree entries as required by ``git mktree --batch -z`` or output by ``git ls-tree -z``.
+    :param mktree_entries: tree entries as required by ``git mktree --batch -z`` or output by ``git ls-tree -z``. No
+        entries make the empty tree.
     :returns: the created tree hash.
     """
     return mktree_tree_make(mktree_popen, b"\0".join(mktree_entries))
