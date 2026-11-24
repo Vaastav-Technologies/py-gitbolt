@@ -20,9 +20,9 @@ class GitCmdException(GitException, VTCmdException):
 
       * raise without message:
 
-        >>> raise GitCmdException(called_process_error=CalledProcessError(1, ['git', 'status'])) # always use `from` clause.
+        >>> raise GitCmdException(called_process_error=CalledProcessError(1, ['git', 'status'])) # always use `from` clause. # doctest: +ELLIPSIS
         Traceback (most recent call last):
-        gitbolt.subprocess.exceptions.GitCmdException: CalledProcessError: Command '['git', 'status']' returned non-zero exit status 1.
+        gitbolt.subprocess.exceptions.GitCmdException: CalledProcessError: Command ...['git', 'status']... returned non-zero exit status 1.
 
       * raise with a message:
 
@@ -39,9 +39,9 @@ class GitCmdException(GitException, VTCmdException):
       * raise without message, override with stderr inside CalledProcessError:
 
         >>> err = CalledProcessError(128, ['git', 'fetch'], stderr='fatal: not a git repository')
-        >>> raise GitCmdException(called_process_error=err) # always use `from` clause.
+        >>> raise GitCmdException(called_process_error=err) # always use `from` clause. # doctest: +ELLIPSIS
         Traceback (most recent call last):
-        gitbolt.subprocess.exceptions.GitCmdException: CalledProcessError: Command '['git', 'fetch']' returned non-zero exit status 128.
+        gitbolt.subprocess.exceptions.GitCmdException: CalledProcessError: Command ...['git', 'fetch']... returned non-zero exit status 128.
 
       * raise exception using `from` clause (chaining):
 
