@@ -76,7 +76,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/py-commons
+      url: https://pypi.org/project/gitbolt/
 
     steps:
       - name: 📥 Retrieve release distributions
