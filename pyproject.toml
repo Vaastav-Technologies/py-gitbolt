@@ -68,3 +68,8 @@ gitbolt_fixtures = "gitbolt.pytest_plugin"
 # so let mypy try to best make sense of the data-types for pytest package
 module = ["pytest.*"]
 follow_untyped_imports = true
+
+[tool.pytest.ini_options]
+addopts = ["--doctest-modules", # Test all the doctests
+    "--doctest-glob=*.md", # Test doctests included as examples in the md files.
+    "--ignore=local-ai-plans"] # AI plans and research tests ignored.
