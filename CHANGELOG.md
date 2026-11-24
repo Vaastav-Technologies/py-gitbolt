@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date format: YYYY-MM-DD
 
+## [Unreleased]
+
+### Fixed
+
+- Making an empty tree with `mktree_tree_make()` or `mktree_tree_data_make()` no longer gives the trees made after it
+  in the same session the wrong hash.
+
 ## [0.0.0] - 2026-10-07
 
 First non-dev release of gitbolt.
