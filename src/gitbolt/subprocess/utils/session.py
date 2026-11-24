@@ -9,8 +9,9 @@ Create sessions for long-running commands and communicate with them using their 
 Much faster that subprocess creation for each input/output pair.
 """
 import errno
+import re
 import subprocess
-from typing import Iterable, IO, cast
+from typing import Iterable, Iterator, IO, cast
 
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE, ERR_DATA_FORMAT_ERR
 
@@ -105,29 +106,84 @@ def cat_file_read(stream: IO[bytes], header: bytes) -> tuple[bytes, bytes, bytes
 
 # region tree
 # region query tree
-def parse_cat_file_tree(git_cat_file_data: bytes) -> Iterable[tuple[bytes, bytes, bytes]]:
-    """
+_SHA1_ID_SIZE: int = 20
+"""Bytes in an object id of a sha1 repository."""
+
+_SHA256_ID_SIZE: int = 32
+"""Bytes in an object id of a sha256 repository."""
+
+_TREE_ENTRY_HEAD: re.Pattern[bytes] = re.compile(rb"([0-7]+) ([^\0]+)\0")
+"""The mode and the name of a tree entry, up to its object id."""
+
+
+def parse_cat_file_tree(git_cat_file_data: bytes, id_size: int = _SHA1_ID_SIZE) -> Iterable[tuple[bytes, bytes, bytes]]:
+    r"""
     Parse bytes tree data.
 
     Typically best for parsing tree data from the stdout of a long-running cat-file query for tree.
 
-    :param git_cat_file_data: tree data in bytes format as given by ``git cat-file --batch`` for a tree query.
-    :returns: iterable of (mode, sha, filename/filepath).
-    """
-    i = 0
-    n = len(git_cat_file_data)
-    while i < n:
-        # mode
-        j = git_cat_file_data.find(b" ", i)
-        mode = git_cat_file_data[i:j]
-        # filename
-        k = git_cat_file_data.find(b"\x00", j)
-        name = git_cat_file_data[j + 1: k]
-        # sha (20 bytes binary)
-        sha = git_cat_file_data[k + 1: k + 21]
+    Examples:
 
-        yield mode, sha.hex().encode(), name
-        i = k + 21
+      * Ids are sha1 ones by default:
+
+        >>> list(parse_cat_file_tree(b"100644 f\x00" + b"\x11" * 20))
+        [(b'100644', b'1111111111111111111111111111111111111111', b'f')]
+
+      * A tree of a sha256 repository has 32-byte ids:
+
+        >>> list(parse_cat_file_tree(b"100644 f\x00" + b"\x11" * 32, 32))
+        [(b'100644', b'1111111111111111111111111111111111111111111111111111111111111111', b'f')]
+
+      * The empty tree has no entries:
+
+        >>> list(parse_cat_file_tree(b""))
+        []
+
+      * An id size of no git hash algorithm is refused at the call:
+
+        >>> parse_cat_file_tree(b"", 40)
+        Traceback (most recent call last):
+        ...
+        ValueError: id_size must be 20 (sha1) or 32 (sha256), not 40.
+
+      * A malformed tree, here an id cut short, is refused while iterating:
+
+        >>> list(parse_cat_file_tree(b"100644 f\x00" + b"\x11" * 19))
+        Traceback (most recent call last):
+        ...
+        gitbolt.exceptions.GitExitingException: ValueError: Malformed tree entry at byte 0.
+
+    :param git_cat_file_data: tree data in bytes format as given by ``git cat-file --batch`` for a tree query.
+    :param id_size: bytes in each object id: 20 for sha1, 32 for sha256.
+    :returns: iterable of (mode, sha, filename/filepath).
+    :raises ValueError: at the call, when ``id_size`` is neither 20 nor 32.
+    :raises GitExitingException: while iterating, with the ``ERR_DATA_FORMAT_ERR`` exit code, when the data isn't a
+        well-formed tree for ``id_size``. The entries before the malformed one are given first.
+    """
+    if id_size not in (_SHA1_ID_SIZE, _SHA256_ID_SIZE):
+        raise ValueError(f"id_size must be {_SHA1_ID_SIZE} (sha1) or {_SHA256_ID_SIZE} (sha256), not {id_size}.")
+    return _iter_tree_entries(git_cat_file_data, id_size)
+
+
+def _iter_tree_entries(tree_data: bytes, id_size: int) -> Iterator[tuple[bytes, bytes, bytes]]:
+    """
+    Iterate over the entries of a tree: see ``parse_cat_file_tree()``, which checks ``id_size`` before any iteration.
+
+    :param tree_data: the tree's content, as git stores it.
+    :param id_size: bytes in each object id.
+    :returns: iterator of (mode, sha, filename).
+    :raises GitExitingException: with the ``ERR_DATA_FORMAT_ERR`` exit code, when an entry is malformed.
+    """
+    entry_start = 0
+    while entry_start < len(tree_data):
+        head = _TREE_ENTRY_HEAD.match(tree_data, entry_start)
+        if head is None or head.end() + id_size > len(tree_data):
+            errmsg = f"Malformed tree entry at byte {entry_start}."
+            raise GitExitingException(errmsg, exit_code=ERR_DATA_FORMAT_ERR) from ValueError(tree_data[entry_start:])
+        mode, name = head.groups()
+        entry_end = head.end() + id_size
+        yield mode, tree_data[head.end():entry_end].hex().encode(), name
+        entry_start = entry_end
 
 
 def cat_file_tree_data(
@@ -146,13 +202,15 @@ def cat_file_tree_data(
     :return: iterable of (mode, sha, filename).
     :raises GitExitingException: when ``tree_hash`` is not the hash of a valid git tree.
     """
-    tree_content = cat_file_blob_content(cat_file_popen, tree_hash)
+    # cat-file answers with the full hex id, even when asked for an abbreviated one or a revision
+    tree_id, _, _, tree_content = cat_file_data(cat_file_popen, tree_hash)
+    entries = parse_cat_file_tree(tree_content, id_size=len(tree_id) // 2)
     if not recursive:
-        for mode, sha, name in parse_cat_file_tree(tree_content):
+        for mode, sha, name in entries:
             # leaf node (blob, symlink, submodule)
             yield mode, sha, name
     else:
-        for mode, sha, name in parse_cat_file_tree(tree_content):
+        for mode, sha, name in entries:
             full_name = _prefix + name
 
             if mode == b"40000":  # directory (tree)
@@ -220,10 +278,12 @@ def mktree_tree_make(mktree_popen: subprocess.Popen[bytes], mktree_null_delimite
 
     :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
     :param mktree_null_delimited_content: the tree data content as taken on stdin on ``mktree --batch -z``. These
-        contents are null (``\0``) delimited.
+        contents are null (``\0``) delimited, without a trailing null. Empty content makes the empty tree.
     :returns: the created tree hash.
     """
-    write_obj = mktree_null_delimited_content + b"\0\0"
+    # -z ends each entry with a null and each tree with one more. The empty tree has no entry to end, and another null
+    # would end a second empty tree, whose hash would be read as the next call's.
+    write_obj = mktree_null_delimited_content + b"\0\0" if mktree_null_delimited_content else b"\0"
     tree_hash = single_shot_command(mktree_popen, write_obj, True)
     return tree_hash.strip()
 
@@ -254,7 +314,8 @@ def mktree_tree_data_make(mktree_popen: subprocess.Popen[bytes], mktree_entries:
     Natively supports null-terminated tree entries or ``git mktree --batch -z`` mode.
 
     :param mktree_popen: long-running ``mktree --batch`` subprocess.Popen.
-    :param mktree_entries: tree entries as required by ``git mktree --batch -z`` or output by ``git ls-tree -z``.
+    :param mktree_entries: tree entries as required by ``git mktree --batch -z`` or output by ``git ls-tree -z``. No
+        entries make the empty tree.
     :returns: the created tree hash.
     """
     return mktree_tree_make(mktree_popen, b"\0".join(mktree_entries))
