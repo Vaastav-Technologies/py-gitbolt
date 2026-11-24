@@ -56,6 +56,7 @@ multitest = ['tox']
 homepage = "https://github.com/Vaastav-Technologies/py-gitbolt"
 source = "https://github.com/Vaastav-Technologies/py-gitbolt"
 issues = "https://github.com/Vaastav-Technologies/py-gitbolt/issues"
+changelog = "https://github.com/Vaastav-Technologies/py-gitbolt/blob/develop/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ['src']
