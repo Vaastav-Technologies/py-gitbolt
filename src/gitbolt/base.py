@@ -941,9 +941,9 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
     @abstractmethod
     def switch(
         self,
+        branch: str,
         *,
         create: str,
-        start_point: str | None = None,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -957,9 +957,62 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         recurse_submodules: bool | None = None,
     ) -> str:
         """
-        Create ``create`` at ``start_point`` and switch to it.
+        Create ``create`` from ``branch`` (the start-point) and switch to it.
 
-        Mirrors ``git switch [<options>] -c <new-branch> [<start-point>]``.
+        Mirrors ``git switch [<options>] (-c|--create) <new-branch> [<start-point>]``.
+        ``git switch -c new-branch an-old-ref-branch`` is
+        ``switch("an-old-ref-branch", create="new-branch")``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        *,
+        create: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Create ``create`` from HEAD and switch to it.
+
+        Mirrors ``git switch [<options>] (-c|--create) <new-branch>``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        branch: str,
+        *,
+        force_create: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Reset ``force_create`` to ``branch`` (the start-point) if it exists, then switch to it.
+
+        Mirrors ``git switch [<options>] (-C|--force-create) <new-branch> [<start-point>]``.
         """
         ...
 
@@ -969,7 +1022,6 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         self,
         *,
         force_create: str,
-        start_point: str | None = None,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -983,9 +1035,35 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         recurse_submodules: bool | None = None,
     ) -> str:
         """
-        Reset ``force_create`` to ``start_point`` if it exists, then switch to it.
+        Reset ``force_create`` to HEAD if it exists, then switch to it.
 
-        Mirrors ``git switch [<options>] -C <new-branch> [<start-point>]``.
+        Mirrors ``git switch [<options>] (-C|--force-create) <new-branch>``.
+        """
+        ...
+
+    @overload
+    @abstractmethod
+    def switch(
+        self,
+        branch: str,
+        *,
+        detach: Literal[True],
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str:
+        """
+        Detach HEAD at ``branch``.
+
+        Mirrors ``git switch [<options>] --detach <start-point>``.
         """
         ...
 
@@ -995,7 +1073,6 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         self,
         *,
         detach: Literal[True],
-        start_point: str | None = None,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -1009,9 +1086,9 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         recurse_submodules: bool | None = None,
     ) -> str:
         """
-        Detach HEAD at ``start_point`` (or HEAD).
+        Detach HEAD at HEAD.
 
-        Mirrors ``git switch [<options>] --detach [<start-point>]``.
+        Mirrors ``git switch [<options>] --detach``.
         """
         ...
 
@@ -1037,6 +1114,7 @@ class Switch(GitSubCommand, RootDirOp, Protocol):  # pragma: no cover
         Create unborn branch ``orphan`` and switch to it.
 
         Mirrors ``git switch [<options>] --orphan <new-branch>``.
+        ``--orphan`` cannot take a start-point (``builtin/checkout.c``).
         """
         ...
     # endregion

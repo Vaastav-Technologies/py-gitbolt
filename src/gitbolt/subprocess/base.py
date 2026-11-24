@@ -1361,9 +1361,48 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
     @overload
     def switch(
         self,
+        branch: str,
         *,
         create: str,
-        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        *,
+        create: str,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        branch: str,
+        *,
+        force_create: str,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -1383,7 +1422,26 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
         self,
         *,
         force_create: str,
-        start_point: str | None = None,
+        guess: bool | None = None,
+        discard_changes: bool = False,
+        force: bool = False,
+        merge: bool = False,
+        conflict: ConflictStyle | None = None,
+        quiet: bool = False,
+        progress: bool | None = None,
+        track: bool | TrackMode | None = None,
+        no_track: bool = False,
+        ignore_other_worktrees: bool = False,
+        recurse_submodules: bool | None = None,
+    ) -> str: ...
+
+    @override
+    @overload
+    def switch(
+        self,
+        branch: str,
+        *,
+        detach: Literal[True],
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -1403,7 +1461,6 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
         self,
         *,
         detach: Literal[True],
-        start_point: str | None = None,
         guess: bool | None = None,
         discard_changes: bool = False,
         force: bool = False,
@@ -1441,7 +1498,6 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
         self,
         branch: SwitchBranch | None = None,
         *,
-        start_point: str | None = None,
         create: str | None = None,
         force_create: str | None = None,
         detach: bool = False,
@@ -1460,7 +1516,6 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
     ) -> str:
         self.args_validator().validate(
             branch,
-            start_point=start_point,
             create=create,
             force_create=force_create,
             detach=detach,
@@ -1479,7 +1534,6 @@ class SwitchCommand(Switch, GitSubcmdCommand, Protocol):
         )
         sub_cmd_args = self.cli_args_builder.build(
             branch,
-            start_point=start_point,
             create=create,
             force_create=force_create,
             detach=detach,

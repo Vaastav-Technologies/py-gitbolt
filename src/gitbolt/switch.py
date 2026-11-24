@@ -11,7 +11,7 @@ from typing import Protocol, override, Literal
 from gitbolt._internal_init import errmsg_creator
 from gitbolt.exceptions import GitExitingException
 from vt.utils.errors.error_specs import ERR_INVALID_USAGE
-from vt.utils.errors.error_specs.utils import require_type
+from vt.utils.errors.error_specs.utils import require_type, optional_type
 
 CONFLICT_STYLES = ("merge", "diff3", "zdiff3")
 TRACK_MODES = ("direct", "inherit")
@@ -30,7 +30,6 @@ class SwitchArgsValidator(Protocol):  # pragma: no cover
         self,
         branch: SwitchBranch | None = None,
         *,
-        start_point: str | None = None,
         create: str | None = None,
         force_create: str | None = None,
         detach: bool = False,
@@ -62,7 +61,6 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
         self,
         branch: SwitchBranch | None = None,
         *,
-        start_point: str | None = None,
         create: str | None = None,
         force_create: str | None = None,
         detach: bool = False,
@@ -81,14 +79,14 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
     ) -> None:
         """
         >>> UtilSwitchArgsValidator().validate("master")
-        >>> UtilSwitchArgsValidator().validate(create="fixup", start_point="HEAD~3")
-        >>> UtilSwitchArgsValidator().validate(detach=True, start_point="HEAD")
+        >>> UtilSwitchArgsValidator().validate("HEAD~3", create="fixup")
+        >>> UtilSwitchArgsValidator().validate("HEAD", detach=True)
         >>> UtilSwitchArgsValidator().validate()
         Traceback (most recent call last):
         gitbolt.exceptions.GitExitingException: ValueError: Either branch, create, force_create, detach or orphan is required
-        >>> UtilSwitchArgsValidator().validate("master", create="fixup")
+        >>> UtilSwitchArgsValidator().validate("master", orphan="blank")
         Traceback (most recent call last):
-        gitbolt.exceptions.GitExitingException: ValueError: branch and create are not allowed together
+        gitbolt.exceptions.GitExitingException: ValueError: '--orphan' cannot take <start-point>
         """
         require_type(detach, "detach", bool, GitExitingException)
         require_type(discard_changes, "discard_changes", bool, GitExitingException)
@@ -97,54 +95,19 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
         require_type(quiet, "quiet", bool, GitExitingException)
         require_type(no_track, "no_track", bool, GitExitingException)
         require_type(ignore_other_worktrees, "ignore_other_worktrees", bool, GitExitingException)
-        if guess is not None:
-            require_type(guess, "guess", bool, GitExitingException)
-        if progress is not None:
-            require_type(progress, "progress", bool, GitExitingException)
-        if recurse_submodules is not None:
-            require_type(recurse_submodules, "recurse_submodules", bool, GitExitingException)
-        if branch is not None:
-            require_type(branch, "branch", str, GitExitingException)
-            if branch == "":
-                errmsg = "'branch' is required"
-                raise GitExitingException(
-                    errmsg, exit_code=ERR_INVALID_USAGE
-                ) from ValueError(errmsg)
-        if start_point is not None:
-            require_type(start_point, "start_point", str, GitExitingException)
-            if start_point == "":
-                errmsg = "'start_point' is required"
-                raise GitExitingException(
-                    errmsg, exit_code=ERR_INVALID_USAGE
-                ) from ValueError(errmsg)
-        if create is not None:
-            require_type(create, "create", str, GitExitingException)
-            if create == "":
-                errmsg = "'create' is required"
-                raise GitExitingException(
-                    errmsg, exit_code=ERR_INVALID_USAGE
-                ) from ValueError(errmsg)
-        if force_create is not None:
-            require_type(force_create, "force_create", str, GitExitingException)
-            if force_create == "":
-                errmsg = "'force_create' is required"
-                raise GitExitingException(
-                    errmsg, exit_code=ERR_INVALID_USAGE
-                ) from ValueError(errmsg)
-        if orphan is not None:
-            require_type(orphan, "orphan", str, GitExitingException)
-            if orphan == "":
-                errmsg = "'orphan' is required"
-                raise GitExitingException(
-                    errmsg, exit_code=ERR_INVALID_USAGE
-                ) from ValueError(errmsg)
+        optional_type(guess, "guess", bool, GitExitingException)
+        optional_type(progress, "progress", bool, GitExitingException)
+        optional_type(recurse_submodules, "recurse_submodules", bool, GitExitingException)
+        optional_type(branch, "branch", str, GitExitingException, ERR_INVALID_USAGE)
+        optional_type(create, "create", str, GitExitingException, ERR_INVALID_USAGE)
+        optional_type(force_create, "force_create", str, GitExitingException, ERR_INVALID_USAGE)
+        optional_type(orphan, "orphan", str, GitExitingException, ERR_INVALID_USAGE)
         self._validate_destination(
             branch=branch,
             create=create,
             force_create=force_create,
             detach=detach,
             orphan=orphan,
-            start_point=start_point,
         )
         if create is not None and force_create is not None:
             self._exclusive("create", "force_create")
@@ -184,12 +147,17 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
         force_create: str | None,
         detach: bool,
         orphan: str | None,
-        start_point: str | None,
     ) -> None:
+        creating = (
+            create is not None
+            or force_create is not None
+            or detach
+            or orphan is not None
+        )
         destinations = [
             name
             for name, selected in (
-                ("branch", branch is not None),
+                ("branch", branch is not None and not creating),
                 ("create", create is not None),
                 ("force_create", force_create is not None),
                 ("detach", detach),
@@ -198,16 +166,19 @@ class UtilSwitchArgsValidator(SwitchArgsValidator):
             if selected
         ]
         if not destinations:
-            errmsg = "Either branch, create, force_create, detach or orphan is required"
+            errmsg = errmsg_creator.at_least_one_required(
+                "branch", "create", "force_create", "detach", "orphan"
+            )
             raise GitExitingException(
                 errmsg, exit_code=ERR_INVALID_USAGE
             ) from ValueError(errmsg)
         if len(destinations) > 1:
             self._exclusive(destinations[0], destinations[1])
-        if start_point is not None and branch is not None:
-            self._exclusive("branch", "start_point")
-        if start_point is not None and orphan is not None:
-            self._exclusive("orphan", "start_point")
+        if orphan is not None and branch is not None:
+            errmsg = "'--orphan' cannot take <start-point>"
+            raise GitExitingException(
+                errmsg, exit_code=ERR_INVALID_USAGE
+            ) from ValueError(errmsg)
 
     def _exclusive(self, left: str, right: str) -> None:
         errmsg = errmsg_creator.not_allowed_together(left, right)

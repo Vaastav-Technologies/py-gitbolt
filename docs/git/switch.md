@@ -11,7 +11,13 @@ $ git switch master
 ### Create and switch
 
 ```shell
+$ git switch -c new-branch an-old-ref-branch
 $ git switch -c fixup HEAD~3
+```
+
+```python
+git.switch_subcmd().switch("an-old-ref-branch", create="new-branch")
+git.switch_subcmd().switch("HEAD~3", create="fixup")
 ```
 
 ### Detach

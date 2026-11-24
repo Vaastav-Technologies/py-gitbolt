@@ -22,7 +22,6 @@ class SwitchCLIArgsBuilder(Protocol):  # pragma: no cover
         self,
         branch: SwitchBranch | None = None,
         *,
-        start_point: str | None = None,
         create: str | None = None,
         force_create: str | None = None,
         detach: bool = False,
@@ -55,7 +54,6 @@ class IndividuallyOverridableSCAB(SwitchCLIArgsBuilder):
         self,
         branch: SwitchBranch | None = None,
         *,
-        start_point: str | None = None,
         create: str | None = None,
         force_create: str | None = None,
         detach: bool = False,
@@ -76,9 +74,9 @@ class IndividuallyOverridableSCAB(SwitchCLIArgsBuilder):
         >>> builder = IndividuallyOverridableSCAB()
         >>> builder.build("master")
         ['switch', 'master']
-        >>> builder.build(create="fixup", start_point="HEAD~3")
+        >>> builder.build("HEAD~3", create="fixup")
         ['switch', '--create', 'fixup', 'HEAD~3']
-        >>> builder.build(detach=True, start_point="HEAD")
+        >>> builder.build("HEAD", detach=True)
         ['switch', '--detach', 'HEAD']
         >>> builder.build("topic", discard_changes=True)
         ['switch', '--discard-changes', 'topic']
@@ -106,8 +104,6 @@ class IndividuallyOverridableSCAB(SwitchCLIArgsBuilder):
         )
         if branch is not None:
             args.append(branch)
-        if start_point is not None:
-            args.append(start_point)
         return args
 
     def create_arg(self, create: str | None) -> list[str]:

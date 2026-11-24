@@ -2128,7 +2128,7 @@ class TestSwitchSubcmd:
     def test_detach(self, repo_local):
         git = self._git(repo_local)
         self._commit(git, "initial")
-        git.switch_subcmd().switch(detach=True, start_point="HEAD")
+        git.switch_subcmd().switch("HEAD", detach=True)
         detached = git.subcmd_unchecked().run(
             ["rev-parse", "--abbrev-ref", "HEAD"], text=True
         ).stdout.strip()
@@ -2157,9 +2157,16 @@ class TestSwitchSubcmd:
             SimpleGitCommand(repo_local).switch_subcmd().switch()
         assert e.value.exit_code == ERR_INVALID_USAGE
 
+    def test_create_from_start_point(self, repo_local):
+        git = self._git(repo_local)
+        self._commit(git, "initial")
+        home = self._branch(git)
+        git.switch_subcmd().switch(home, create="from-old")
+        assert self._branch(git) == "from-old"
+
     def test_exclusive_modes(self, repo_local):
         with pytest.raises(GitExitingException) as e:
-            SimpleGitCommand(repo_local).switch_subcmd().switch("master", create="x")
+            SimpleGitCommand(repo_local).switch_subcmd().switch(create="x", orphan="y")
         assert e.value.exit_code == ERR_INVALID_USAGE
 
     def test_str(self):
@@ -2192,7 +2199,7 @@ class TestSwitchSubcmd:
     def test_cli_builder_helpers(self):
         builder = IndividuallyOverridableSCAB()
         assert builder.build("master") == ["switch", "master"]
-        assert builder.build(create="fixup", start_point="HEAD~3") == [
+        assert builder.build("HEAD~3", create="fixup") == [
             "switch",
             "--create",
             "fixup",
@@ -2230,7 +2237,7 @@ class TestSwitchSubcmd:
             "--recurse-submodules",
             "t",
         ]
-        assert builder.build(force_create="topic", start_point="HEAD") == [
+        assert builder.build("HEAD", force_create="topic") == [
             "switch",
             "--force-create",
             "topic",
@@ -2265,11 +2272,9 @@ class TestSwitchSubcmd:
             v.validate("t", track="upstream")  # type: ignore[arg-type]
         assert e.value.exit_code == ERR_INVALID_USAGE
         with pytest.raises(GitExitingException) as e:
-            v.validate("t", start_point="HEAD")
+            v.validate("HEAD", orphan="blank")
         assert e.value.exit_code == ERR_INVALID_USAGE
-        with pytest.raises(GitExitingException) as e:
-            v.validate(orphan="blank", start_point="HEAD")
-        assert e.value.exit_code == ERR_INVALID_USAGE
+        v.validate("an-old-ref-branch", create="new-branch")
         v.validate("t", guess=True, progress=False, recurse_submodules=True, conflict="zdiff3")
         v.validate(detach=True)
 
